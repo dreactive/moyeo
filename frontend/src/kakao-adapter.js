@@ -10,3 +10,18 @@ export async function loadKakao(appKey) {
   await new Promise(resolve => kakao.maps.load(resolve));
   return kakao.maps;
 }
+export function drawKakao(maps,element,points,lines = []) {
+  if (!points.length) { element.textContent = '표시할 좌표가 없습니다.'; return; }
+  element.innerHTML = '';
+  element.classList.add('sdk');
+  const latLng = point => new maps.LatLng(point.latitude,point.longitude);
+  const map = new maps.Map(element,{center:latLng(points[0]),level:6});
+  const bounds = new maps.LatLngBounds();
+  points.forEach(point => {
+    const position = latLng(point);
+    new maps.Marker({map,position,title:point.name ?? point.label});
+    bounds.extend(position);
+  });
+  map.setBounds(bounds);
+  return {map,latLng};
+}
