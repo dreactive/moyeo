@@ -30,3 +30,15 @@ test('unknown costs and market prices keep unknown values and distinct budget la
   renderPlace(scenarios['no-menu'].places[0]);
   assert.match(output.place,/메뉴 미등록 · 가격 미확인/);
 });
+import {renderPlan} from '../src/plan.js';
+import {renderItems,renderConstraints,renderConflicts,renderQuestions} from '../src/items.js';
+test('every recorded room scenario renders all shared sections with coherent targets', () => {
+  const output={};
+  globalThis.document={getElementById:id => ({set innerHTML(value){output[id]=value;}})};
+  for (const {snapshot} of Object.values(scenarios)) {
+    [renderItems,renderConstraints,renderQuestions,renderConflicts,renderPlan].forEach(render => render(snapshot));
+    renderCost((snapshot.review_plan ?? snapshot.current_plan)?.cost);
+    assert.ok(output.plan.includes('확인'));
+    if (snapshot.active_target) assert.deepEqual(snapshot.active_target,snapshot.review_plan.confirmation_target);
+  }
+});
