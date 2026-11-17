@@ -66,3 +66,16 @@ def test_plan_revision_changes_only_for_content_or_inputs(room):
     second = build_plan(room, draft, [])
     assert second['plan_revision'] == first['plan_revision'] + 1
     assert second['content_hash'] != first['content_hash']
+
+
+def test_stale_base_versions_not_applied(room):
+    from backend.db import Database
+    from backend.services.agent_apply import valid_result_base
+    db = Database(':memory:')
+    db.put('room:' + room['room_id'], room)
+    result = dict(run_id='run', room_id=room['room_id'], base_versions=dict(room['versions']))
+    assert not valid_result_base(db, result)
+    db.put('run:run', {'room_id':room['room_id'], 'base_versions':dict(room['versions'])})
+    assert valid_result_base(db, result)
+    result['base_versions']['constraint_version'] += 1
+    assert not valid_result_base(db, result)
