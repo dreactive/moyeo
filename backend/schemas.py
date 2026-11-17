@@ -81,3 +81,8 @@ class SelectOption(Request):
 class AgentRun(Request):
     reason: Literal['manual_replan']
 
+
+class Register(Request):
+    name: str
+    email: str
+    password: str

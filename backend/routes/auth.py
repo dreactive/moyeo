@@ -35,3 +35,27 @@ def register(body: Registration, request: Request, response: Response):
     user = register_user(db, body.name, body.email, body.password)
     set_session(response, db, user)
     return user
+
+@router.post('/logout')
+def logout(request: Request, response: Response):
+    request.app.state.db.put('session:' + request.cookies.get('session', ''), None)
+    response.delete_cookie('session')
+    return {'ok': True}
+
+
+class Login(BaseModel):
+    email: str
+    password: str
+
+
+@router.post('/login')
+def login(body: Login, request: Request, response: Response):
+    from backend.auth import verify_password
+    db = request.app.state.db
+    user_id = db.get('email:' + body.email.lower())
+    stored = db.get('user:' + user_id) if user_id else None
+    if stored is None or not verify_password(body.password, stored['password_hash']):
+        raise HTTPException(401, 'Invalid credentials')
+    user = {key: stored[key] for key in ('id', 'name', 'email')}
+    set_session(response, db, user)
+    return user
