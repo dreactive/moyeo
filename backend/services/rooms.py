@@ -16,3 +16,12 @@ def new_room(user, body):
     room = deepcopy(EMPTY_ROOM)
     room.update(room_id=secrets.token_hex(16), title=body['title'], invite_code=secrets.token_urlsafe(8), config={k: v for k, v in body.items() if k != 'title'}, members=[{'user_id': user['id'], 'name': user['name']}])
     return room
+
+
+def require_room(db, room_id, viewer_id):
+    room = db.get('room:' + room_id)
+    if room is None:
+        raise HTTPException(404, 'Room not found')
+    if viewer_id not in [member['user_id'] for member in room['members']]:
+        raise HTTPException(403, 'Room membership required')
+    return room
