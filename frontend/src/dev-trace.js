@@ -15,6 +15,9 @@ if (typeof document !== 'undefined') {
     event.preventDefault();
     const data = Object.fromEntries(new FormData(event.target));
     event.target.elements.devToken.value = '';
+    html('traces','조회 중…');
+    html('error','');
     run(async () => renderTraces(await loadTraces(data)));
   };
 }
+
