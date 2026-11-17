@@ -25,3 +25,11 @@ def require_room(db, room_id, viewer_id):
     if viewer_id not in [member['user_id'] for member in room['members']]:
         raise HTTPException(403, 'Room membership required')
     return room
+
+from backend.domain import project_items
+
+
+def get_room_snapshot(db, room_id, viewer_id):
+    room = project_items(require_room(db, room_id, viewer_id))
+    room['messages'] = room['messages'][-50:]
+    return room

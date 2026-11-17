@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Depends
 from backend.routes.auth import current_user
 from backend.schemas import CreateRoom
-from backend.services.rooms import new_room, require_room
+from backend.services.rooms import new_room, require_room, get_room_snapshot
 import secrets
 
 router = APIRouter(prefix='/api/rooms')
@@ -20,8 +20,7 @@ def create(body: CreateRoom, request: Request, user=Depends(current_user)):
 @router.get('/{room_id}')
 def snapshot(room_id: str, request: Request, user=Depends(current_user)):
     room = require_room(request.app.state.db, room_id, user['id'])
-    room['messages'] = room['messages'][-50:]
-    return room
+    return get_room_snapshot(request.app.state.db, room_id, user['id'])
 
 from backend.schemas import JoinRoom
 from fastapi import HTTPException
@@ -43,8 +42,7 @@ def join(body: JoinRoom, request: Request, user=Depends(current_user)):
             db.put('room:' + room_id, room)
             publish_event(db, room_id, 'room.updated', {'changed':['members','versions','confirmations']})
         room = db.get('room:' + room_id)
-    room['messages'] = room['messages'][-50:]
-    return room
+    return get_room_snapshot(request.app.state.db, room_id, user['id'])
 from pydantic import ValidationError
 from backend.schemas import TripConfig
 

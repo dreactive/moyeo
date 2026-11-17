@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Depends
 from backend.routes.auth import current_user
 from backend.schemas import Confirm, Activate
-from backend.services.rooms import require_room
+from backend.services.rooms import require_room, get_room_snapshot
 from backend.services.planning import record_confirmation, finalize_plan, activate_plan
 from backend.services.events import publish_event
 
@@ -20,8 +20,7 @@ async def confirm(room_id: str, body: Confirm, request: Request, user=Depends(cu
         if finalized:
             publish_event(db, room_id, 'plan.confirmed', {'target':room['active_target']})
         room = require_room(db, room_id, user['id'])
-    room['messages'] = room['messages'][-50:]
-    return room
+    return get_room_snapshot(request.app.state.db, room_id, user['id'])
 
 @router.post('/withdraw')
 async def withdraw(room_id: str, body: Confirm, request: Request, user=Depends(current_user)):
@@ -31,8 +30,7 @@ async def withdraw(room_id: str, body: Confirm, request: Request, user=Depends(c
         record_confirmation(room, user['id'], body.target.model_dump(), 'withdraw')
         db.put('room:' + room_id, room)
         publish_event(db, room_id, 'room.updated', {'changed':['confirmations']})
-    room['messages'] = room['messages'][-50:]
-    return room
+    return get_room_snapshot(request.app.state.db, room_id, user['id'])
 
 @router.post('/activate')
 async def activate(room_id: str, body: Activate, request: Request, user=Depends(current_user)):
@@ -42,5 +40,4 @@ async def activate(room_id: str, body: Activate, request: Request, user=Depends(
         activate_plan(room, body.plan_revision)
         db.put('room:' + room_id, room)
         publish_event(db, room_id, 'room.updated', {'changed':['review_plan','active_target','confirmations']})
-    room['messages'] = room['messages'][-50:]
-    return room
+    return get_room_snapshot(request.app.state.db, room_id, user['id'])

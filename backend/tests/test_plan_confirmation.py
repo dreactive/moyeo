@@ -128,3 +128,15 @@ def test_conflict_selection_copies_saved_effect(room):
     import pytest
     with pytest.raises(Exception):
         select_conflict_option(room, 'c', 'o', 'u1')
+
+
+def test_confirmation_response_contains_confirmed_item_states(api):
+    db = api.app.state.db
+    room = db.get('room:room-fixture')
+    room['current_plan']['validation'] = 'ready'
+    room['constraints'] = []
+    db.put('room:room-fixture', room)
+    for actor in ('u1','u2','u3','u4'):
+        api.cookies.set('session','s'+actor)
+        response = api.post('/api/rooms/room-fixture/plan/confirm', json={'target':room['current_plan']['confirmation_target']})
+    assert all(item['state'] == 'confirmed' for item in response.json()['items'])
