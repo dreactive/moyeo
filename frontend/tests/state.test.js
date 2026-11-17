@@ -10,3 +10,11 @@ test('personal place selection disappears when absent from the replacement snaps
   assert.equal(state.getSelectedPlace(), null);
   assert.equal(room.selected_place, undefined);
 });
+test('snapshot subscribers stop receiving updates after unsubscribe', () => {
+  let calls = 0;
+  const stop = state.subscribeState(() => calls++);
+  state.applySnapshot({current_plan:null});
+  stop();
+  state.applySnapshot({current_plan:null});
+  assert.equal(calls, 1);
+});
