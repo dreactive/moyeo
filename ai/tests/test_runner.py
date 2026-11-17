@@ -79,3 +79,21 @@ async def test_invalid_model_scores_return_needs_input_without_tool_call():
     result = await run_agent(task(), Model(), Tools(), None)
     assert result["completion"] == "needs_input"
     assert result["questions"] and not result["observations"]
+
+
+async def test_rule_assistance_is_labeled_and_does_not_skip_base_generation():
+    from ai.runner import run_agent
+    class Model:
+        mode = "local_qwen"
+        calls = 0
+        def generate_json(self, request):
+            self.calls += 1
+            return {}
+    model, events, value = Model(), [], task()
+    value["goal"] = "chat"
+    async def sink(event):
+        events.append(event)
+    result = await run_agent(value, model, None, sink)
+    assert model.calls == 1 and result["constraint_proposals"][0]["value"] == 200000
+    assert events[0]["payload"]["extraction_mode"] == "rule-assisted"
+    assert events[0]["payload"]["model_mode"] == "local_qwen"

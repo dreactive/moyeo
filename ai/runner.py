@@ -10,6 +10,22 @@ from ai.questions import question
 from ai.outcome import assemble_result
 from ai.result import empty_result
 from ai.extraction import validate_extraction
+from ai.assistance import assist_extraction
+
+
+async def extract_proposals(task, model, emit_trace):
+    error = None
+    try:
+        raw = await asyncio.to_thread(model.generate_json, {"phase": "extract", "context": task})
+    except ValueError as exc:
+        raw, error = {}, type(exc).__name__
+    output = assist_extraction(raw, task)
+    await emit(emit_trace, task, 0, "decision", None,
+               dict(goal=task["goal"], candidates=[], selected_index=None, scores=[],
+                    model_mode=getattr(model, "mode", "unknown"), base_versions=task["base_versions"],
+                    extraction_mode="rule-assisted", model_format_error=error,
+                    model_proposal_counts={k: len(v) for k, v in raw.items() if isinstance(v, list)}))
+    return output
 
 
 async def run_agent(task, model, tools, emit_trace):
@@ -19,8 +35,7 @@ async def run_agent(task, model, tools, emit_trace):
         result["completion"] = "unsupported"
         return result
     try:
-        extraction = await asyncio.to_thread(model.generate_json, {"phase": "extract", "context": task})
-        result.update(validate_extraction(extraction, task))
+        result.update(await extract_proposals(task, model, emit_trace))
         if task["goal"] in ("chat", "messages", "extract"):
             result["completion"] = "needs_input" if result["questions"] else "done"
         else:
