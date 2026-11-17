@@ -44,3 +44,15 @@ def test_model_cannot_replace_observed_menu_price():
     next(l for l in forged["lines"] if l["category"] == "meal")["unit_price_krw"] = 1
     with pytest.raises(ValueError):
         validate_arguments("calculate_costs", forged, build_tool_context(value))
+
+
+def test_model_cannot_invent_route_seconds_in_schedule():
+    from ai.tests.test_place_route_tools import task
+    from ai.planning import itinerary_arguments
+    from ai.tools.validation import validate_arguments
+    from ai.tools.context import build_tool_context
+    value = task()
+    args = itinerary_arguments(value)
+    args["route_legs"] = [{"from_ref": "fixture:place-a", "to_ref": "fixture:place-b", "duration_seconds": 1}]
+    with pytest.raises(ValueError):
+        validate_arguments("build_itinerary", args, build_tool_context(value))
