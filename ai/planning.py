@@ -1,10 +1,20 @@
 def planned_visits(context):
     plan = context.get("current_plan") or {}
     refs = {i["id"]: i.get("place_ref") for i in plan.get("item_snapshots", [])}
-    return [dict(item_id=v["item_id"], place_ref=refs.get(v["item_id"]) or v["place_ref"],
+    visits = [dict(item_id=v["item_id"], place_ref=refs.get(v["item_id"]) or v["place_ref"],
                  date=d["date"], preferred_start_at=v.get("start_at"),
                  stay_minutes=v.get("stay_minutes"), selected_menu_ids=v.get("selected_menu_ids", []))
             for d in plan.get("days", []) for v in d["visits"]]
+    for q in context.get("questions", []):
+        if q["status"] != "answered" or q.get("owner_id") not in (None, q.get("answered_by")):
+            continue
+        for visit in visits:
+            if visit["item_id"] == q["target_ref"]:
+                if q["field"] == "visit_duration":
+                    visit["stay_minutes"] = q["answer"]["stay_minutes"]
+                if q["field"] == "menu_selection":
+                    visit["selected_menu_ids"] = [q["answer"]["menu_id"]]
+    return visits
 
 
 def itinerary_arguments(context):

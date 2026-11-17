@@ -62,3 +62,15 @@ def test_extraction_context_does_not_reintroduce_plan_text_as_message_sources():
     assert "이전 여행안에서만 나온 장소" not in json.dumps(context, ensure_ascii=False)
     assert context["recent_messages"][0]["id"] == "m0"
     assert context["items"][0]["id"] == "item-a"
+
+
+def test_stay_and_menu_answers_are_restored_into_planning_inputs():
+    from ai.planning import planned_visits
+    value = task()
+    value["questions"] = [
+        dict(field="visit_duration", target_ref="item-b", status="answered", owner_id=None, answered_by="u1", answer={"stay_minutes": 40}),
+        dict(field="menu_selection", target_ref="item-a", status="answered", owner_id=None, answered_by="u2",
+             answer={"menu_id": "fixture:menu-a", "quantity": 2, "scope": "shared"})]
+    visits = planned_visits(value)
+    assert visits[1]["stay_minutes"] == 40
+    assert visits[0]["selected_menu_ids"] == ["fixture:menu-a"]
