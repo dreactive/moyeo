@@ -178,3 +178,12 @@ def test_used_evidence_change_without_draft_invalidates_review(room, agent_resul
     assert room['versions']['evidence_version'] == 2
     assert room['review_plan'] is None
     assert room['active_target'] is None
+
+
+def test_result_question_references_must_exist(room, agent_result):
+    from backend.services.agent_apply import validate_questions
+    validate_questions(room, agent_result['questions'])
+    agent_result['questions'][0]['target_ref'] = 'other-room-item'
+    import pytest
+    with pytest.raises(ValueError):
+        validate_questions(room, agent_result['questions'])

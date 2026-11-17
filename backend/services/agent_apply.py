@@ -57,6 +57,7 @@ def prepare_result(room, result, old_observations):
     updated = deepcopy(room)
     mapped = apply_proposals(updated, result)
     observations = merge_observations(old_observations, mapped['observations'])
+    validate_questions(updated, mapped['questions'])
     apply_questions(updated, mapped['questions'])
     apply_plan(updated, mapped['plan_draft'], old_observations, observations)
     updated['conflicts'] = deepcopy(mapped['conflicts'])
@@ -81,3 +82,21 @@ def apply_agent_result(db, result):
     db.observations[room_id] = observations
     publish_event(db, room_id, 'room.updated', {'changed':['items','constraints','questions','conflicts','current_plan','versions']})
     return True
+
+
+def validate_questions(room, questions):
+    items = {item['id'] for item in room['items']}
+    members = {member['user_id'] for member in room['members']}
+    for question in questions:
+        field = question['field']
+        targets = items
+        if field in ('origin','destination','lodging'):
+            targets = {'anchor:' + field}
+        elif field == 'constraint_value':
+            targets = {c['id'] for c in room['constraints'] if c['owner_id'] == question['owner_id']}
+        elif field == 'support_target':
+            targets = items | {None}
+        elif field not in ('menu_selection','visit_duration'):
+            raise ValueError('Unknown question field')
+        if question['owner_id'] not in members | {None} or question['target_ref'] not in targets or not set(question['related_item_ids']) <= items:
+            raise ValueError('Invalid question target')
