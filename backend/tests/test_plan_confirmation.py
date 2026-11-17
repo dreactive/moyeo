@@ -120,7 +120,7 @@ def test_withdraw_before_review_does_not_activate_plan(room):
 
 def test_conflict_selection_copies_saved_effect(room):
     from backend.services.planning import select_conflict_option
-    room['conflicts'] = [{'id':'c','base_versions':dict(room['versions']),'options':[{'id':'o','requires_owner_id':None,'effect':{'kind':'drop_visit','item_id':'item-b'}}]}]
+    room['conflicts'] = [{'id':'c','type':'time','explanation':'Fixture conflict','affected_item_ids':['item-b'],'blocking':True,'status':'open','base_versions':dict(room['versions']),'options':[{'id':'o','requires_owner_id':None,'effect':{'kind':'drop_visit','item_id':'item-b'}}]}]
     selected = select_conflict_option(room, 'c', 'o', 'u1')
     assert selected['effect'] == {'kind':'drop_visit','item_id':'item-b'}
     assert room['confirmations'] == []
@@ -155,3 +155,14 @@ def test_conflict_condition_change_stages_owner_card(room):
     pending = apply_selected_condition(room, selection, condition['owner_id'])
     assert pending['status'] == 'needs_owner_confirmation'
     assert condition['value'] == before
+
+
+def test_conflict_choice_http_returns_run_without_confirmation(api):
+    db = api.app.state.db
+    room = db.get('room:room-fixture')
+    room['conflicts'] = [{'id':'c','type':'time','explanation':'Fixture conflict','affected_item_ids':['item-b'],'blocking':True,'status':'open','base_versions':dict(room['versions']),'options':[{'id':'o','requires_owner_id':None,'effect':{'kind':'drop_visit','item_id':'item-b'}}]}]
+    db.put('room:room-fixture', room)
+    response = api.post('/api/rooms/room-fixture/conflicts/c/select', json={'option_id':'o'})
+    assert response.status_code == 202
+    assert set(response.json()) == {'run_id','base_versions'}
+    assert api.get('/api/rooms/room-fixture').json()['confirmations'] == []

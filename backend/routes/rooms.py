@@ -104,3 +104,20 @@ async def answer(room_id: str, question_id: str, body: ValueAnswer, request: Req
         publish_event(db, room_id, 'room.updated', {'changed':['questions','config','constraints','versions','confirmations']})
     await request.app.state.jobs.enqueue(room_id, 'question_answered')
     return snapshot(room_id, request, user)
+
+from backend.schemas import SelectOption
+from backend.services.planning import select_conflict_option, apply_selected_condition
+
+
+@router.post('/{room_id}/conflicts/{conflict_id}/select', status_code=202)
+async def select_conflict(room_id: str, conflict_id: str, body: SelectOption, request: Request, user=Depends(current_user)):
+    db = request.app.state.db
+    with db.lock:
+        room = require_room(db, room_id, user['id'])
+        selection = select_conflict_option(room, conflict_id, body.option_id, user['id'])
+        if selection['effect']['kind'] == 'change_constraint':
+            apply_selected_condition(room, selection, user['id'])
+            db.put('room:' + room_id, room)
+            publish_event(db, room_id, 'room.updated', {'changed':['constraints']})
+            selection = None
+    return await request.app.state.jobs.enqueue(room_id, 'conflict_selected', selection)
