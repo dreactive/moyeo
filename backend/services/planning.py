@@ -4,7 +4,7 @@ from copy import deepcopy
 from fastapi import HTTPException
 
 
-HASH_FIELDS = ('selected_item_ids','item_snapshots','days','cost','evidence')
+HASH_FIELDS = ('selected_item_ids','item_snapshots','days','cost','evidence','validation','blocking_conflict_ids')
 IGNORED_TIMES = {'retrieved_at','observed_at','provider_updated_at'}
 
 
@@ -97,3 +97,21 @@ def item_snapshots(room, draft):
         snapshot['place_ref'] = places.get(item_id)
         snapshots.append(snapshot)
     return snapshots
+
+DRAFT_FIELDS = ('selected_item_ids','days','cost','validation','blocking_conflict_ids')
+
+
+def build_plan(room, draft, evidence):
+    plan = {key:deepcopy(draft[key]) for key in DRAFT_FIELDS}
+    plan['item_snapshots'] = item_snapshots(room, plan)
+    plan['content_hash'] = semantic_plan_hash(dict(plan, evidence=evidence))
+    current = room['current_plan']
+    unchanged = current and current['content_hash'] == plan['content_hash']
+    unchanged = unchanged and all(current[key] == room['versions'][key] for key in ('participant_version','constraint_version','evidence_version'))
+    if unchanged:
+        return deepcopy(current)
+    room['versions']['plan_revision'] += 1
+    plan.update(room['versions'])
+    plan['confirmation_target'] = dict(room['versions'], content_hash=plan['content_hash'])
+    return plan
+

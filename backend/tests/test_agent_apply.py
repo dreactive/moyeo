@@ -53,3 +53,16 @@ def test_plan_item_snapshots_copy_current_content(room):
     room['items'][0]['title'] = 'Later edit'
     assert snapshots[0]['title'] != 'Later edit'
     assert snapshots[0]['place_ref'] == 'fixture:place-a'
+
+
+def test_plan_revision_changes_only_for_content_or_inputs(room):
+    from backend.services.planning import build_plan
+    from copy import deepcopy
+    draft = {key:deepcopy(room['current_plan'][key]) for key in ('selected_item_ids','days','cost','validation','blocking_conflict_ids')}
+    first = build_plan(room, draft, [])
+    room['current_plan'] = first
+    assert build_plan(room, draft, []) == first
+    draft['days'][0]['visits'][0]['stay_minutes'] = 80
+    second = build_plan(room, draft, [])
+    assert second['plan_revision'] == first['plan_revision'] + 1
+    assert second['content_hash'] != first['content_hash']
