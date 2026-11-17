@@ -23,3 +23,15 @@ async def test_worker_serializes_and_closes_once():
     worker.close()
     worker.close()
     assert backend.maximum == 1 and backend.closed == 1
+
+
+def test_fake_is_input_based_without_shared_room_cursor():
+    from ai.models.fake import FakeModelBackend
+    from ai.tests.test_place_route_tools import task
+    model = FakeModelBackend()
+    request = {"phase": "extract", "context": task()}
+    first = model.generate_json(request)
+    model.generate_json({"phase": "extract", "context": dict(task(), recent_messages=[])})
+    assert model.generate_json(request) == first
+    assert first["constraint_proposals"][0]["value"] == 200000
+    assert any(s["author_id"] == "u3" and s["item_id"] == "item-b" for s in first["support_observations"])
