@@ -50,3 +50,27 @@ def test_model_json_parser_does_not_accept_reasoning_as_data():
     assert parse_object('```json\n{"candidates": []}\n```') == {"candidates": []}
     with pytest.raises(ValueError):
         parse_object('I think {"price": 10000}')
+
+
+def test_generation_returns_only_new_tokens(monkeypatch):
+    import sys
+    from contextlib import nullcontext
+    from types import SimpleNamespace
+    from ai.models.qwen_generation import generate_object
+    monkeypatch.setitem(sys.modules, "torch", SimpleNamespace(inference_mode=nullcontext))
+    class Tokens(list):
+        shape = (1, 2)
+    class Encoding(dict):
+        def to(self, device):
+            return self
+    class Tokenizer:
+        eos_token_id = 0
+        def apply_chat_template(self, messages, **options):
+            return "prompt"
+        def __call__(self, text, **options):
+            return Encoding(input_ids=Tokens([[8, 9]]))
+        def decode(self, ids, **options):
+            assert ids == [2, 3]
+            return '{"ok": true}'
+    model = SimpleNamespace(device="cpu", generate=lambda **options: [[8, 9, 2, 3]])
+    assert generate_object(model, Tokenizer(), {"phase": "extract", "context": {}}) == {"ok": True}

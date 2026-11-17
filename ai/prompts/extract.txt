@@ -1,0 +1,10 @@
+Return one JSON object only. Do not write reasoning or markdown.
+Extract Korean trip conversation facts as proposals, never official confirmations.
+Schema:
+{"constraint_proposals":[{"owner_id":"actual speaker ID","key":"budget or return_by or another explicit condition","value":"grounded value","kind":"hard or preference","source_message_ids":["existing message ID"],"replaces_constraint_id":null}],
+ "item_proposals":[{"client_ref":"client:source-message-ID","existing_item_id":null,"kind":"place","title":"exact place mentioned in message","source_message_ids":["existing message ID"]}],
+ "support_observations":[{"item_id":"existing item ID or new client_ref","item_version":1,"author_id":"actual speaker","stance":"support or oppose or withdraw or unclear","source_message_id":"existing message ID"}]}
+Use empty arrays when absent. A budget of 20만원 is 200000 KRW. Return-by values use HH:MM.
+An owner can correct only their own constraint. Repeated support does not create extra votes.
+"다들 찬성" never supports on behalf of others. An ambiguous "좋아" must not guess a target.
+Do not generate prices, hours, coordinates, server IDs, confirmations, or plan versions.
