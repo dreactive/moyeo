@@ -9,6 +9,19 @@ export async function requestFixture(path, {method = 'GET',body} = {}) {
   if (parts[2] === 'auth') return parts[3] === 'logout' ? {ok:true} : structuredClone(fixtureUser);
   if (parts[4] === 'places') return structuredClone(fixturePlaces.get(parts[5]));
   if (parts.length === 4 && method === 'GET') return structuredClone(fixtureRoom);
+  if (parts[2] === 'rooms' && parts[3] === 'join') {
+    if (body.invite_code !== 'FIXTURE') throw new Error('fixture 초대 코드는 FIXTURE입니다.');
+    return replayScenario('initial');
+  }
+  if (parts[2] === 'rooms' && (parts.length === 3 || parts[4] === 'trip')) {
+    fixtureRoom.config = {...fixtureRoom.config,...body};
+    delete fixtureRoom.config.title;
+    if (body.title) fixtureRoom.title = body.title;
+    fixtureRoom.current_plan = fixtureRoom.review_plan = fixtureRoom.active_target = null;
+    fixtureRoom.confirmations = [];
+    fixtureRoom.seq++;
+    return structuredClone(fixtureRoom);
+  }
   if (parts[4] === 'messages') {
     if (method === 'POST') {
       const message = {id:crypto.randomUUID(),room_id:fixtureRoom.room_id,seq:++fixtureRoom.seq,author_id:fixtureUser.id,text:body.text,created_at:new Date().toISOString()};
@@ -50,5 +63,6 @@ export function replayScenario(key) {
   emitFixture('onRoomUpdated',{room_id:fixtureRoom.room_id,seq,changed:['fixture_scenario']});
   return structuredClone(fixtureRoom);
 }
+
 
 
