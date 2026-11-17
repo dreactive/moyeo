@@ -1,0 +1,47 @@
+{
+  "place": {
+    "id": "fixture:place-b",
+    "name": "가상 B공원",
+    "address": "계약 예시용 공원 주소, 실제 장소 아님",
+    "latitude": 34.77,
+    "longitude": 127.68,
+    "provider_refs": {
+      "fixture": "place-b"
+    }
+  },
+  "menus": [],
+  "opening_hours": {
+    "raw_text": "예시 매일 10:00-20:00",
+    "intervals": [
+      {
+        "day": "2026-11-21",
+        "start": "10:00",
+        "end": "20:00"
+      }
+    ],
+    "holiday_text": null,
+    "evidence_id": "fixture:hours-b"
+  },
+  "evidence": [
+    {
+      "id": "fixture:hours-b",
+      "provider": "fixture",
+      "provider_record_id": "fixture:place-b",
+      "source_url": "https://example.invalid/fixture/place-b",
+      "field": "opening_hours",
+      "raw_value": "10:00-20:00",
+      "normalized_value": [
+        {
+          "day": "2026-11-21",
+          "start": "10:00",
+          "end": "20:00"
+        }
+      ],
+      "status": "api_observed",
+      "retrieved_at": "2026-11-18T10:05:00+09:00",
+      "provider_updated_at": null,
+      "mode": "fixture",
+      "match_status": "matched"
+    }
+  ]
+}

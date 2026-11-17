@@ -1,0 +1,4 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>개발자 작업 trace</title><link rel="stylesheet" href="/styles.css"></head>
+<body><header><h1>개발자 작업 trace</h1><span>일반 사용자 SSE와 분리</span></header><div id="mode"></div><div id="error" role="alert"></div>
+<section class="panel"><form id="trace-form"><label>방 ID<input name="room_id" value="room-fixture" required></label><label>Run ID (선택)<input name="run_id"></label><label>개발자 token<input name="devToken" type="password" autocomplete="off" required></label><button>조회</button></form><p>fixture token: fixture-dev · 접근제한의 실제 보안 검증이 아닙니다. token은 헤더에만 보내며 보관하지 않습니다.</p><p>점수는 후보 비교 점수입니다. 확률 또는 비공개 추론 원문이 아닙니다.</p></section><main id="traces" style="display:block"></main>
+<script type="module" src="/src/dev-trace.js"></script></body></html>
