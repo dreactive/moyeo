@@ -66,3 +66,13 @@ def test_explicit_registered_tool_action_can_be_normalized_without_inventing_arg
     assert build_candidates(value)[0]["action"] == "tool"
     value["generated_candidates"][0]["tool_name"] = "delete_everything"
     assert build_candidates(value) == []
+
+
+def test_grounded_choices_include_independent_routes_and_ask():
+    from ai.candidates import grounded_options
+    from ai.tests.test_place_route_tools import task
+    options = grounded_options(task())
+    routes = [c for c in options if c["tool_name"] == "get_car_route"]
+    assert {c["arguments"]["from_ref"] for c in routes} == {"anchor:origin", "anchor:lodging"}
+    assert any(c["action"] == "ask" for c in options)
+    assert all(c["tool_name"] != "calculate_costs" for c in options)
