@@ -50,3 +50,17 @@ def apply_plan(room, draft, old_observations, observations):
         room['versions']['evidence_version'] += 1
         room.update(review_plan=None, active_target=None, confirmations=[])
     room['current_plan'] = build_plan(room, draft, evidence)
+
+from backend.services.observations import merge_observations
+
+
+def prepare_result(room, result, old_observations):
+    updated = deepcopy(room)
+    mapped = apply_proposals(updated, result)
+    observations = merge_observations(old_observations, mapped['observations'])
+    apply_questions(updated, mapped['questions'])
+    apply_plan(updated, mapped['plan_draft'], old_observations, observations)
+    updated['conflicts'] = deepcopy(mapped['conflicts'])
+    for conflict in updated['conflicts']:
+        conflict['base_versions'] = deepcopy(updated['versions'])
+    return updated, observations

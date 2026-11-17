@@ -130,3 +130,14 @@ def test_evidence_change_invalidates_review_but_poll_time_does_not(room, agent_r
     apply_plan(room, agent_result['plan_draft'], old, new)
     assert room['review_plan'] is None
     assert room['versions']['evidence_version'] == 2
+
+
+def test_prepare_result_does_not_mutate_current_state(room, agent_result):
+    from backend.services.agent_apply import prepare_result
+    from copy import deepcopy
+    before = deepcopy(room)
+    updated, observations = prepare_result(room, agent_result, [])
+    assert room == before
+    assert updated['versions']['plan_revision'] == room['versions']['plan_revision'] + 1
+    assert updated['current_plan']['cost'] == agent_result['plan_draft']['cost']
+    assert observations == agent_result['observations']
