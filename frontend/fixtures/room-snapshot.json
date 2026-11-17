@@ -1,0 +1,353 @@
+{
+  "room_id": "room-fixture",
+  "title": "계약 예시 여행방 · 실제 여행 계획 아님",
+  "invite_code": "FIXTURE",
+  "seq": 7,
+  "config": {
+    "region": "여수",
+    "start_date": "2026-11-21",
+    "end_date": "2026-11-22",
+    "transport": "car",
+    "day_start_time": "09:00",
+    "day_end_time": "18:00",
+    "per_person_budget_krw": 200000,
+    "origin": {
+      "label": "예시 출발지",
+      "latitude": 34.76,
+      "longitude": 127.66,
+      "source_ref": "fixture:anchor"
+    },
+    "destination": {
+      "label": "예시 귀가 지점",
+      "latitude": 34.76,
+      "longitude": 127.66,
+      "source_ref": "fixture:anchor"
+    },
+    "lodging": {
+      "label": "예시 숙소",
+      "latitude": 34.75,
+      "longitude": 127.67,
+      "source_ref": "fixture:anchor"
+    },
+    "fixed_costs": [
+      {
+        "id": "cost-lodging",
+        "category": "lodging",
+        "scope": "shared",
+        "owner_id": null,
+        "description": "계약 예시 숙박비",
+        "unit_price_krw": 80000,
+        "quantity": 1,
+        "subtotal_krw": 80000,
+        "paid": true,
+        "evidence_id": null,
+        "assumption": "fixture 사용자 입력"
+      }
+    ]
+  },
+  "members": [
+    {
+      "user_id": "u1",
+      "name": "참가자1"
+    },
+    {
+      "user_id": "u2",
+      "name": "참가자2"
+    },
+    {
+      "user_id": "u3",
+      "name": "참가자3"
+    },
+    {
+      "user_id": "u4",
+      "name": "참가자4"
+    }
+  ],
+  "versions": {
+    "participant_version": 1,
+    "constraint_version": 1,
+    "evidence_version": 1,
+    "plan_revision": 1
+  },
+  "messages": [
+    {
+      "id": "m0",
+      "room_id": "room-fixture",
+      "seq": 1,
+      "author_id": "u1",
+      "text": "예산은 20만원이야.",
+      "created_at": "2026-11-18T10:00:00+09:00"
+    },
+    {
+      "id": "m1",
+      "room_id": "room-fixture",
+      "seq": 2,
+      "author_id": "u1",
+      "text": "가상 A식당 가자.",
+      "created_at": "2026-11-18T10:01:00+09:00"
+    },
+    {
+      "id": "m2",
+      "room_id": "room-fixture",
+      "seq": 3,
+      "author_id": "u2",
+      "text": "가상 B공원 가자.",
+      "created_at": "2026-11-18T10:02:00+09:00"
+    },
+    {
+      "id": "m3",
+      "room_id": "room-fixture",
+      "seq": 4,
+      "author_id": "u3",
+      "text": "B공원 좋아.",
+      "created_at": "2026-11-18T10:03:00+09:00"
+    },
+    {
+      "id": "m4",
+      "room_id": "room-fixture",
+      "seq": 5,
+      "author_id": "u4",
+      "text": "B공원 찬성.",
+      "created_at": "2026-11-18T10:04:00+09:00"
+    }
+  ],
+  "items": [
+    {
+      "id": "item-a",
+      "item_version": 1,
+      "kind": "place",
+      "title": "가상 A식당",
+      "source_message_ids": [
+        "m1"
+      ],
+      "included_in_plan": true,
+      "supporter_ids": [
+        "u1"
+      ],
+      "opponent_ids": [],
+      "support_threshold": 3,
+      "state": "mentioned",
+      "conflict_ids": []
+    },
+    {
+      "id": "item-b",
+      "item_version": 1,
+      "kind": "place",
+      "title": "가상 B공원",
+      "source_message_ids": [
+        "m2",
+        "m3",
+        "m4"
+      ],
+      "included_in_plan": true,
+      "supporter_ids": [
+        "u2",
+        "u3",
+        "u4"
+      ],
+      "opponent_ids": [],
+      "support_threshold": 3,
+      "state": "supported",
+      "conflict_ids": []
+    }
+  ],
+  "constraints": [
+    {
+      "id": "constraint-budget",
+      "owner_id": "u1",
+      "key": "budget_krw",
+      "value": 200000,
+      "kind": "hard",
+      "status": "confirmed",
+      "source_message_ids": [
+        "m0"
+      ]
+    }
+  ],
+  "current_plan": {
+    "participant_version": 1,
+    "constraint_version": 1,
+    "evidence_version": 1,
+    "plan_revision": 1,
+    "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "selected_item_ids": [
+      "item-a",
+      "item-b"
+    ],
+    "days": [
+      {
+        "date": "2026-11-21",
+        "visits": [
+          {
+            "item_id": "item-a",
+            "place_ref": "fixture:place-a",
+            "date": "2026-11-21",
+            "start_at": "2026-11-21T11:30:00+09:00",
+            "end_at": "2026-11-21T12:30:00+09:00",
+            "stay_minutes": 60,
+            "selected_menu_ids": [
+              "fixture:menu-a"
+            ],
+            "assumptions": [
+              "계약 예시"
+            ]
+          },
+          {
+            "item_id": "item-b",
+            "place_ref": "fixture:place-b",
+            "date": "2026-11-21",
+            "start_at": "2026-11-21T14:00:00+09:00",
+            "end_at": "2026-11-21T15:00:00+09:00",
+            "stay_minutes": 60,
+            "selected_menu_ids": [],
+            "assumptions": [
+              "기본 체류시간 가정"
+            ]
+          }
+        ],
+        "route_legs": [
+          {
+            "from_ref": "fixture:place-a",
+            "to_ref": "fixture:place-b",
+            "distance_m": 5000,
+            "duration_seconds": 900,
+            "toll_krw": 0,
+            "polyline": [
+              {
+                "latitude": 34.761,
+                "longitude": 127.661
+              },
+              {
+                "latitude": 34.77,
+                "longitude": 127.68
+              }
+            ],
+            "evidence_id": "fixture:route-a-b"
+          }
+        ]
+      },
+      {
+        "date": "2026-11-22",
+        "visits": [],
+        "route_legs": []
+      }
+    ],
+    "cost": {
+      "lines": [
+        {
+          "id": "cost-lodging",
+          "category": "lodging",
+          "scope": "shared",
+          "owner_id": null,
+          "description": "계약 예시 숙박비",
+          "unit_price_krw": 80000,
+          "quantity": 1,
+          "subtotal_krw": 80000,
+          "paid": true,
+          "evidence_id": null,
+          "assumption": "fixture 사용자 입력"
+        },
+        {
+          "id": "cost-meal",
+          "category": "meal",
+          "scope": "per_person",
+          "owner_id": null,
+          "description": "계약 예시 1인 메뉴",
+          "unit_price_krw": 10000,
+          "quantity": 1,
+          "subtotal_krw": 40000,
+          "paid": false,
+          "evidence_id": "fixture:price-a",
+          "assumption": "참가자마다 메뉴 1개"
+        }
+      ],
+      "known_total_krw": 120000,
+      "total_krw": 120000,
+      "per_person_krw": {
+        "u1": 30000,
+        "u2": 30000,
+        "u3": 30000,
+        "u4": 30000
+      },
+      "paid_krw": 80000,
+      "paid_by_user_krw": {
+        "u1": 20000,
+        "u2": 20000,
+        "u3": 20000,
+        "u4": 20000
+      },
+      "remaining_budget_krw": {
+        "u1": 180000,
+        "u2": 180000,
+        "u3": 180000,
+        "u4": 180000
+      },
+      "planned_balance_krw": {
+        "u1": 170000,
+        "u2": 170000,
+        "u3": 170000,
+        "u4": 170000
+      },
+      "unknown_line_count": 0,
+      "estimated_line_count": 0
+    },
+    "validation": "needs_input",
+    "blocking_conflict_ids": [],
+    "item_snapshots": [
+      {
+        "id": "item-a",
+        "item_version": 1,
+        "kind": "place",
+        "title": "가상 A식당",
+        "source_message_ids": [
+          "m1"
+        ],
+        "place_ref": "fixture:place-a"
+      },
+      {
+        "id": "item-b",
+        "item_version": 1,
+        "kind": "place",
+        "title": "가상 B공원",
+        "source_message_ids": [
+          "m2",
+          "m3",
+          "m4"
+        ],
+        "place_ref": "fixture:place-b"
+      }
+    ],
+    "confirmation_target": {
+      "participant_version": 1,
+      "constraint_version": 1,
+      "evidence_version": 1,
+      "plan_revision": 1,
+      "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  },
+  "review_plan": null,
+  "active_target": null,
+  "confirmed_plan": null,
+  "confirmations": [],
+  "conflicts": [],
+  "questions": [
+    {
+      "id": "question-stay",
+      "owner_id": null,
+      "field": "visit_duration",
+      "target_ref": "item-b",
+      "text": "가상 B공원 체류시간을 입력해주세요.",
+      "related_item_ids": [
+        "item-b"
+      ],
+      "status": "open",
+      "answer": null,
+      "answered_by": null
+    }
+  ],
+  "agent_status": {
+    "run_id": "run-fixture",
+    "state": "needs_input",
+    "label": "fixture 입력 확인 필요"
+  }
+}

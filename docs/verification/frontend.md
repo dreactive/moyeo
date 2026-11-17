@@ -1,22 +1,8 @@
-# S1 Frontend 검증·인계 기록
-
-소유자: S1만 수정. 상태: 미실행. 기준: [FE 계획](../superpowers/plans/2026-11-18-frontend.md), 계약 v0.2.
-
-- [ ] F1 계약 예제·fixture·화면 뼈대
-- [ ] F2 계정/방/대화/이벤트의 fixture 전이
-- [ ] F3 색상·질문·충돌·확인 대상 전이
-- [ ] F4 지도 adapter·장소·비용·출처 렌더링
-- [ ] F5 trace·전체 fixture 시나리오
-
-## 실행 증거
-
-| 단계 / C번호 | 코드·계약 버전 | 모드 | 조작·명령 | 관측·증거 경로 | 판정 |
-|---|---|---|---|---|---|
-
-## 계약 변경 제안
-
-제안 필드 / 기존 값 / 새 값 / 영향 / 계약 유지 대안. 현재 제안 없음.
-
-## S2 인계
-
-commit SHA·범위 / 실행 방법 / 확인한 시나리오 / fixture와 live 구분 / 미완료 SDK·실제 연결 항목을 기록한다. 공통 체크리스트는 직접 수정하지 않는다.
+# S1 frontend verification — v0.2
+Workspace: C:/Users/user/.codex/visualizations/2026/11/17/01a1ea45-e5e7-72b1-bd85-e12da6b4cabe/trip-s1-fe
+Branch: work/fe. Base: 20db9c11b2f8a6bdbfa1824720ca9aa502fe71a3.
+F1-F5 in progress. All data below is fixture unless explicitly marked live.
+Ruling: native create_worktree failed twice (Windows and slash paths): "Could not find a Git repository at sourceRoot ... on this host." Shell git verified clean develop and origin. One deliberate git worktree fallback created the isolated path above; source product files untouched.
+Ruling: Python launcher unavailable; use dependency-free Node static server on 5173.
+Ruling: this file is the execution ledger within S1 file ownership. Planned manual browser checks remain primary; meaningful Node tests cover state/transport/target boundaries.
+Pre-flight: F1 state/API consumed by F2 events and F3 plan; F3 selected review plan consumed by F4 maps/cost. Same snapshot and opaque five-field target must be used throughout. F5 trace is independent of user SSE.

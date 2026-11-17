@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="kakao-map-app-key" content="">
+<title>함께 만드는 여수 여행</title><link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header><div><small>TRIP / TOGETHER</small><h1>함께 만드는 여행</h1></div><span id="session">로그인 전</span></header>
+<div id="mode" role="status"></div><div id="error" role="alert"></div>
+<section id="account" class="panel">
+<form id="auth"><h2>계정</h2><label>이름<input name="name" autocomplete="name"></label><label>이메일<input name="email" type="email" required autocomplete="email"></label><label>비밀번호<input name="password" type="password" required autocomplete="current-password" minlength="8"></label><button name="action" value="login">로그인</button><button name="action" value="register">가입</button></form>
+<button id="logout" type="button">로그아웃</button>
+<form id="join"><label>초대 코드<input name="invite_code" required></label><button>방 입장</button></form>
+</section>
+<details class="panel"><summary>여행방 만들기 / 여행 입력 수정 · 자동차</summary>
+<form id="trip">
+<label>방 이름<input name="title" value="우리의 여수 여행" required></label>
+<label>도시<input name="region" value="여수" required></label>
+<label>시작일<input name="start_date" type="date" value="2026-11-21" required></label>
+<label>종료일<input name="end_date" type="date" value="2026-11-22" required></label>
+<label>활동 시작<input name="day_start_time" type="time" value="09:00" required></label>
+<label>활동 종료<input name="day_end_time" type="time" value="18:00" required></label>
+<label>1인 전체 예산 (원)<input name="per_person_budget_krw" type="number" min="0" value="200000" required></label>
+<fieldset><legend>출발 지점</legend><input name="origin_label" aria-label="출발 명칭" placeholder="명칭"><input name="origin_latitude" aria-label="출발 위도" type="number" step="any" min="-90" max="90" placeholder="위도"><input name="origin_longitude" aria-label="출발 경도" type="number" step="any" min="-180" max="180" placeholder="경도"></fieldset>
+<fieldset><legend>귀가 지점</legend><input name="destination_label" aria-label="귀가 명칭" placeholder="명칭"><input name="destination_latitude" aria-label="귀가 위도" type="number" step="any" min="-90" max="90" placeholder="위도"><input name="destination_longitude" aria-label="귀가 경도" type="number" step="any" min="-180" max="180" placeholder="경도"></fieldset>
+<fieldset><legend>숙소</legend><input name="lodging_label" aria-label="숙소 명칭" placeholder="명칭"><input name="lodging_latitude" aria-label="숙소 위도" type="number" step="any" min="-90" max="90" placeholder="위도"><input name="lodging_longitude" aria-label="숙소 경도" type="number" step="any" min="-180" max="180" placeholder="경도"></fieldset>
+<div class="wide"><h3>고정비</h3><p>per_person + 대상 전체: 모든 참가자에게 각각 같은 금액. 소계는 서버 응답을 따릅니다.</p><div id="fixed-costs"></div><button id="add-cost" type="button">비용 추가</button></div>
+<button name="action" value="create">새 방 만들기</button><button name="action" value="update">현재 방 입력 저장</button>
+</form></details>
+<section id="fixture-controls" class="panel" hidden><strong>개발 시나리오</strong><label>사용자<select id="fixture-user"><option value="u1">참가자1</option><option value="u2">참가자2</option><option value="u3">참가자3</option><option value="u4">참가자4</option></select></label><select id="scenario" aria-label="fixture 시나리오"></select><button id="replay">재생</button><button id="reconnect">재연결 재생</button></section>
+<main>
+<aside class="panel chat"><h2>사람들의 대화</h2><p id="room-heading">방을 만들거나 입장하세요.</p><button id="history">이전 대화 조회</button><ol id="messages"></ol><form id="message"><label>메시지<input name="text" required autocomplete="off"></label><button>보내기</button></form></aside>
+<article>
+<section class="panel"><h2>Agent 작업</h2><p id="agent">대기</p><button id="replan">다시 계획</button><div id="members"></div></section>
+<section class="panel"><h2>개인 조건 · 확인 질문</h2><div id="constraints"></div><div id="questions"></div></section>
+<section class="panel"><h2>공동 결정</h2><p class="legend"><span class="mentioned">빨강 · 언급됨</span><span class="supported">노랑 · 다수 지지</span><span class="confirmed">초록 · 전체 여행안 확정</span><span>! 충돌</span></p><div id="items"></div><div id="conflicts"></div></section>
+<section class="panel"><h2>전체 여행안 확인</h2><div id="plan"></div><div id="confirmed-plan"></div></section>
+<section class="panel"><h2>전체 동선</h2><div id="route-map" class="map"></div></section>
+<section class="panel"><h2>개인 선택 장소</h2><p>장소 열람은 공동 여행안을 바꾸지 않습니다.</p><div id="place-map" class="map"></div><div id="place"></div></section>
+<section class="panel"><h2>경비 · 같은 여행안 기준</h2><div id="cost"></div></section>
+</article>
+</main>
+</body></html>
