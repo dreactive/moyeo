@@ -35,3 +35,9 @@ class Database:
 
     def close(self):
         self.connection.close()
+
+    @serialized
+    def put_many(self, records):
+        rows = [(key, json.dumps(value)) for key, value in records.items()]
+        with self.connection:
+            self.connection.executemany('INSERT OR REPLACE INTO records VALUES (?, ?)', rows)
