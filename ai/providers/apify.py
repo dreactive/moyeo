@@ -3,6 +3,21 @@ from ai.providers.hours import expand_hours
 import json
 
 
+async def fetch_rows(client, token, *, keywords=None, urls=None):
+    if not token:
+        raise ValueError("APIFY_TOKEN missing")
+    body = dict(maxResults=5, maxItems=5, includeDetails=True, includeReviews=False)
+    body.update({"urls": urls[:5]} if urls else {"searchKeywords": (keywords or [])[:5]})
+    response = await client.post("https://api.apify.com/v2/acts/huggable_quote~naver-map-scraper/run-sync-get-dataset-items",
+                                 headers={"Authorization": "Bearer " + token},
+                                 params={"timeout": 180}, json=body, timeout=210)
+    response.raise_for_status()
+    rows = response.json()
+    if not isinstance(rows, list):
+        raise ValueError("Apify did not return dataset rows")
+    return rows[:5]
+
+
 def normalize_place(raw, days, retrieved_at):
     record_id = str(raw["place_id"])
     place = dict(id="apify:" + record_id, name=raw["name"],

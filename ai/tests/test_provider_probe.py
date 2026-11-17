@@ -60,3 +60,17 @@ def test_cross_provider_match_requires_more_than_name():
     correct = dict(wrong, place_id="2", address="여수 A", y="34.7", x="127.6")
     assert match_record(place, [wrong, correct])["place_id"] == "2"
     assert match_record(place, [correct, dict(correct, place_id="3")]) is None
+
+
+async def test_apify_http_caps_five_excludes_reviews_and_keeps_token_out_of_url():
+    import httpx
+    import json
+    from ai.providers.apify import fetch_rows
+    def respond(request):
+        body = json.loads(request.content)
+        assert body["maxItems"] == 5 and body["includeReviews"] is False
+        assert "test-secret" not in str(request.url)
+        assert request.headers["Authorization"] == "Bearer test-secret"
+        return httpx.Response(200, json=[{"place_id": "1"}])
+    async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+        assert await fetch_rows(client, "test-secret", keywords=["여수 맛집"]) == [{"place_id": "1"}]
