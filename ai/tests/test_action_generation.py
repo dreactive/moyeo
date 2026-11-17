@@ -13,3 +13,16 @@ def test_observation_changes_fixture_next_action():
     changed["current_plan"]["item_snapshots"][0]["place_ref"] = "fixture:other"
     changed["observations"] = []
     assert propose_actions(changed)[0]["arguments"]["place_ref"] == "fixture:other"
+
+
+def test_next_route_uses_prior_duration_and_visit_departure_time():
+    from ai.planning import next_route
+    value = task()
+    first = next_route(value)
+    assert first["departure_at"] == "2026-11-21T09:00:00+09:00"
+    value["observations"].append(dict(tool_name="get_car_route", arguments=first,
+        result=dict(from_ref=first["from_ref"], to_ref=first["to_ref"], duration_seconds=180)))
+    following = next_route(value)
+    assert following["from_ref"] == "fixture:place-a"
+    assert following["to_ref"] == "fixture:place-b"
+    assert following["departure_at"] == "2026-11-21T12:30:00+09:00"
