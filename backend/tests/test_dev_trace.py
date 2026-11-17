@@ -27,3 +27,14 @@ def test_trace_api_requires_developer_token(api):
     response = api.get(path, headers={'X-Dev-Token':'test-dev'})
     assert response.status_code == 200
     assert response.json() == {'runs':[]}
+
+
+def test_worker_records_state_applied_without_user_trace(api):
+    api.app.state.dev_token = 'test-dev'
+    receipt = api.post('/api/rooms/room-fixture/agent-runs', json={'reason':'manual_replan'}).json()
+    api.portal.call(api.app.state.jobs.queue.join)
+    traces = api.get('/api/dev/rooms/room-fixture/traces', headers={'X-Dev-Token':'test-dev'}).json()['runs']
+    assert traces[0]['run_id'] == receipt['run_id']
+    assert traces[0]['events'][-1]['event'] == 'state_applied'
+    assert traces[0]['events'][-1]['payload']['applied'] is True
+    assert 'trace' not in api.get('/api/rooms/room-fixture').text
