@@ -115,3 +115,12 @@ def build_plan(room, draft, evidence):
     plan['confirmation_target'] = dict(room['versions'], content_hash=plan['content_hash'])
     return plan
 
+
+from backend.services.consensus import edit_constraint
+
+
+def apply_selected_condition(room, selection, actor_id):
+    effect = selection['effect']
+    if effect['owner_id'] != actor_id:
+        raise HTTPException(403, 'Only condition owner may select relaxation')
+    return edit_constraint(room, effect['constraint_id'], actor_id, effect['new_value'])

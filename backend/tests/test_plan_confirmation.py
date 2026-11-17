@@ -140,3 +140,18 @@ def test_confirmation_response_contains_confirmed_item_states(api):
         api.cookies.set('session','s'+actor)
         response = api.post('/api/rooms/room-fixture/plan/confirm', json={'target':room['current_plan']['confirmation_target']})
     assert all(item['state'] == 'confirmed' for item in response.json()['items'])
+
+
+def test_conflict_condition_change_stages_owner_card(room):
+    from backend.services.planning import apply_selected_condition
+    condition = room['constraints'][0]
+    condition['status'] = 'confirmed'
+    before = condition['value']
+    selection = {'effect':{'kind':'change_constraint','constraint_id':condition['id'],'owner_id':condition['owner_id'],'new_value':150000}}
+    import pytest
+    from fastapi import HTTPException
+    with pytest.raises(HTTPException):
+        apply_selected_condition(room, selection, 'u4')
+    pending = apply_selected_condition(room, selection, condition['owner_id'])
+    assert pending['status'] == 'needs_owner_confirmation'
+    assert condition['value'] == before
