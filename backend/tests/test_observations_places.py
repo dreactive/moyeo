@@ -31,3 +31,15 @@ def test_observation_merge_keeps_latest_value():
     second = dict(first, result={'price':2})
     assert merge_observations([first], [second]) == [second]
     assert first['result']['price'] == 1
+
+
+def test_place_read_preserves_plan_and_votes_and_blocks_other_room(api, agent_result):
+    from backend.services.observations import project_observations
+    db = api.app.state.db
+    project_observations(db, 'room-fixture', agent_result['observations'])
+    before = api.get('/api/rooms/room-fixture').json()
+    response = api.get('/api/rooms/room-fixture/places/fixture:place-a')
+    assert response.status_code == 200
+    assert response.json()['place']['id'] == 'fixture:place-a'
+    assert api.get('/api/rooms/room-fixture').json() == before
+    assert api.get('/api/rooms/room-fixture/places/https:evil').status_code == 404
