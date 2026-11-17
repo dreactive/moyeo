@@ -22,3 +22,15 @@ def test_provider_cli_missing_key_is_explicit_not_run(tmp_path):
     assert process.returncode == 0, process.stderr
     report = json.loads(output.read_text(encoding="utf-8"))
     assert report["status"] == "not_run" and report["matched_place_count"] == 0
+
+
+def test_replay_cli_writes_assertions_and_modes(tmp_path):
+    cases, output = tmp_path / "cases.jsonl", tmp_path / "eval.json"
+    case = dict(id="chat", messages=[], actions=[{"kind": "patch_task", "patch": {
+        "goal": "new_message", "questions": []}}], expected={"completion": "done"})
+    cases.write_text(json.dumps(case) + "\n", encoding="utf-8")
+    process = subprocess.run([sys.executable, "-m", "ai.eval.replay", "--model", "fake",
+        "--providers", "fixture", "--cases", str(cases), "--output", str(output)], capture_output=True, text=True)
+    assert process.returncode == 0, process.stderr
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert report["passed_cases"] == 1 and report["model_mode"] == "fake" and report["git_sha"]

@@ -6,6 +6,8 @@ from copy import deepcopy
 from ai.runtime import create_runtime
 import subprocess
 import sys
+import argparse
+import asyncio
 
 
 async def evaluate(cases, model_mode, provider_mode, config):
@@ -81,3 +83,26 @@ def read_path(value, path):
         except (IndexError, ValueError, TypeError, AttributeError):
             return None
     return value
+
+
+async def main(args):
+    cases = [json.loads(line) for line in Path(args.cases).read_text(encoding="utf-8").splitlines() if line.strip()]
+    report = await evaluate(cases, args.model, args.providers, dict(base_model_path=args.base_model_path,
+                            adapter_path=args.adapter_path, env_file=args.env_file))
+    output = Path(args.output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"{args.model}/{args.providers}: {report['passed_cases']}/{report['total_cases']} cases")
+    return 0 if report["passed"] else 1
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", choices=["fake", "local_qwen"], default="fake")
+    parser.add_argument("--providers", choices=["fixture", "live"], default="fixture")
+    parser.add_argument("--cases", required=True)
+    parser.add_argument("--output", required=True)
+    parser.add_argument("--base-model-path")
+    parser.add_argument("--adapter-path")
+    parser.add_argument("--env-file")
+    raise SystemExit(asyncio.run(main(parser.parse_args())))
