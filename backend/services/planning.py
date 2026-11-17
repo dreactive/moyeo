@@ -65,3 +65,11 @@ def finalize_plan(room):
         return False
     room['confirmed_plan'] = deepcopy(plan)
     return True
+
+
+def activate_plan(room, plan_revision):
+    plan = room['current_plan']
+    if plan is None or plan['plan_revision'] != plan_revision:
+        raise HTTPException(409, 'Draft revision changed')
+    room.update(review_plan=None, active_target=None, confirmations=[])
+    freeze_review(room, plan['confirmation_target'])

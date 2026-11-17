@@ -59,3 +59,14 @@ def test_four_members_same_target_required(room):
     assert room['confirmed_plan'] == room['review_plan']
     room['current_plan']['days'] = []
     assert room['confirmed_plan']['days']
+
+
+def test_explicit_activation_discards_previous_votes(room):
+    from backend.services.planning import activate_plan, record_confirmation
+    target = room['current_plan']['confirmation_target']
+    record_confirmation(room, 'u1', target, 'confirm')
+    room['current_plan']['plan_revision'] = 2
+    room['current_plan']['confirmation_target'] = dict(target, plan_revision=2)
+    activate_plan(room, 2)
+    assert room['active_target']['plan_revision'] == 2
+    assert room['confirmations'] == []
