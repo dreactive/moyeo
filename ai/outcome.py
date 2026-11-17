@@ -4,6 +4,9 @@ from ai.cost_inputs import build_cost_inputs
 from ai.context import build_context
 from ai.conflicts import conflict
 from ai.tools.costs import allocate
+from ai.planning import planned_visits, itinerary_arguments, planning_inputs_ready
+from ai.tools.context import build_tool_context
+from ai.tools.hours import validate_hours
 
 SUPPORTED_HARD_KEYS = ("budget", "budget_krw", "return_by")
 
@@ -43,7 +46,10 @@ def reuse_current_plan(task, result):
 
 
 def assemble_result(task, result):
-    calculations = {o["tool_name"]: o["result"] for o in result["observations"]}
+    context = build_tool_context(build_context(task, result["observations"]))
+    expected = dict(build_itinerary=itinerary_arguments(context), calculate_costs=build_cost_inputs(context)[0])
+    calculations = {o["tool_name"]: o["result"] for o in result["observations"]
+                    if o["tool_name"] in expected and o.get("arguments", expected[o["tool_name"]]) == expected[o["tool_name"]]}
     if not {"build_itinerary", "calculate_costs"} <= calculations.keys():
         return False
     itinerary, cost = (calculations[k] for k in ("build_itinerary", "calculate_costs"))
@@ -57,9 +63,14 @@ def assemble_result(task, result):
                 condition.get("status") != "confirmed" or condition["key"] not in SUPPORTED_HARD_KEYS):
             result["questions"].append(question("constraint_value", condition["id"],
                 "이 필수 조건의 확인 또는 충족 근거가 더 필요합니다.", condition["owner_id"]))
-    if cost["total_krw"] is None:
-        result["questions"].append(question("constraint_value", None, "가격/차량 비용 중 미확인 금액이 있습니다."))
-    validation = "conflict" if result["conflicts"] else "needs_input" if result["questions"] else "ready"
+    actual = [(v["item_id"], v["place_ref"], v["date"]) for d in itinerary["days"] for v in d["visits"]]
+    wanted = [(v["item_id"], v["place_ref"], v["date"]) for v in planned_visits(context)]
+    legs = [r for d in itinerary["days"] for r in d["route_legs"]]
+    complete = (planning_inputs_ready(context) and sorted(actual) == sorted(wanted)
+                and legs == expected["build_itinerary"]["route_legs"]
+                and not any(validate_hours(v, context["details"].get(v["place_ref"], {}), task["base_versions"])[1]
+                            for d in itinerary["days"] for v in d["visits"]))
+    validation = "conflict" if result["conflicts"] else "needs_input" if result["questions"] or cost["total_krw"] is None or not complete else "ready"
     result["plan_draft"] = dict(selected_item_ids=[v["item_id"] for d in itinerary["days"] for v in d["visits"]],
                                days=itinerary["days"], cost=cost, validation=validation,
                                blocking_conflict_ids=[c["id"] for c in result["conflicts"] if c["blocking"]])

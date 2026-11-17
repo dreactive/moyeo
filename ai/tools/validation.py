@@ -1,6 +1,6 @@
 import math
 from ai.cost_inputs import build_cost_inputs
-from ai.planning import itinerary_arguments
+from ai.planning import itinerary_arguments, planning_inputs_ready
 
 PARAMETERS = {
     "search_places": {"query": str, "region": str, "category": (str, type(None))},
@@ -31,3 +31,5 @@ def validate_arguments(name, arguments, context):
             raise ValueError("Cost arguments differ from observed prices and user inputs")
     if name == "build_itinerary" and arguments != itinerary_arguments(context):
         raise ValueError("Itinerary arguments differ from task facts and observed route seconds")
+    if name in ("build_itinerary", "calculate_costs") and not planning_inputs_ready(context):
+        raise ValueError("Resolve selected items, details and actual route departures before calculations")

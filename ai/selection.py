@@ -16,6 +16,7 @@ def apply_selection(task):
     if effect["kind"] == "drop_visit" and effect["item_id"] in ids:
         for day in plan["days"]:
             day["visits"] = [v for v in day["visits"] if v["item_id"] != effect["item_id"]]
+        plan["selected_item_ids"] = [i for i in plan.get("selected_item_ids", []) if i != effect["item_id"]]
         return task, []
     if effect["kind"] == "reorder_visits":
         day = next((d for d in plan.get("days", []) if d["date"] == effect["date"]), None)

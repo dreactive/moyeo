@@ -44,6 +44,28 @@ def planned_visits(context):
     return visits
 
 
+def planning_inputs_ready(context):
+    context = build_tool_context(context)
+    plan = context.get("current_plan")
+    expected = ({i["id"] for i in context["items"] if i.get("kind") == "place"} if plan is None else
+                set(plan.get("selected_item_ids", [v["item_id"] for d in plan.get("days", []) for v in d["visits"]])))
+    expected.update(context.get("_new_item_refs", []))
+    visits = planned_visits(context)
+    anchors = ("origin", "destination") + (("lodging",) if context["config"]["start_date"] != context["config"]["end_date"] else ())
+    if any("anchor:" + name not in context["places"] for name in anchors):
+        return False
+    if (plan is None and not expected) or not expected <= {v["item_id"] for v in visits} or pending_routes(context):
+        return False
+    if any(v["place_ref"] not in context["details"] for v in visits):
+        return False
+    if context.get("_provider_mode") == "live":
+        if any(e["mode"] != "live" for v in visits for e in context["details"][v["place_ref"]]["evidence"]):
+            return False
+        if any(o["result"]["evidence_id"].startswith("fixture:") for o in selected_route_observations(context)):
+            return False
+    return True
+
+
 def itinerary_arguments(context):
     return dict(visits=planned_visits(context),
                 anchors={k: context["config"].get(k) for k in ("origin", "destination", "lodging")},

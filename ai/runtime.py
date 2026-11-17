@@ -24,6 +24,7 @@ class AgentRuntime:
 
     async def run(self, task, emit_trace):
         task = build_context(task, [])
+        task["_provider_mode"] = self.config.get("provider_mode", "fixture")
         tools = RegisteredTools(task, self.config.get("provider_mode", "fixture"), self.config)
         return await run_agent(task, self.model, tools, emit_trace)
 

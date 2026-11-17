@@ -55,7 +55,14 @@ async def test_registry_search_and_calculation_are_server_independent():
     result = await tools.execute("search_places", {"query": "A식당", "region": "여수", "category": None})
     assert [p["id"] for p in result["places"]] == ["fixture:place-a"]
     from ai.cost_inputs import build_cost_inputs
-    summary = await tools.execute("calculate_costs", build_cost_inputs(task())[0])
+    from ai.planning import next_route
+    value = task()
+    while arguments := next_route(value):
+        route = await tools.execute("get_car_route", arguments)
+        observation = dict(tool_name="get_car_route", arguments=arguments, result=route)
+        value["observations"].append(observation)
+        tools.remember(observation)
+    summary = await tools.execute("calculate_costs", build_cost_inputs(value)[0])
     assert summary["known_total_krw"] == 120000
 
 
@@ -85,6 +92,7 @@ async def test_itinerary_uses_only_route_observed_for_actual_departure():
     from ai.tools.registry import RegisteredTools
     value = task()
     value["current_plan"]["days"][0]["visits"] = value["current_plan"]["days"][0]["visits"][:1]
+    value["current_plan"]["selected_item_ids"] = ["item-a"]
     value["current_plan"]["days"][0]["visits"][0]["start_at"] = None
     def observed(a, b, when, seconds, evidence):
         return dict(tool_name="get_car_route", arguments=dict(from_ref=a, to_ref=b, departure_at=when),
