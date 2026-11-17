@@ -29,3 +29,22 @@ test('fixture input echoes keep history immutable and owner questions cannot cre
   assert.deepEqual(answered.items[0].supporter_ids,['u1']);
   assert.equal(answered.questions[6].target_ref,'item-a');
 });
+test('recorded end-to-end scenario keeps three approvals unconfirmed then confirms one exact target', async () => {
+  const initial=replayScenario('initial');
+  assert.equal(initial.items[0].state,'mentioned');
+  const conflict=replayScenario('conflict');
+  assert.equal(conflict.items[1].state,'supported');
+  assert.deepEqual(conflict.items[1].conflict_ids,['c1']);
+  await requestFixture('/api/rooms/room-fixture/conflicts/c1/select',{method:'POST',body:{option_id:'drop'}});
+  let room=replayScenario('ready');
+  for (const id of ['u1','u2','u3']) {
+    setFixtureUser(id);
+    room=await requestFixture('/api/rooms/room-fixture/plan/confirm',{method:'POST',body:{target:room.current_plan.confirmation_target}});
+  }
+  assert.equal(room.confirmed_plan,null);
+  assert.equal(room.confirmations.length,3);
+  setFixtureUser('u4');
+  room=await requestFixture('/api/rooms/room-fixture/plan/confirm',{method:'POST',body:{target:room.review_plan.confirmation_target}});
+  assert.equal(room.confirmed_plan.plan_revision,1);
+  assert.ok(room.items.every(item => item.state==='confirmed'));
+});
