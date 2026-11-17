@@ -14,3 +14,13 @@ test('trip serialization keeps budget numeric, anchors null and cost IDs stable'
   assert.equal(result.origin,null);
   assert.equal(result.fixed_costs,costs);
 });
+import * as tripInput from '../src/trip-input.js';
+test('saving an edited end time leaves a remotely updated budget untouched', () => {
+  const baseline={per_person_budget_krw:200000,day_end_time:'18:00'};
+  const edited={...baseline,day_end_time:'19:00'};
+  const latest={...baseline,per_person_budget_krw:300000};
+  const patch=tripInput.changedTripFields(edited,baseline);
+  assert.deepEqual(patch,{day_end_time:'19:00'});
+  assert.equal({...latest,...patch}.per_person_budget_krw,300000);
+  assert.equal(edited.day_end_time,'19:00');
+});

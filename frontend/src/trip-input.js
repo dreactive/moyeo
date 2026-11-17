@@ -9,3 +9,6 @@ export function readTripConfig(data,fixed_costs) {
   ['origin','destination','lodging'].forEach(key => config[key] = readAnchor(data,key));
   return config;
 }
+export function changedTripFields(edited,baseline) {
+  return Object.fromEntries(Object.entries(edited).filter(([key,value]) => JSON.stringify(value) !== JSON.stringify(baseline[key])));
+}
