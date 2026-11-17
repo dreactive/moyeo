@@ -6,8 +6,12 @@ export const sourceLinks = ids => ids.map(id => `<button data-message="${e(id)}"
 export function renderItems(snapshot) {
   const plan = displayPlan(snapshot);
   html('items', snapshot.items.map(item => {
-    const confirmed = item.state === 'confirmed' && item.included_in_plan && sameTarget(plan?.confirmation_target,snapshot.confirmed_plan?.confirmation_target) && plan.item_snapshots.some(old => old.id === item.id && old.item_version === item.item_version);
-    const state = item.state === 'confirmed' && !confirmed ? 'pending' : item.state;
+    const official = snapshot.confirmed_plan;
+    const matchesItem = entry => entry.id === item.id && entry.item_version === item.item_version;
+    const confirmed = sameTarget(plan?.confirmation_target,official?.confirmation_target)
+      && plan.selected_item_ids.includes(item.id) && official.selected_item_ids.includes(item.id)
+      && plan.item_snapshots.some(matchesItem) && official.item_snapshots.some(matchesItem);
+    const state = confirmed ? 'confirmed' : item.state === 'confirmed' ? 'pending' : item.state;
     return `<div class="card ${e(state)}"><strong>${e(item.title)} · ${e(labels[state])}</strong>
     ${item.conflict_ids.length ? '<strong class="badge">! 충돌</strong>' : ''}
     <p>지지 ${item.supporter_ids.length}명 / 기준 ${item.support_threshold}명 · v${item.item_version}</p>${sourceLinks(item.source_message_ids)}</div>`;
