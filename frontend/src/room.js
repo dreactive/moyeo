@@ -37,7 +37,7 @@ export function enterRoom(snapshot) {
   restoreTrip(snapshot);
   sessionStorage.setItem('trip-room',roomId);
   applySnapshot(snapshot);
-  closeEvents = openRoomEvents(roomId,{onMessage:data => appendMessage(data.message),
+  closeEvents = openRoomEvents(roomId,{onMessage:data => appendMessage(data.message,data.seq),
     onRoomUpdated:() => run(() => refreshRoom()),onPlanConfirmed:() => run(() => refreshRoom()),
     onAgentStatus:() => run(() => refreshRoom()),onReconnect:() => run(() => refreshRoom())});
 }
@@ -173,3 +173,4 @@ document.getElementById('retry').onclick = () => run(async () => {
   if (roomId) await refreshRoom();
   else showUser(await requestJson('/api/auth/me'));
 });
+

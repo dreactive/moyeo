@@ -18,9 +18,9 @@ export const getUser = () => user;
 export const setUser = value => { user = value; };
 
 
-export function appendMessage(message) {
+export function appendMessage(message,eventSeq) {
   if (snapshot?.room_id !== message.room_id || snapshot.messages.some(old => old.id === message.id)) return;
-  snapshot = {...snapshot,messages:[...snapshot.messages,message]};
+  snapshot = {...snapshot,seq:Math.max(snapshot.seq ?? 0,eventSeq ?? 0),messages:[...snapshot.messages,message].sort((a,b) => a.seq - b.seq)};
   listeners.forEach(listener => listener(snapshot));
 }
 
@@ -28,3 +28,4 @@ export function applyRoomResponse(next,expectedRoom) {
   if (next.room_id !== expectedRoom || snapshot?.room_id !== expectedRoom || next.seq < snapshot.seq) return;
   applySnapshot(next);
 }
+

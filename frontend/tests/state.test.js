@@ -39,3 +39,10 @@ test('late room responses cannot replace another room or a newer sequence', () =
   assert.equal(state.getSnapshot().room_id,'b');
   assert.equal(state.getSnapshot().seq,10);
 });
+test('SSE room sequence prevents an older refresh from losing a saved message', () => {
+  state.applySnapshot({room_id:'r',seq:1,current_plan:null,messages:[]});
+  state.appendMessage({id:'m',room_id:'r',seq:1},3);
+  state.applyRoomResponse({room_id:'r',seq:2,current_plan:null,messages:[]},'r');
+  assert.equal(state.getSnapshot().messages.length,1);
+  assert.equal(state.getSnapshot().seq,3);
+});
