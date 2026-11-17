@@ -35,3 +35,10 @@ def test_fake_is_input_based_without_shared_room_cursor():
     assert model.generate_json(request) == first
     assert first["constraint_proposals"][0]["value"] == 200000
     assert any(s["author_id"] == "u3" and s["item_id"] == "item-b" for s in first["support_observations"])
+
+
+def test_local_model_missing_paths_fail_without_download():
+    import pytest
+    from ai.models.qwen_loader import load_components
+    with pytest.raises(ValueError, match='local'):
+        load_components('missing-base', 'missing-adapter')
