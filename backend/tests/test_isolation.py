@@ -16,3 +16,11 @@ def test_app_closes_injected_port_once():
     with TestClient(create_app(port)) as client:
         assert client.get('/openapi.json').status_code == 200
     assert port.closed == 1
+
+
+def test_default_fixture_port():
+    from backend.app import create_app
+    from fastapi.testclient import TestClient
+    from backend.adapters.fixture_agent import FixtureAgentPort
+    with TestClient(create_app()) as client:
+        assert isinstance(client.app.state.agent, FixtureAgentPort)
