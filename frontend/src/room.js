@@ -11,7 +11,7 @@ import {requestJson,getDataMode} from './api.js';
 import {applySnapshot,subscribeState,setUser} from './state.js';
 import {showError} from './ui.js';
 export async function startRoomApp() {
-  bindAccount(); bindSessionActions(); bindFixtureControls(); bindPlanActions(); bindDecisionActions(); bindTripInput();
+  bindAccount(); bindSessionActions(); bindFixtureControls(); bindPlanActions(); bindDecisionActions(); bindTripInput(); bindHistory();
   html('mode', getDataMode() === 'fixture' ? '개발용 fixture · 실제 API 조회 아님' : 'LIVE · Backend 연결');
   subscribeState(snapshot => snapshot && renderRoom(snapshot));
   const user = await requestJson('/api/auth/me');
@@ -33,6 +33,7 @@ export async function refreshRoom(id = roomId) {
 export function enterRoom(snapshot) {
   closeEvents();
   roomId = snapshot.room_id;
+  restoreTrip(snapshot);
   sessionStorage.setItem('trip-room',roomId);
   applySnapshot(snapshot);
   closeEvents = openRoomEvents(roomId,{onMessage:data => appendMessage(data.message),
@@ -123,6 +124,27 @@ function bindTripInput() {
     ['origin','destination','lodging'].forEach(key => body[key] = readAnchor(data,key));
     if (action === 'create') enterRoom(await requestJson('/api/rooms',{method:'POST',body}));
     else { delete body.title; await roomAction('trip',body,'PATCH'); }
+  });
+}
+
+function restoreTrip(snapshot) {
+  const form = document.getElementById('trip');
+  form.elements.title.value = snapshot.title;
+  Object.entries(snapshot.config).forEach(([key,value]) => { if (form.elements[key]) form.elements[key].value = value; });
+  ['origin','destination','lodging'].forEach(key => ['label','latitude','longitude'].forEach(field => form.elements[key + '_' + field].value = snapshot.config[key]?.[field] ?? ''));
+  html('fixed-costs',''); snapshot.config.fixed_costs.forEach(appendCost);
+}
+function bindHistory() {
+  document.getElementById('history').onclick = () => run(async () => {
+    const result = await requestJson('/api/rooms/' + encodeURIComponent(roomId) + '/messages?after_seq=0');
+    result.messages.forEach(appendMessage);
+  });
+  document.addEventListener('click',event => {
+    const button = event.target.closest('[data-message]');
+    if (button) run(async () => {
+      appendMessage(await requestJson('/api/rooms/' + encodeURIComponent(roomId) + '/messages/' + encodeURIComponent(button.dataset.message)));
+      document.getElementById('message-' + button.dataset.message)?.scrollIntoView({block:'center'});
+    });
   });
 }
 
