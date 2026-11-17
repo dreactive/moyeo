@@ -37,3 +37,14 @@ def test_visit_time_uses_route_seconds_and_explicit_stay_assumption():
     assert scheduled["start_at"] == "2026-11-21T09:03:00+09:00"
     assert scheduled["end_at"] == "2026-11-21T10:03:00+09:00"
     assert scheduled["assumptions"]
+
+
+def test_itinerary_missing_route_requires_input():
+    from ai.tools.itinerary import build_itinerary
+    config = {"start_date": "2026-11-21", "end_date": "2026-11-22"}
+    anchors = {x: {"latitude": 34.7, "longitude": 127.6} for x in ("origin", "lodging", "destination")}
+    visit = {"item_id": "a", "place_ref": "p", "date": "2026-11-21", "stay_minutes": 60}
+    result = build_itinerary([visit], anchors, [], [], config)
+    assert [d["date"] for d in result["days"]] == ["2026-11-21", "2026-11-22"]
+    assert result["questions"]
+    assert result["days"][0]["visits"] == []
