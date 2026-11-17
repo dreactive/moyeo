@@ -41,3 +41,21 @@ def test_fixture_does_not_apply_unknown_seed_item_refs():
     assert result['plan_draft'] is None
     assert result['questions'] == []
     assert result['completion'] == 'needs_input'
+
+
+def test_fixture_preserves_contract_fields_enums_and_timestamps():
+    from datetime import datetime
+    from backend.adapters.fixture_agent import FixtureAgentPort
+    from backend.schemas import Versions
+    task = json.loads(Path('docs/contracts/examples/agent-input.example.json').read_text(encoding='utf-8'))
+    expected = json.loads(Path('docs/contracts/examples/agent-result.example.json').read_text(encoding='utf-8'))
+    result = asyncio.run(FixtureAgentPort().run(task, None))
+    assert set(result) == set(expected)
+    assert Versions.model_validate(result['base_versions']).model_dump() == task['base_versions']
+    evidence = result['observations'][0]['result']['evidence'][0]
+    assert evidence['mode'] == 'fixture'
+    assert evidence['status'] == 'api_observed'
+    assert evidence['provider_updated_at'] is None
+    assert datetime.fromisoformat(evidence['retrieved_at']).tzinfo is not None
+    assert isinstance(result['run_id'], str)
+    assert isinstance(result['observations'][0]['result']['menus'][0]['price_krw'], int)
