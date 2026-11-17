@@ -32,3 +32,15 @@ def test_client_ref_resolves_to_backend_item(room):
     refs = apply_item_proposals(room, [proposal])
     assert refs['new'] == room['items'][-1]['id']
     assert resolve_refs({'target_ref':'new','related_item_ids':['new']}, refs) == {'target_ref':refs['new'],'related_item_ids':[refs['new']]}
+
+
+def test_agent_constraint_proposal_never_confirms_or_impersonates(room):
+    from backend.domain import add_constraint_proposal
+    proposal = dict(owner_id='u4', key='return_by', value='16:00', kind='hard', source_message_ids=['m4'], replaces_constraint_id=None)
+    condition = add_constraint_proposal(room, proposal)
+    assert condition['status'] == 'needs_owner_confirmation'
+    assert add_constraint_proposal(room, proposal) is None
+    proposal['owner_id'] = 'u1'
+    import pytest
+    with pytest.raises(ValueError):
+        add_constraint_proposal(room, proposal)

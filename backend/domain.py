@@ -50,3 +50,18 @@ def resolve_refs(value, refs, field=None):
     if isinstance(value, list):
         return [resolve_refs(item, refs, field) for item in value]
     return refs.get(value, value) if isinstance(value, str) and field in REF_FIELDS else value
+
+
+def add_constraint_proposal(room, proposal):
+    if not valid_sources(room, proposal['source_message_ids'], proposal['owner_id']):
+        raise ValueError('Condition owner does not match evidence')
+    for existing in room['constraints']:
+        same_key = existing['owner_id'] == proposal['owner_id'] and existing['key'] == proposal['key']
+        if existing['id'] == proposal.get('replaces_constraint_id') and not same_key:
+            raise ValueError('Cannot replace another owner condition')
+        if same_key and existing['value'] == proposal['value'] and existing['status'] != 'superseded':
+            return None
+    condition = {key:proposal[key] for key in ('owner_id','key','value','kind','source_message_ids')}
+    condition.update(id=uuid4().hex, status='needs_owner_confirmation')
+    room['constraints'].append(condition)
+    return condition
