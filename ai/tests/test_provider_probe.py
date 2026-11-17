@@ -15,3 +15,10 @@ def test_unknown_price_is_not_zero():
     from ai.providers.normalize import price_krw
     assert [price_krw(x) for x in ["10,000원", "0", 0, "시가", "", None, "1~2만원"]] == [
         10000, 0, 0, None, None, None, None]
+
+
+def test_weekly_hours_expand_only_for_known_visit_days():
+    from ai.providers.hours import expand_hours
+    hours = [{"schedule": [{"day": "토", "start": "10:00", "end": "20:00"}]}]
+    assert expand_hours(hours, ["2026-11-21", "2026-11-22"]) == [
+        {"day": "2026-11-21", "start": "10:00", "end": "20:00"}]
