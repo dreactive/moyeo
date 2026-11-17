@@ -24,3 +24,14 @@ def test_enqueue_returns_versioned_receipt():
     receipt = asyncio.run(jobs.enqueue('r', 'manual_replan'))
     assert receipt['base_versions'] == room['versions']
     assert jobs.queue.qsize() == 1
+
+
+def test_status_is_published_without_chat():
+    from backend.services.agent_jobs import set_status
+    from backend.db import Database
+    db = Database(':memory:')
+    db.put('room:r', {'seq':0, 'messages':[]})
+    set_status(db, 'r', 'run1', 'running', 'Working')
+    assert db.get('room:r')['agent_status']['state'] == 'running'
+    assert db.get('room:r')['messages'] == []
+    assert db.get('events:r')[0]['event'] == 'agent.status'
