@@ -92,6 +92,10 @@ Every result changes the next context/options; no code-selected first-candidate
 fallback runs. Known duplicate queries are omitted. Maximum actual choices: 20.
 Prices, participant budgets, route seconds, dates and KRW arithmetic come from
 observations/user inputs and code; mismatching model arguments are rejected.
+Fractional quantities are allowed only when their subtotal is an integer KRW
+amount; sub-won results are rejected instead of silently truncated.
+Base/judge inputs omit map polyline arrays; full geometry remains in returned
+observations. The 24,000-token input guard still ends oversized requests safely.
 
 ## Live providers
 
@@ -135,6 +139,13 @@ Real probe: base load ~5.1–5.6s, generation of the short extraction case
 memory ~3584MiB on RTX4070 12GB. Extraction quality and mechanics are separate.
 Full run/provider results and resource shutdown are recorded in
 docs/verification/ai.md; ignored ai/.artifacts contains local evidence.
+
+Final local_qwen/live component run (clean a9154f1) passed in 590.2s:
+three real future driving calls plus cost/itinerary calculations, ready total
+134,000 KRW with explicit synthetic user cost inputs. Actual judge scores chose
+cost before itinerary. Peak CUDA allocation was 8,134MiB; after aclose 16.25MiB,
+then the process exited. This long live-input latency is a current limitation;
+the short mechanics timings above do not predict full-run latency.
 
 ## Reproduce evaluation
 
