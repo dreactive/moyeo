@@ -38,3 +38,17 @@ def test_concurrent_messages_are_not_lost():
         messages = list(pool.map(lambda i: save_message(db, 'r', str(i), 'hello'), range(12)))
     assert len(db.get('room:r')['messages']) == 12
     assert sorted(message['seq'] for message in messages) == list(range(1,13))
+
+
+def test_message_evidence_and_manual_receipt():
+    from fastapi.testclient import TestClient
+    from backend.app import create_app
+    with TestClient(create_app(database_path=':memory:')) as client:
+        client.post('/api/auth/register', json={'name':'a','email':'a@b.test','password':'password123'})
+        room = client.post('/api/rooms', json={'title':'trip','start_date':'2026-11-21','end_date':'2026-11-22','per_person_budget_krw':200000}).json()
+        path = '/api/rooms/' + room['room_id']
+        message = client.post(path + '/messages', json={'text':'hello'}).json()
+        assert client.get(path + '/messages/' + message['id']).json() == message
+        receipt = client.post(path + '/agent-runs', json={'reason':'manual_replan'})
+        assert receipt.status_code == 202
+        assert set(receipt.json()) == {'run_id','base_versions'}
