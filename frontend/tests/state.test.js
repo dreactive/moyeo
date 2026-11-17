@@ -25,3 +25,10 @@ test('POST and SSE copies of a person message appear only once', () => {
   state.appendMessage({id:'other',room_id:'different'});
   assert.equal(state.getSnapshot().messages.length,1);
 });
+test('personal selection follows the displayed review while a draft removes the place', () => {
+  const review = {item_snapshots:[{place_ref:'p'}]};
+  state.applySnapshot({current_plan:review,review_plan:review});
+  state.setSelectedPlace('p');
+  state.applySnapshot({current_plan:{item_snapshots:[]},review_plan:review});
+  assert.equal(state.getSelectedPlace(),'p');
+});

@@ -4,7 +4,7 @@ export const getSnapshot = () => snapshot;
 export const getSelectedPlace = () => selectedPlace;
 export function applySnapshot(next) {
   snapshot = next;
-  if (!next?.current_plan?.item_snapshots.some(item => item.place_ref === selectedPlace)) selectedPlace = null;
+  if (!(next?.review_plan ?? next?.current_plan)?.item_snapshots.some(item => item.place_ref === selectedPlace)) selectedPlace = null;
   listeners.forEach(listener => listener(snapshot));
 }
 export function setSelectedPlace(ref) { selectedPlace = ref; }
@@ -23,3 +23,4 @@ export function appendMessage(message) {
   snapshot = {...snapshot,messages:[...snapshot.messages,message]};
   listeners.forEach(listener => listener(snapshot));
 }
+
