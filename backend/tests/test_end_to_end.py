@@ -42,3 +42,13 @@ def test_empty_four_person_room_creates_initial_plan(room):
         assert snapshot['items'][0]['state'] == 'mentioned'
         assert snapshot['current_plan'] is not None
         assert snapshot['current_plan']['selected_item_ids'] == [snapshot['items'][0]['id']]
+        for client, expected in zip(clients[1:3], ('mentioned','supported')):
+            client.post(path+'/messages', json={'text':'가상 A식당 좋아'})
+            clients[0].portal.call(clients[0].app.state.jobs.queue.join)
+            snapshot = clients[0].get(path).json()
+            assert snapshot['items'][0]['state'] == expected
+        clients[2].post(path+'/messages', json={'text':'가상 A식당 좋아'})
+        clients[0].portal.call(clients[0].app.state.jobs.queue.join)
+        snapshot = clients[0].get(path).json()
+        assert len(snapshot['items'][0]['supporter_ids']) == 3
+        assert snapshot['confirmations'] == []
