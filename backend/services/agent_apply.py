@@ -39,7 +39,7 @@ def apply_questions(room, proposals):
     room['questions'] = answered
 
 from backend.services.observations import relevant_evidence
-from backend.services.planning import build_plan
+from backend.services.planning import build_plan, validate_effect
 
 
 def apply_plan(room, draft, old_observations, observations):
@@ -63,6 +63,10 @@ def prepare_result(room, result, old_observations):
     apply_plan(updated, mapped['plan_draft'], old_observations, observations)
     updated['conflicts'] = deepcopy(mapped['conflicts'])
     for conflict in updated['conflicts']:
+        if not set(conflict['affected_item_ids']) <= {item['id'] for item in updated['items']}:
+            raise ValueError('Invalid conflict item')
+        for option in conflict['options']:
+            validate_effect(updated, option['effect'], observations)
         conflict['base_versions'] = deepcopy(updated['versions'])
     return updated, observations
 

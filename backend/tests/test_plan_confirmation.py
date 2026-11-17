@@ -178,3 +178,14 @@ def test_confirmed_snapshot_is_appended_to_immutable_history(api):
         api.cookies.set('session','s'+actor)
         response = api.post('/api/rooms/room-fixture/plan/confirm', json={'target':room['current_plan']['confirmation_target']})
     assert db.get('confirmed-history:room-fixture') == [response.json()['confirmed_plan']]
+
+
+def test_conflict_options_cannot_target_foreign_items(room):
+    from backend.services.planning import validate_effect
+    import pytest
+    from fastapi import HTTPException
+    with pytest.raises(HTTPException):
+        validate_effect(room, {'kind':'drop_visit','item_id':'foreign'}, [])
+    with pytest.raises(HTTPException):
+        validate_effect(room, {'kind':'replace_place','item_id':'item-a','new_place_ref':'foreign'}, [])
+    validate_effect(room, {'kind':'drop_visit','item_id':'item-a'}, [])

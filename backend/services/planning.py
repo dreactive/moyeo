@@ -124,3 +124,25 @@ def apply_selected_condition(room, selection, actor_id):
     if effect['owner_id'] != actor_id:
         raise HTTPException(403, 'Only condition owner may select relaxation')
     return edit_constraint(room, effect['constraint_id'], actor_id, effect['new_value'])
+
+from backend.services.observations import known_place_ids
+
+
+def validate_effect(room, effect, observations):
+    kind = effect['kind']
+    if kind == 'change_constraint':
+        condition = next((c for c in room['constraints'] if c['id'] == effect['constraint_id']), None)
+        if condition is None or condition['owner_id'] != effect['owner_id']:
+            raise HTTPException(409, 'Condition effect target unavailable')
+        return
+    if kind == 'reorder_visits':
+        targets = effect['ordered_item_ids']
+    elif kind in ('drop_visit','replace_place'):
+        targets = [effect['item_id']]
+    else:
+        raise HTTPException(409, 'Unknown conflict effect')
+    ids = {item['id'] for item in room['items']}
+    if len(set(targets)) != len(targets) or not set(targets) <= ids:
+        raise HTTPException(409, 'Effect item unavailable')
+    if kind == 'replace_place' and effect['new_place_ref'] not in known_place_ids(observations):
+        raise HTTPException(409, 'Replacement place not observed')

@@ -106,7 +106,8 @@ async def answer(room_id: str, question_id: str, body: ValueAnswer, request: Req
     return snapshot(room_id, request, user)
 
 from backend.schemas import SelectOption
-from backend.services.planning import select_conflict_option, apply_selected_condition
+from backend.services.planning import select_conflict_option, apply_selected_condition, validate_effect
+from backend.services.observations import get_observations
 
 
 @router.post('/{room_id}/conflicts/{conflict_id}/select', status_code=202)
@@ -115,6 +116,7 @@ async def select_conflict(room_id: str, conflict_id: str, body: SelectOption, re
     with db.lock:
         room = require_room(db, room_id, user['id'])
         selection = select_conflict_option(room, conflict_id, body.option_id, user['id'])
+        validate_effect(room, selection['effect'], get_observations(db, room_id))
         if selection['effect']['kind'] == 'change_constraint':
             apply_selected_condition(room, selection, user['id'])
             db.put('room:' + room_id, room)
