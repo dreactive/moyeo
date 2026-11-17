@@ -204,3 +204,27 @@ def test_worker_drains_more_than_twenty_unprocessed_messages(room, agent_result)
         assert [len(batch) for batch in port.batches] == [20,5]
         assert db.get('processed-message:room-fixture') == '24'
     asyncio.run(scenario())
+
+
+def test_worker_rejects_another_registered_run_result(room, agent_result):
+    import asyncio
+    from copy import deepcopy
+    from backend.services.agent_jobs import AgentJobs
+    from backend.db import Database
+    async def scenario():
+        db = Database(':memory:')
+        db.put('room:room-fixture', room)
+        db.put('run:older', {'room_id':'room-fixture','base_versions':dict(room['versions'])})
+        class Port:
+            async def run(self, task, emit):
+                result = deepcopy(agent_result)
+                result.update(run_id='older', completion='done')
+                return result
+        jobs = AgentJobs(db, Port())
+        worker = asyncio.create_task(jobs.work())
+        await jobs.enqueue('room-fixture','replan')
+        await asyncio.wait_for(jobs.queue.join(),2)
+        worker.cancel()
+        assert not db.get('run:older').get('applied')
+        assert db.get('room:room-fixture')['agent_status']['state'] == 'needs_input'
+    asyncio.run(scenario())

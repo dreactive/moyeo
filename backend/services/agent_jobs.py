@@ -51,6 +51,8 @@ class AgentJobs:
                 self.active_run_id = task['run_id']
                 set_status(self.db, task['room_id'], task['run_id'], 'running', 'Working')
                 result = await self.port.run(task, self.emit_trace)
+                if (result.get('run_id'), result.get('room_id')) != (task['run_id'], task['room_id']):
+                    raise ValueError('Agent result identity does not match the active request')
                 applied = apply_agent_result(self.db, result)
                 processed = result.get('last_processed_message_id')
                 room = self.db.get('room:' + task['room_id'])
