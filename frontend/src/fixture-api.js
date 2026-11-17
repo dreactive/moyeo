@@ -105,4 +105,3 @@ import trace from '../fixtures/run-trace.json' with {type:'json'};
 
 
 import {sameTarget} from './plan.js';
-
