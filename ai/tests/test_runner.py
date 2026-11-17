@@ -10,3 +10,21 @@ async def test_observations_survive_disabled_trace():
     assert observation["result"]["menus"][0]["price_krw"] == 10000
     assert observation["tool_name"] == "get_place_details"
     assert "fixture:price-a" in observation["source_refs"]
+
+
+async def test_observation_changes_next_selected_action():
+    from ai.runner import choose_action
+    from ai.models.fake_actions import tool
+    class Model:
+        def generate_json(self, request):
+            ref = request["context"]["observations"][0]["result"]["places"][0]["id"]
+            return {"candidates": [tool("get_place_details", {"place_ref": ref})]}
+        def score_candidates(self, context, candidates):
+            return [1.]
+    value = task()
+    value["observations"] = [{"result": {"places": [{"id": "new-a", "name": "A"}]}, "source_refs": []}]
+    first = await choose_action(value, Model(), None, 1)
+    value["observations"][0]["result"]["places"][0]["id"] = "new-b"
+    second = await choose_action(value, Model(), None, 2)
+    assert first["arguments"]["place_ref"] == "new-a"
+    assert second["arguments"]["place_ref"] == "new-b"

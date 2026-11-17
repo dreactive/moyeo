@@ -2,6 +2,25 @@ import asyncio
 import time
 from datetime import datetime, timezone
 from ai.trace import emit
+from ai.candidates import build_candidates, select_candidate
+from ai.tools.context import build_tool_context
+from ai.tools.validation import validate_arguments
+
+
+async def choose_action(context, model, emit_trace, step):
+    context = build_tool_context(context)
+    generated = await asyncio.to_thread(model.generate_json, {"phase": "actions", "context": context})
+    context["generated_candidates"] = generated.get("candidates", [])
+    candidates = build_candidates(context)
+    scores = await asyncio.to_thread(model.score_candidates, context, candidates)
+    index = select_candidate(candidates, scores)
+    action = candidates[index]
+    await emit(emit_trace, context, step, "decision", None,
+               dict(goal=context["goal"], candidates=candidates, selected_index=index, scores=scores,
+                    model_mode=getattr(model, "mode", "unknown"), base_versions=context["base_versions"]))
+    if action["action"] == "tool":
+        validate_arguments(action["tool_name"], action["arguments"], context)
+    return action
 
 
 async def execute_selected(task, action, tools, emit_trace, step):
