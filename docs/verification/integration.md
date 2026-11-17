@@ -57,6 +57,14 @@ Parent independently checked the actual developer endpoint: no token403, room co
 
 Final screenshots: C:/Users/user/.codex/visualizations/2026/11/17/01a1e9f0-734d-7000-8d80-dc48c5f02a61/g4-conflict.jpg and g4-confirmed-full.jpg. The cropped g4-confirmed.jpg is not the final full-screen evidence.
 
+## C07 actual three-screen completion
+
+Additional run of source53bf8bb, unchanged product code: one actual FastAPI app/UUID SQLite served three explicitly loopback-only sockets127.0.0.1/.2/.3:8000. IAB tabs6/7/8 logged in as distinct users2/3/4 and joined the same invitation room. Agent/provider are FixtureAgentPort/fixture with no external calls or GPU; no wildcard interface was used.
+
+User1 sent exactly one HTTP POST (message1d3dd3cd005b4dcf909cb57fee95f94b, human-message seq1, text C07-DOM-6528825cb3c2,2026-11-17T19:54:31.004571+00:00). After the POST there was no navigation, manual reload or UI mutation. Parent directly observed all three actual AX/DOM views automatically contain the same author, message ID, text and time. The three tabs have separate host-cookie authentication, not three views of one shared login. PASS satisfies the original C07 screen criterion.
+
+Local ignored helper/receipt/evidence: original source .planning/c07-ui/{server.py,last-send.json,ui-evidence.json}. S2 read and independently checked the recorded source SHA, three distinct receiving accounts, matching message IDs/text and zero post-send UI mutations. The C07 checkbox is now complete; this does not broaden G4 or free-form model-quality claims.
+
 ## Shutdown verification
 
 The first G4 harness waited30s for an unbounded uvicorn shutdown while an IAB SSE remained open, then its daemon process exited. Its original report honestly retains server_thread_stopped=false/runtime_closed=false; process exit returned GPU memory. This is not relabelled as awaited aclose.
@@ -67,7 +75,7 @@ A separate actual-Qwen lifecycle probe (g4_shutdown_probe.py/result g4-shutdown-
 
 - Actual live latency is material and unresolved. model_context removes duplicate geometry from generation/judge context; scored candidate strings and executed arguments still retain full route geometry. This is a later performance optimization candidate, not a changed correctness claim.
 - Free-form small-model extraction initially failed. Explicit source-preserving rule assistance is labelled; region-only conversation does not discover a complete plan. Unsupported hard rules require owner input; unknown prices/serving basis/provider dates remain unknown.
-- C07 has actual POST→three independent SSE clients and actual FE behavior, but three browser screens simultaneously operated as different people were not observed. The checklist keeps that manual display scope partial.
+- C07 additionally passed with three actual authenticated FE tabs using independent loopback-host cookies; see the separate fixture-Agent evidence below. It is not additional actual-model/provider evidence.
 - Parent performed independent fresh FE/BE/AI review. Reproduced corrections have regression evidence: identity/base/atomic application, bounded accepted-message cursor/backlog, owner conditions/question targets, immutable review vs draft/evidence, cold import, source/trace boundaries and FE basis/version races. Backend has no duplicate AI itinerary/cost/NLP algorithm.
 - SQLite persists accounts/sessions/room/events/run provenance/immutable confirmations. Observations and sanitized trace are separate room-scoped process memory, so restart needs new observations. Keep one worker.
 - Parent checked original submission9 files (including adapter), PDF2 and baseline diffs unchanged; personal AGENTS/.local/.planning/.env/weights are excluded. No credential values were printed/committed. Only the public Kakao JS key reaches HTML. Native worktree discovery failed; approved isolated manual worktrees preserved original develop until final handoff.

@@ -18,7 +18,7 @@
 ## B. 대화와 조건 — S2 B2/B4, S3 A3/A4, S1 F1/F2
 
 - [x] C06. 4개 로그인 세션이 코드로 같은 방에 입장하고 참가 명단을 공유한다.
-- [ ] C07. 한 사람이 POST로 보낸 메시지가 다른 세 화면에 SSE로 나타난다. 전체 페이지 새로고침은 필요 없다.
+- [x] C07. 한 사람이 POST로 보낸 메시지가 다른 세 화면에 SSE로 나타난다. 전체 페이지 새로고침은 필요 없다.
 - [x] C08. Agent 출력은 오른쪽에만 나타나고 사람 채팅에는 AI 메시지가 없다.
 - [x] C09. ‘예산 20만원’ → ‘아니 15만원’에서 같은 사람의 정정과 근거 메시지를 연결하고 이전 조건 이력을 남긴다.
 - [x] C10. 다른 사람이 개인 필수 조건을 완화하는 발언을 해도 소유자 확인 없이 조건이 바뀌지 않는다.
@@ -93,7 +93,7 @@ API 키 없는 개발용 fixture 검증, 허용된 실제 응답을 이용한 re
 | C04 | PASS mechanics; quality limited | 실제 Qwen2.5-1.5B-Instruct 베이스 생성·현재 judge LoRA 점수 모드와 후보1/2/5 실측. 자유 추출 실패·rule-assisted 보조를 모델 품질 통과로 표시하지 않음. |
 | C05 | PASS fake/fixture | AI runtime 계약·모델 대역 교체, BE lazy bridge 테스트. AI113 / BE111 / FE40; 실제 모델 동등 품질 주장 없음. |
 | C06 | PASS HTTP fake/fixture | G2 test_empty_four_person_room_creates_initial_plan: 실제 가입 cookie 4개·코드 입장·동일 참가 명단. |
-| C07 | PARTIAL HTTP fixture | G3 실제 TCP POST→다른 3 cookie SSE 수신 PASS, FE 중복 제거/자동 snapshot 복구 PASS. 부모 IAB 1화면 관측; 세 브라우저 화면 동시 시연은 별도 미관측. |
+| C07 | PASS actual three FE views / fixture Agent | source53bf8bb 실제FastAPI·동일방에 u2/u3/u4 독립host-cookie 로그인한 IAB3탭. u1 HTTP POST1건 후 탐색/새로고침/UI변경0, 세 실제AX화면 모두 같은 author·message ID·본문·시각 자동수신. .planning/c07-ui/ui-evidence.json(로컬). GPU/외부공급자 호출 없음. |
 | C08 | PASS fixture + G2 | 사람 메시지 보존, agent.status/우측 UI. G2 JSON 적용 후 사람 채팅 원본 동일. |
 | C09 | PASS rule-assisted fixture | AI test_rule_assisted_budget_correction_is_owned_and_grounded / Backend owner 확인·supersede 이력 테스트. 순수 모델 품질 통과 아님. |
 | C10 | PASS structured fixture | BE consensus_constraints·questions 소유권, G2 u4 조건의 u1 confirm403/u4 confirm200. |
@@ -129,10 +129,10 @@ API 키 없는 개발용 fixture 검증, 허용된 실제 응답을 이용한 re
 | C40 | PASS G4 mixed live/replay | 실제모델+freshKakao/recorded-liveApify+명시적 합성기존일정:16시추가→owner확인→충돌!→실제FE방문제외→재계산→새target4of4→실제UI초록/지도/241600.1719.172초. 빈방자유검색품질 주장 아님. |
 | C41 | PASS independent | FE40 tests + standalone fixture, BE111 tests no ai/torch import, AI113 core fake/fixture JSON + 재생18/18; G2/G3와 별도. |
 | C42 | PASS startup/lifecycle | 세 README·내부링크검사 및 실제uvicorn/4로그인/G4 성공. 실행명령에 timeout-graceful-shutdown5 명시; 별도 실제Qwen/openSSE probe close1·GPU0 확인. |
-| C43 | PASS limits recorded | 실제G4통과와 rule-assisted/지역명만계획불가/장기지연/공급자누락/C07수동범위를 구분. 첫process-exit와 별도awaitaclose검증도 분리. |
+| C43 | PASS limits recorded | 실제G4통과와 rule-assisted/지역명만계획불가/장기지연/공급자누락을 구분. C07은 별도 실제3탭·fixture Agent 범위로 통과했다. 첫process-exit와 별도awaitaclose검증도 분리. |
 | C44 | PASS preservation review | 부모 전체 submission9파일·원본 PDF SHA 보존, baseline 대비 submission/data/PDF diff 없음. 서비스와 대회 패키지 구분. |
 | C45 | PASS fixture/G2 | BE question field/target/owner·menu 소속 검증, FE typed 제출; G2 실제 menu answer 후 자동 재계획 ready130000. |
 | C46 | PASS fixture arithmetic | AI budget_paid_and_projected_balances, shared_remainder_and_per_person_without_owner; FE 앞으로 쓸 금액/계획 후 여유 분리. |
 | C47 | PASS G4 + trace-off unit | 실제상세/API근거/다음run은 observations로 전달. 부모IAB 실제메뉴/시간/출처 유지; trace 꺼도 제품 데이터 정상은 BE단위회귀. |
 
-최종 로컬 게이트: G1/G2/G3/G4 통과. C07의 세 브라우저 동시 수동 시연은 부분 검증으로 남겼다. 원격 push/PR 성공과 실모델 성능·자유 추출 품질은 이 체크 결과로 추정하지 않는다.
+최종 로컬 게이트: G1/G2/G3/G4 통과. C07도 독립host-cookie의 실제 FE3탭에서 추가 검증했다. 각 항목의 fixture·replay·실모델 범위와 C02 미적용 사유는 그대로 구분한다. 원격 push/PR 성공과 실모델 성능·자유 추출 품질은 이 체크 결과로 추정하지 않는다.
