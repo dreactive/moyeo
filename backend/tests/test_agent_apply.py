@@ -155,3 +155,12 @@ def test_apply_is_one_snapshot_revision(room, agent_result):
     assert updated['current_plan']['cost'] == agent_result['plan_draft']['cost']
     assert db.observations['room-fixture'] == agent_result['observations']
     assert not apply_agent_result(db, agent_result)
+
+
+def test_worker_applies_results_and_keeps_observations(api):
+    receipt = api.post('/api/rooms/room-fixture/agent-runs', json={'reason':'manual_replan'})
+    assert receipt.status_code == 202
+    api.portal.call(api.app.state.jobs.queue.join)
+    room = api.get('/api/rooms/room-fixture').json()
+    assert room['current_plan']['content_hash'] != 'a'*64
+    assert api.app.state.db.observations['room-fixture']

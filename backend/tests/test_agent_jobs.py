@@ -51,7 +51,7 @@ def test_single_worker_never_overlaps_runs():
                 self.peak = max(self.peak, self.active)
                 await asyncio.sleep(.01)
                 self.active -= 1
-                return {'completion':'done'}
+                return dict(run_id=task['run_id'], room_id=task['room_id'], base_versions=task['base_versions'], constraint_proposals=[], item_proposals=[], support_observations=[], questions=[], conflicts=[], observations=[], plan_draft=None, completion='done', last_processed_message_id=None)
         db = Database(':memory:')
         room = new_room({'id':'u','name':'a'}, {'title':'t'})
         room['room_id'] = 'r'
@@ -80,3 +80,4 @@ def test_enqueue_registers_run_and_uses_product_observations(room):
     task = jobs.queue.get_nowait()
     assert task['observations'] == db.observations['room-fixture']
     assert db.get('run:'+receipt['run_id'])['room_id'] == 'room-fixture'
+

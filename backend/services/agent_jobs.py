@@ -9,6 +9,7 @@ def make_task(room, run_id, goal, observations, selection):
 import asyncio
 from uuid import uuid4
 from backend.services.observations import get_observations
+from backend.services.agent_apply import apply_agent_result
 
 
 class AgentJobs:
@@ -29,9 +30,11 @@ class AgentJobs:
             try:
                 set_status(self.db, task['room_id'], task['run_id'], 'running', 'Working')
                 result = await self.port.run(task, self.emit_trace)
-                self.db.put('result:' + task['run_id'], result)
-                state = 'done' if result['completion'] == 'done' else 'needs_input'
+                applied = apply_agent_result(self.db, result)
+                state = 'done' if applied and result['completion'] == 'done' else 'needs_input'
                 set_status(self.db, task['room_id'], task['run_id'], state, result['completion'])
+            except Exception:
+                set_status(self.db, task['room_id'], task['run_id'], 'needs_input', 'Agent run failed')
             finally:
                 self.queue.task_done()
 
