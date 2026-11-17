@@ -59,9 +59,10 @@ def add_constraint_proposal(room, proposal):
         same_key = existing['owner_id'] == proposal['owner_id'] and existing['key'] == proposal['key']
         if existing['id'] == proposal.get('replaces_constraint_id') and not same_key:
             raise ValueError('Cannot replace another owner condition')
-        if same_key and existing['value'] == proposal['value'] and existing['status'] != 'superseded':
+        if same_key and existing['value'] == proposal['value'] and existing['kind'] == proposal['kind'] and existing['status'] != 'superseded':
             return None
     condition = {key:proposal[key] for key in ('owner_id','key','value','kind','source_message_ids')}
     condition.update(id=uuid4().hex, status='needs_owner_confirmation')
     room['constraints'].append(condition)
     return condition
+

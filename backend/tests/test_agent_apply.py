@@ -79,3 +79,16 @@ def test_stale_base_versions_not_applied(room):
     assert valid_result_base(db, result)
     result['base_versions']['constraint_version'] += 1
     assert not valid_result_base(db, result)
+
+
+def test_condition_kind_change_is_pending_new_proposal(room):
+    from backend.domain import add_constraint_proposal
+    original = room['constraints'][0]
+    original['kind'] = 'hard'
+    original['status'] = 'confirmed'
+    proposal = {key:original[key] for key in ('owner_id','key','value','source_message_ids')}
+    proposal.update(kind='preference', replaces_constraint_id=original['id'])
+    pending = add_constraint_proposal(room, proposal)
+    assert pending is not None
+    assert pending['kind'] == 'preference'
+    assert original['kind'] == 'hard'
