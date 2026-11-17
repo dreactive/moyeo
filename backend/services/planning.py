@@ -45,3 +45,11 @@ def record_confirmation(room, actor_id, target, stance):
     freeze_review(room, target)
     room['confirmations'] = [vote for vote in room['confirmations'] if vote['user_id'] != actor_id]
     room['confirmations'].append(dict(user_id=actor_id, target=deepcopy(target), stance=stance, created_at=datetime.now(timezone.utc).isoformat()))
+
+
+def ready_to_confirm(room, plan):
+    if plan['validation'] != 'ready' or plan['blocking_conflict_ids']:
+        return False
+    if any(conflict['blocking'] and conflict['status'] == 'open' for conflict in room['conflicts']):
+        return False
+    return not any(condition['kind'] == 'hard' and condition['status'] == 'needs_owner_confirmation' for condition in room['constraints'])

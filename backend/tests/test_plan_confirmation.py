@@ -30,3 +30,17 @@ def test_official_vote_is_unique_and_owned(room):
     record_confirmation(room, 'u1', target, 'withdraw')
     assert room['confirmations'][0]['stance'] == 'withdraw'
     assert room['confirmed_plan'] is None
+
+
+def test_blocking_or_unchecked_requirements_prevent_green(room):
+    from backend.services.planning import ready_to_confirm
+    plan = room['current_plan']
+    assert not ready_to_confirm(room, plan)
+    plan['validation'] = 'ready'
+    room['constraints'] = []
+    assert ready_to_confirm(room, plan)
+    plan['blocking_conflict_ids'] = ['blocking']
+    assert not ready_to_confirm(room, plan)
+    plan['blocking_conflict_ids'] = []
+    room['constraints'] = [{'kind':'hard','status':'needs_owner_confirmation'}]
+    assert not ready_to_confirm(room, plan)
