@@ -66,3 +66,17 @@ def test_single_worker_never_overlaps_runs():
         assert port.peak == 1
         assert db.get('room:r')['agent_status']['state'] == 'done'
     asyncio.run(scenario())
+
+
+def test_enqueue_registers_run_and_uses_product_observations(room):
+    import asyncio
+    from backend.services.agent_jobs import AgentJobs
+    from backend.db import Database
+    db = Database(':memory:')
+    db.put('room:room-fixture', room)
+    db.observations['room-fixture'] = [{'tool_name':'search_places','arguments':{},'result':{'places':[]}}]
+    jobs = AgentJobs(db, None)
+    receipt = asyncio.run(jobs.enqueue('room-fixture','replan'))
+    task = jobs.queue.get_nowait()
+    assert task['observations'] == db.observations['room-fixture']
+    assert db.get('run:'+receipt['run_id'])['room_id'] == 'room-fixture'

@@ -8,6 +8,7 @@ def make_task(room, run_id, goal, observations, selection):
 
 import asyncio
 from uuid import uuid4
+from backend.services.observations import get_observations
 
 
 class AgentJobs:
@@ -17,7 +18,8 @@ class AgentJobs:
 
     async def enqueue(self, room_id, reason, selection=None):
         room = self.db.get('room:' + room_id)
-        task = make_task(room, uuid4().hex, reason, self.db.get('observations:' + room_id) or [], selection)
+        task = make_task(room, uuid4().hex, reason, get_observations(self.db, room_id), selection)
+        self.db.put('run:' + task['run_id'], {key:task[key] for key in ('room_id','base_versions')})
         await self.queue.put(task)
         return {key:task[key] for key in ('run_id','base_versions')}
 
