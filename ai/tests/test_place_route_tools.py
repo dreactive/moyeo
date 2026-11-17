@@ -21,7 +21,8 @@ async def test_details_restored_and_cross_room_isolation():
 async def test_route_anchors_units_and_missing_leg():
     from ai.tools.registry import RegisteredTools
     context = task()
-    context["observations"].append({"tool_name": "get_car_route", "arguments": {}, "result": {
+    context["observations"].append({"tool_name": "get_car_route", "arguments": {"from_ref": "anchor:origin",
+        "to_ref": "fixture:place-a", "departure_at": None}, "result": {
         "from_ref": "anchor:origin", "to_ref": "fixture:place-a", "distance_m": 1200,
         "duration_seconds": 180, "toll_krw": None, "polyline": [], "evidence_id": "fixture:route"}})
     tools = RegisteredTools(context)
@@ -96,3 +97,17 @@ async def test_itinerary_uses_only_route_observed_for_actual_departure():
     result = await RegisteredTools(value).execute("build_itinerary", itinerary_arguments(value))
     assert result["days"][0]["visits"][0]["start_at"] == "2026-11-21T10:00:00+09:00"
     assert result["days"][0]["route_legs"][0]["evidence_id"] == "new"
+
+
+def test_changed_anchor_invalidates_same_time_live_route_observation():
+    from ai.providers.kakao import route_evidence_id
+    from ai.tools.context import build_tool_context
+    from ai.planning import next_route
+    value = task()
+    args = dict(from_ref="anchor:origin", to_ref="fixture:place-a", departure_at="2026-11-21T09:00:00+09:00")
+    evidence = route_evidence_id(build_tool_context(value)["places"], args)
+    value["observations"].append(dict(tool_name="get_car_route", arguments=args, result=dict(
+        from_ref=args["from_ref"], to_ref=args["to_ref"], duration_seconds=600, evidence_id=evidence)))
+    assert next_route(value)["from_ref"] == "fixture:place-a"
+    value["config"]["origin"]["latitude"] = 35
+    assert next_route(value)["from_ref"] == "anchor:origin"

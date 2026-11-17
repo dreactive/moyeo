@@ -1,5 +1,7 @@
 from datetime import date, datetime, timedelta
 from ai.tools.itinerary import schedule_visit
+from ai.tools.context import build_tool_context
+from ai.tools.routes import route_matches
 
 
 def resolved_item_visits(context):
@@ -52,6 +54,7 @@ def itinerary_arguments(context):
 
 
 def next_route(context, only_day=None):
+    context = build_tool_context(context)
     config, visits = context["config"], planned_visits(context)
     first, last = (date.fromisoformat(config[k]) for k in ("start_date", "end_date"))
     for offset in range((last - first).days + 1):
@@ -65,7 +68,7 @@ def next_route(context, only_day=None):
         for visit in day_visits + [dict(place_ref=destination)]:
             arguments = dict(from_ref=previous, to_ref=visit["place_ref"], departure_at=cursor.isoformat())
             observed = next((o["result"] for o in reversed(context["observations"])
-                             if o["tool_name"] == "get_car_route" and o["arguments"] == arguments), None)
+                             if route_matches(o, context, arguments)), None)
             if observed is None:
                 return arguments
             if "item_id" in visit:
@@ -81,6 +84,7 @@ def pending_routes(context):
 
 
 def selected_route_observations(context):
+    context = build_tool_context(context)
     config, visits, selected = context["config"], planned_visits(context), []
     first, last = (date.fromisoformat(config[k]) for k in ("start_date", "end_date"))
     for offset in range((last - first).days + 1):
@@ -91,7 +95,7 @@ def selected_route_observations(context):
         for visit in [v for v in visits if v["date"] == day] + [dict(place_ref=target)]:
             args = dict(from_ref=previous, to_ref=visit["place_ref"], departure_at=cursor.isoformat())
             observed = next((o for o in reversed(context["observations"])
-                             if o["tool_name"] == "get_car_route" and o["arguments"] == args), None)
+                             if route_matches(o, context, args)), None)
             if observed is None:
                 break
             selected.append(observed)
