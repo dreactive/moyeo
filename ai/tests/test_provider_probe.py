@@ -74,3 +74,10 @@ async def test_apify_http_caps_five_excludes_reviews_and_keeps_token_out_of_url(
         return httpx.Response(200, json=[{"place_id": "1"}])
     async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
         assert await fetch_rows(client, "test-secret", keywords=["여수 맛집"]) == [{"place_id": "1"}]
+
+
+async def test_probe_missing_credentials_is_not_live_success():
+    from ai.providers.probe import probe_place_data
+    report = await probe_place_data("apify", "여수", settings={"APIFY_TOKEN": ""})
+    assert report["matched_place_count"] == 0 and report["limitations"]
+    assert report["mode"] == "live" and report["status"] == "not_run"
