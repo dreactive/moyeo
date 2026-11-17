@@ -1,5 +1,5 @@
 import initial from '../fixtures/room-snapshot.json' with {type:'json'};
-import {fixturePlaces} from './fixture-places.js';
+import {fixturePlaces,resetFixturePlaces} from './fixture-places.js';
 export const fixtureRoom = structuredClone(initial);
 let fixtureUser = {id:'u1',name:'참가자1',email:'u1@fixture.test'};
 export const setFixtureUser = id => { fixtureUser = {id,name:'참가자' + id.slice(1),email:id + '@fixture.test'}; return fixtureUser; };
@@ -77,6 +77,7 @@ export function replayScenario(key) {
   const next = scenarios[key];
   const seq = fixtureRoom.seq + 1;
   Object.assign(fixtureRoom,structuredClone(next.snapshot),{seq});
+  resetFixturePlaces();
   next.places?.forEach(details => fixturePlaces.set(details.place.id,structuredClone(details)));
   emitFixture('onRoomUpdated',{room_id:fixtureRoom.room_id,seq,changed:['fixture_scenario']});
   return structuredClone(fixtureRoom);
@@ -99,3 +100,4 @@ import trace from '../fixtures/run-trace.json' with {type:'json'};
 
 
 import {sameTarget} from './plan.js';
+
