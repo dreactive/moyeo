@@ -63,3 +63,14 @@ def test_constraint_edit_and_confirm_http_are_owner_only(api):
     response = api.post('/api/rooms/room-fixture/constraints/' + edited.json()['id'] + '/confirm')
     assert response.status_code == 200
     assert any(c['value'] == 150000 and c['status'] == 'confirmed' for c in response.json()['constraints'])
+
+
+def test_item_state_uses_displayed_confirmed_snapshot(room):
+    from backend.domain import project_items
+    from copy import deepcopy
+    room['confirmed_plan'] = deepcopy(room['current_plan'])
+    project_items(room)
+    assert all(item['state'] == 'confirmed' for item in room['items'])
+    room['current_plan']['confirmation_target']['plan_revision'] += 1
+    project_items(room)
+    assert all(item['state'] != 'confirmed' for item in room['items'])

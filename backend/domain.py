@@ -66,3 +66,19 @@ def add_constraint_proposal(room, proposal):
     room['constraints'].append(condition)
     return condition
 
+
+
+def project_items(room):
+    current = room['current_plan']
+    confirmed = room['confirmed_plan']
+    selected = set(current['selected_item_ids']) if current else set()
+    same_plan = bool(current and confirmed and current['confirmation_target'] == confirmed['confirmation_target'])
+    snapshots = {item['id']:item for item in confirmed['item_snapshots']} if same_plan else {}
+    for item in room['items']:
+        item['support_threshold'] = len(room['members']) // 2 + 1
+        item['included_in_plan'] = item['id'] in selected
+        item['state'] = 'supported' if len(set(item['supporter_ids'])) >= item['support_threshold'] else 'mentioned'
+        if item['id'] in snapshots and snapshots[item['id']]['item_version'] == item['item_version']:
+            item['state'] = 'confirmed'
+        item['conflict_ids'] = [conflict['id'] for conflict in room['conflicts'] if item['id'] in conflict['affected_item_ids'] and conflict['status'] == 'open']
+    return room
