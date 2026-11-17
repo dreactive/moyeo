@@ -13,5 +13,5 @@ def test_probe_counts_only_live_yeosu_values():
 
 def test_unknown_price_is_not_zero():
     from ai.providers.normalize import price_krw
-    assert [price_krw(x) for x in ["10,000원", "0", "시가", "", None, "1~2만원"]] == [
-        10000, 0, None, None, None, None]
+    assert [price_krw(x) for x in ["10,000원", "0", 0, "시가", "", None, "1~2만원"]] == [
+        10000, 0, 0, None, None, None, None]
