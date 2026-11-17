@@ -19,7 +19,10 @@ def create_app(agent_port: AgentPort | None = None, *, database_path=None) -> Fa
     app = FastAPI(title="Travel Agent", lifespan=lifespan)
     from backend.routes.auth import router
     app.include_router(router)
+    from backend.routes.rooms import router as rooms_router
+    app.include_router(rooms_router)
     return app
 
 
 app = create_app()
+

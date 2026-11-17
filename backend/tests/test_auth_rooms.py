@@ -19,3 +19,11 @@ def test_login_logout_revokes_cookie():
         assert client.get('/api/auth/me').status_code == 401
         assert client.post('/api/auth/login', json={'email': body['email'], 'password': 'wrong'}).status_code == 401
         assert client.post('/api/auth/login', json=body).status_code == 200
+
+
+def test_create_room_is_member_scoped():
+    with TestClient(create_app(database_path=':memory:')) as client:
+        client.post('/api/auth/register', json={'name':'a','email':'a@b.test','password':'password123'})
+        room = client.post('/api/rooms', json={'title':'여수','start_date':'2026-11-21','end_date':'2026-11-22','per_person_budget_krw':200000})
+        assert room.status_code == 201
+        assert client.get('/api/rooms/' + room.json()['room_id']).status_code == 200
