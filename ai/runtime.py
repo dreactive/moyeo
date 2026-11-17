@@ -10,11 +10,17 @@ from ai.tools.registry import RegisteredTools
 class AgentRuntime:
     def __init__(self, config):
         self.config = dict(config)
-        if config.get("model_backend", "fake") != "fake":
-            raise ValueError("Model backend unavailable")
         if config.get("provider_mode", "fixture") not in ("fixture", "live"):
             raise ValueError("Unknown provider mode")
-        self.model = ModelWorker(FakeModelBackend())
+        backend = config.get("model_backend", "fake")
+        if backend == "local_qwen":
+            from ai.models.local_qwen import LocalQwenBackend
+            model = LocalQwenBackend(config.get("base_model_path"), config.get("adapter_path"))
+        elif backend == "fake":
+            model = FakeModelBackend()
+        else:
+            raise ValueError("Unknown model backend")
+        self.model = ModelWorker(model)
 
     async def run(self, task, emit_trace):
         task = build_context(task, [])

@@ -54,3 +54,11 @@ async def test_fake_fixture_loop_produces_calculated_plan_and_mode_trace():
     assert result["plan_draft"]["cost"]["total_krw"] is None
     assert result["completion"] == "needs_input"
     assert {e["payload"]["model_mode"] for e in events if e["event"] == "decision"} == {"fake"}
+
+
+def test_local_qwen_runtime_needs_local_weights_without_downloading():
+    import pytest
+    from ai.runtime import create_runtime
+    with pytest.raises(ValueError, match="local"):
+        create_runtime({"model_backend": "local_qwen", "provider_mode": "fixture",
+                        "base_model_path": "missing", "adapter_path": "missing"})
