@@ -1,5 +1,21 @@
 from datetime import date, datetime, timedelta
 from ai.questions import question
+from ai.conflicts import conflict
+
+
+def finish_day(day, destination, route_legs, end_time, versions):
+    if not day["visits"]:
+        return [], []
+    visit = day["visits"][-1]
+    leg = next((r for r in route_legs if r["from_ref"] == visit["place_ref"] and r["to_ref"] == destination), None)
+    if leg is None:
+        return [], [question("constraint_value", destination, "숙소/귀가 구간 조회가 필요합니다.")]
+    day["route_legs"].append(leg)
+    arrival = datetime.fromisoformat(visit["end_at"]) + timedelta(seconds=leg["duration_seconds"])
+    deadline = datetime.fromisoformat(day["date"] + "T" + end_time + ":00+09:00")
+    conflicts = [conflict("time", "도착 시간이 활동/귀가 제한을 넘습니다.",
+                         [visit["item_id"]], versions)] if arrival > deadline else []
+    return conflicts, []
 
 
 def build_itinerary(visits, anchors, constraints, route_legs, config):

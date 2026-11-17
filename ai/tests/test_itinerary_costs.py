@@ -58,3 +58,15 @@ def test_itinerary_schedules_observed_inbound_leg():
     result = build_itinerary([visit], {"origin": {}, "destination": {}}, [], [leg], config)
     assert result["days"][0]["visits"][0]["start_at"] == "2026-11-21T09:03:00+09:00"
     assert result["days"][0]["route_legs"] == [leg]
+
+
+def test_return_deadline_includes_outbound_leg():
+    from ai.tools.itinerary import finish_day
+    day = {"date": "2026-11-21", "visits": [{"item_id": "a", "place_ref": "p",
+            "end_at": "2026-11-21T15:30:00+09:00"}], "route_legs": []}
+    leg = {"from_ref": "p", "to_ref": "anchor:destination", "duration_seconds": 3600}
+    conflicts, questions = finish_day(day, "anchor:destination", [leg], "16:00", {})
+    assert conflicts[0]["type"] == "time"
+    assert conflicts[0]["blocking"] is True
+    assert day["route_legs"] == [leg]
+    assert not questions
