@@ -20,3 +20,15 @@ for (const key of ['participant_version','constraint_version','evidence_version'
     assert.match(output.plan,/data-plan="confirm" disabled/);
   });
 }
+test('a newer draft revision keeps the unchanged pinned review confirmable', () => {
+  const room = structuredClone(fixture);
+  room.current_plan.validation = 'ready';
+  room.review_plan = structuredClone(room.current_plan);
+  room.active_target = structuredClone(room.review_plan.confirmation_target);
+  room.current_plan.plan_revision = room.versions.plan_revision = 2;
+  room.current_plan.confirmation_target.plan_revision = 2;
+  const output = {};
+  globalThis.document = {getElementById:id => ({set innerHTML(value) { output[id] = value; }})};
+  plan.renderPlan(room);
+  assert.doesNotMatch(output.plan.match(/<button data-plan="confirm"[^>]*>/)[0],/disabled/);
+});

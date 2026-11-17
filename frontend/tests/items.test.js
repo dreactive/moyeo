@@ -19,6 +19,7 @@ test('the official confirmed review projects green despite a newer draft support
   room.confirmed_plan = structuredClone(room.review_plan);
   room.current_plan.confirmation_target.content_hash = 'newer-draft';
   room.current_plan.confirmation_target.plan_revision = 2;
+  room.current_plan.plan_revision = 2;
   room.versions.plan_revision = 2;
   room.items[0].state = 'supported';
   room.items[0].included_in_plan = false;
