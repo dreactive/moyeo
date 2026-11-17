@@ -21,3 +21,19 @@ def apply_proposals(room, result):
     for observation in mapped['support_observations']:
         apply_support(room, observation, observation['author_id'])
     return mapped
+
+from copy import deepcopy
+
+
+def apply_questions(room, proposals):
+    answered = [q for q in room['questions'] if q['status'] == 'answered']
+    members = {member['user_id'] for member in room['members']}
+    for proposal in proposals:
+        if proposal['owner_id'] is not None and proposal['owner_id'] not in members:
+            raise ValueError('Unknown question owner')
+        if any(q['id'] == proposal['id'] for q in answered):
+            continue
+        question = deepcopy(proposal)
+        question.update(status='open', answer=None, answered_by=None)
+        answered.append(question)
+    room['questions'] = answered

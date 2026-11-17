@@ -101,3 +101,16 @@ def test_agent_cannot_create_confirmations(room, agent_result):
     apply_proposals(room, agent_result)
     assert room['confirmations'] == []
     assert room['confirmed_plan'] is None
+
+
+def test_agent_questions_cannot_forge_answers(room, agent_result):
+    from backend.services.agent_apply import apply_questions
+    question = agent_result['questions'][0]
+    question.update(status='answered', answer={'stay_minutes':1}, answered_by='u1')
+    apply_questions(room, agent_result['questions'])
+    saved = room['questions'][0]
+    assert saved['status'] == 'open'
+    assert saved['answered_by'] is None
+    saved.update(status='answered', answer={'stay_minutes':40}, answered_by='u2')
+    apply_questions(room, agent_result['questions'])
+    assert room['questions'][0]['answer'] == {'stay_minutes':40}
