@@ -73,3 +73,15 @@ def activate_plan(room, plan_revision):
         raise HTTPException(409, 'Draft revision changed')
     room.update(review_plan=None, active_target=None, confirmations=[])
     freeze_review(room, plan['confirmation_target'])
+
+
+def select_conflict_option(room, conflict_id, option_id, actor_id):
+    conflict = next((c for c in room['conflicts'] if c['id'] == conflict_id), None)
+    if conflict is None or conflict['base_versions'] != room['versions']:
+        raise HTTPException(409, 'Conflict inputs changed')
+    option = next((o for o in conflict['options'] if o['id'] == option_id), None)
+    if option is None:
+        raise HTTPException(404, 'Option not found')
+    if option.get('requires_owner_id') not in (None, actor_id):
+        raise HTTPException(403, 'Owner selection required')
+    return deepcopy(dict(conflict_id=conflict_id, option_id=option_id, effect=option['effect'], base_versions=conflict['base_versions']))

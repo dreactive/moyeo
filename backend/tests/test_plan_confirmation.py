@@ -117,3 +117,14 @@ def test_withdraw_before_review_does_not_activate_plan(room):
     with pytest.raises(HTTPException):
         record_confirmation(room, 'u1', room['current_plan']['confirmation_target'], 'withdraw')
     assert room['review_plan'] is None
+
+def test_conflict_selection_copies_saved_effect(room):
+    from backend.services.planning import select_conflict_option
+    room['conflicts'] = [{'id':'c','base_versions':dict(room['versions']),'options':[{'id':'o','requires_owner_id':None,'effect':{'kind':'drop_visit','item_id':'item-b'}}]}]
+    selected = select_conflict_option(room, 'c', 'o', 'u1')
+    assert selected['effect'] == {'kind':'drop_visit','item_id':'item-b'}
+    assert room['confirmations'] == []
+    room['versions']['constraint_version'] += 1
+    import pytest
+    with pytest.raises(Exception):
+        select_conflict_option(room, 'c', 'o', 'u1')
