@@ -18,3 +18,19 @@ def observed_place(db, room_id, place_ref):
         if observation['tool_name'] == 'get_place_details' and observation['result']['place']['id'] == place_ref:
             return observation['result']
     return None
+
+import json
+from backend.services.planning import substantive
+
+
+def relevant_evidence(plan, observations):
+    if plan is None:
+        return []
+    places = {visit['place_ref'] for day in plan['days'] for visit in day['visits']}
+    routes = {leg['evidence_id'] for day in plan['days'] for leg in day['route_legs']}
+    results = []
+    for observation in observations:
+        result = observation['result']
+        if result.get('place', {}).get('id') in places or result.get('evidence_id') in routes:
+            results.append(substantive(result))
+    return sorted(results, key=lambda value:json.dumps(value, sort_keys=True))
