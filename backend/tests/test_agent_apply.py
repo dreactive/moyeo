@@ -187,3 +187,14 @@ def test_result_question_references_must_exist(room, agent_result):
     import pytest
     with pytest.raises(ValueError):
         validate_questions(room, agent_result['questions'])
+
+
+def test_plan_cannot_reference_unobserved_place(room, agent_result):
+    from backend.services.agent_apply import prepare_result
+    from copy import deepcopy
+    import pytest
+    before = deepcopy(room)
+    agent_result['plan_draft']['days'][0]['visits'][0]['place_ref'] = 'other-room-place'
+    with pytest.raises(ValueError):
+        prepare_result(room, agent_result, [])
+    assert room == before

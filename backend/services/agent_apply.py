@@ -48,6 +48,7 @@ def apply_plan(room, draft, old_observations, observations):
         room['versions']['evidence_version'] += 1
         room.update(review_plan=None, active_target=None, confirmations=[])
     if draft is not None:
+        validate_plan_refs(room, draft, observations)
         room['current_plan'] = build_plan(room, draft, relevant_evidence(draft, observations))
 
 from backend.services.observations import merge_observations
@@ -100,3 +101,16 @@ def validate_questions(room, questions):
             raise ValueError('Unknown question field')
         if question['owner_id'] not in members | {None} or question['target_ref'] not in targets or not set(question['related_item_ids']) <= items:
             raise ValueError('Invalid question target')
+
+from backend.services.observations import known_place_ids
+
+
+def validate_plan_refs(room, draft, observations):
+    selected = set(draft['selected_item_ids'])
+    if not selected <= {item['id'] for item in room['items']}:
+        raise ValueError('Unknown plan item')
+    places = known_place_ids(observations)
+    for day in draft['days']:
+        for visit in day['visits']:
+            if visit['item_id'] not in selected or visit['place_ref'] not in places:
+                raise ValueError('Unknown plan visit reference')
