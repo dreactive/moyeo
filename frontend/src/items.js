@@ -1,5 +1,5 @@
 import {html,escapeHtml as e} from './ui.js';
-import {displayPlan,sameTarget} from './plan.js';
+import {displayPlan,sameTarget,hasCurrentBasis} from './plan.js';
 import {getUser} from './state.js';
 const labels = {mentioned:'언급됨',supported:'다수 지지',confirmed:'확정',pending:'새 안 · 미확정'};
 export const sourceLinks = ids => ids.map(id => `<button data-message="${e(id)}">근거 ${e(id)}</button>`).join('');
@@ -9,6 +9,7 @@ export function renderItems(snapshot) {
     const official = snapshot.confirmed_plan;
     const matchesItem = entry => entry.id === item.id && entry.item_version === item.item_version;
     const confirmed = sameTarget(plan?.confirmation_target,official?.confirmation_target)
+      && hasCurrentBasis(snapshot,plan.confirmation_target)
       && plan.selected_item_ids.includes(item.id) && official.selected_item_ids.includes(item.id)
       && plan.item_snapshots.some(matchesItem) && official.item_snapshots.some(matchesItem);
     const state = confirmed ? 'confirmed' : item.state === 'confirmed' ? 'pending' : item.state;

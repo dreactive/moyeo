@@ -176,3 +176,16 @@ S2 추가 인계: 이전 fee36dd 다음부터 work/fe 최신 HEAD까지 순서�
 
 추가 실제 모듈 메모리 smoke: Node에서 실제 frontend/src/room.js를 import하고 최소 form DOM/Fetch/EventSource 대역으로 실행했다. 초기 예산200000 폼 → 서버 예산300000/seq증가 → 첫 onopen 시 GET가 총2회로 증가함 → 종료시각19:00 저장 PATCH가 {day_end_time:"19:00"}만 포함함을 확인했다. PATCH 대기 중 입력을20:00으로 편집한 뒤 응답을 완료해도20:00이 유지되며, 다음 저장은 {day_end_time:"20:00"}만 전송했다. error 출력도 비어 있었다. 이는 실제 모듈의 폼 baseline/콜백 연결 검사이며 실제 브라우저/네트워크 관측은 아니다.
 e5e8001 docs(fe): record concurrent form SSE and confirmed color fixes
+
+## C23 초록 투영 보완 — 공통 basis 일치 (2026-11-18)
+
+부모가 재현한 범위만 수정했다. current_plan과 confirmed_plan이 같은 옛 target을 유지하는 동안 참가자/조건/근거 version이 먼저 바뀌면 기존 공식 초록 투영이 계속되는 회귀였다. 각각의 version을 올린 Node 렌더러 검사에서 변경 전 초록이 남는 실패를 직접 관측했다.
+
+- 9de7372: hasCurrentBasis는 room.versions의 participant_version, constraint_version, evidence_version만 표시 target과 비교한다. 이 공통 basis가 일치할 때만 기존 공식 confirmed_plan/표시 target/동일 항목 version을 통한 초록 투영을 허용한다.
+- 4e4c00d: 같은 basis가 오래된 표시안의 전체 확인 버튼도 비활성화한다. 서버의 확인 판정/거부 동작은 변경하지 않는다.
+- 6701f90: room.plan_revision만 새 초안 때문에 증가한 경우 기존 고정 review의 초록과 확인 가능 상태가 유지됨을 검증했다. plan_revision은 위 공통 basis 검사에 넣지 않았다.
+- 세 basis 각각에 대한 초록 제거/확인 비활성화, 과거 confirmed_plan 불변, 새 item_version의 초록 비전이 회귀를 함께 유지했다. 지지 수·확인 표를 FE에서 판정하지 않는다.
+
+최종 명령: node --test frontend/tests/*.test.js **40/40 pass**. node --check frontend/src/items.js 및 frontend/src/plan.js 통과. git diff --check 통과.
+수정 경로: frontend/src/{items,plan}.js, 해당 tests, frontend/README.md, 이 검증 기록. API/계약/Backend/AI 변경 없음. Node renderer 검증이며 새 실API/브라우저 성공 주장은 추가하지 않는다.
+S2 추가 통합 범위: 기존 c01f8c1 다음부터 work/fe 최신 HEAD까지. worktree 보존, S1 push/PR/merge 없음.
