@@ -90,10 +90,11 @@ def test_base_generation_judge_switch_and_variable_candidates(monkeypatch):
                 self.disabled = False
     model = Model()
     monkeypatch.setattr(module, "load_components", lambda *args: (model, object()))
-    monkeypatch.setattr(module, "generate_object", lambda m, t, r: {"disabled": m.disabled})
+    monkeypatch.setattr(module, "generate_object", lambda m, t, r: {"disabled": m.disabled, "view": r.get("context")})
     monkeypatch.setattr(module, "score_objects", lambda m, t, c, choices: [float(not m.disabled)] * len(choices))
     backend = module.LocalQwenBackend("base", "adapter")
-    assert backend.generate_json({}) == {"disabled": True}
+    assert backend.generate_json({"context": {"polyline": [1], "seconds": 2}}) == {
+        "disabled": True, "view": {"seconds": 2}}
     for count in (1, 2, 5):
         assert backend.score_candidates({}, [{}] * count) == [1.] * count
     def fail(*args):
