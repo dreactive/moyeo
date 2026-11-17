@@ -74,3 +74,32 @@ def test_generation_returns_only_new_tokens(monkeypatch):
             return '{"ok": true}'
     model = SimpleNamespace(device="cpu", generate=lambda **options: [[8, 9, 2, 3]])
     assert generate_object(model, Tokenizer(), {"phase": "extract", "context": {}}) == {"ok": True}
+
+
+def test_base_generation_judge_switch_and_variable_candidates(monkeypatch):
+    from contextlib import contextmanager
+    import ai.models.local_qwen as module
+    class Model:
+        disabled = False
+        @contextmanager
+        def disable_adapter(self):
+            self.disabled = True
+            try:
+                yield
+            finally:
+                self.disabled = False
+    model = Model()
+    monkeypatch.setattr(module, "load_components", lambda *args: (model, object()))
+    monkeypatch.setattr(module, "generate_object", lambda m, t, r: {"disabled": m.disabled})
+    monkeypatch.setattr(module, "score_objects", lambda m, t, c, choices: [float(not m.disabled)] * len(choices))
+    backend = module.LocalQwenBackend("base", "adapter")
+    assert backend.generate_json({}) == {"disabled": True}
+    for count in (1, 2, 5):
+        assert backend.score_candidates({}, [{}] * count) == [1.] * count
+    def fail(*args):
+        raise ValueError("invalid JSON")
+    monkeypatch.setattr(module, "generate_object", fail)
+    import pytest
+    with pytest.raises(ValueError):
+        backend.generate_json({})
+    assert not model.disabled
