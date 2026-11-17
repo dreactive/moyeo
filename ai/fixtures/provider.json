@@ -1,0 +1,525 @@
+{
+  "mode": "fixture",
+  "warning": "Synthetic route values, not real travel measurements",
+  "locations": {
+    "anchor:origin": {
+      "label": "예시 출발지",
+      "latitude": 34.76,
+      "longitude": 127.66,
+      "source_ref": "fixture:anchor"
+    },
+    "anchor:destination": {
+      "label": "예시 귀가 지점",
+      "latitude": 34.76,
+      "longitude": 127.66,
+      "source_ref": "fixture:anchor"
+    },
+    "anchor:lodging": {
+      "label": "예시 숙소",
+      "latitude": 34.75,
+      "longitude": 127.67,
+      "source_ref": "fixture:anchor"
+    },
+    "fixture:place-a": {
+      "id": "fixture:place-a",
+      "name": "가상 A식당",
+      "address": "계약 예시용 주소, 실제 업소 아님",
+      "latitude": 34.761,
+      "longitude": 127.661,
+      "provider_refs": {
+        "fixture": "place-a"
+      }
+    },
+    "fixture:place-b": {
+      "id": "fixture:place-b",
+      "name": "가상 B공원",
+      "address": "계약 예시용 공원 주소, 실제 장소 아님",
+      "latitude": 34.77,
+      "longitude": 127.68,
+      "provider_refs": {
+        "fixture": "place-b"
+      }
+    }
+  },
+  "details": {
+    "fixture:place-a": {
+      "place": {
+        "id": "fixture:place-a",
+        "name": "가상 A식당",
+        "address": "계약 예시용 주소, 실제 업소 아님",
+        "latitude": 34.761,
+        "longitude": 127.661,
+        "provider_refs": {
+          "fixture": "place-a"
+        }
+      },
+      "menus": [
+        {
+          "id": "fixture:menu-a",
+          "name": "예시 메뉴",
+          "price_krw": 10000,
+          "price_text": "10,000원",
+          "serving_basis": "fixture 1인분",
+          "evidence_id": "fixture:price-a"
+        }
+      ],
+      "opening_hours": {
+        "raw_text": "예시 매일 10:00-20:00",
+        "intervals": [
+          {
+            "day": "2026-11-21",
+            "start": "10:00",
+            "end": "20:00"
+          }
+        ],
+        "holiday_text": null,
+        "evidence_id": "fixture:hours-a"
+      },
+      "evidence": [
+        {
+          "id": "fixture:price-a",
+          "provider": "fixture",
+          "provider_record_id": "fixture:place-a",
+          "source_url": "https://example.invalid/fixture/place-a",
+          "field": "menu_price",
+          "raw_value": "10,000원",
+          "normalized_value": 10000,
+          "status": "api_observed",
+          "retrieved_at": "2026-11-18T10:05:00+09:00",
+          "provider_updated_at": null,
+          "mode": "fixture",
+          "match_status": "matched"
+        },
+        {
+          "id": "fixture:hours-a",
+          "provider": "fixture",
+          "provider_record_id": "fixture:place-a",
+          "source_url": "https://example.invalid/fixture/place-a",
+          "field": "opening_hours",
+          "raw_value": "10:00-20:00",
+          "normalized_value": [
+            {
+              "day": "2026-11-21",
+              "start": "10:00",
+              "end": "20:00"
+            }
+          ],
+          "status": "api_observed",
+          "retrieved_at": "2026-11-18T10:05:00+09:00",
+          "provider_updated_at": null,
+          "mode": "fixture",
+          "match_status": "matched"
+        }
+      ]
+    },
+    "fixture:place-b": {
+      "place": {
+        "id": "fixture:place-b",
+        "name": "가상 B공원",
+        "address": "계약 예시용 공원 주소, 실제 장소 아님",
+        "latitude": 34.77,
+        "longitude": 127.68,
+        "provider_refs": {
+          "fixture": "place-b"
+        }
+      },
+      "menus": [],
+      "opening_hours": {
+        "raw_text": "예시 매일 10:00-20:00",
+        "intervals": [
+          {
+            "day": "2026-11-21",
+            "start": "10:00",
+            "end": "20:00"
+          }
+        ],
+        "holiday_text": null,
+        "evidence_id": "fixture:hours-b"
+      },
+      "evidence": [
+        {
+          "id": "fixture:hours-b",
+          "provider": "fixture",
+          "provider_record_id": "fixture:place-b",
+          "source_url": "https://example.invalid/fixture/place-b",
+          "field": "opening_hours",
+          "raw_value": "10:00-20:00",
+          "normalized_value": [
+            {
+              "day": "2026-11-21",
+              "start": "10:00",
+              "end": "20:00"
+            }
+          ],
+          "status": "api_observed",
+          "retrieved_at": "2026-11-18T10:05:00+09:00",
+          "provider_updated_at": null,
+          "mode": "fixture",
+          "match_status": "matched"
+        }
+      ]
+    }
+  },
+  "routes": [
+    {
+      "from_ref": "anchor:origin",
+      "to_ref": "anchor:destination",
+      "distance_m": 4000,
+      "duration_seconds": 600,
+      "toll_krw": 0,
+      "polyline": [
+        {
+          "latitude": 34.76,
+          "longitude": 127.66
+        },
+        {
+          "latitude": 34.76,
+          "longitude": 127.66
+        }
+      ],
+      "evidence_id": "fixture:route:anchor:origin:anchor:destination"
+    },
+    {
+      "from_ref": "anchor:origin",
+      "to_ref": "anchor:lodging",
+      "distance_m": 4000,
+      "duration_seconds": 600,
+      "toll_krw": 0,
+      "polyline": [
+        {
+          "latitude": 34.76,
+          "longitude": 127.66
+        },
+        {
+          "latitude": 34.75,
+          "longitude": 127.67
+        }
+      ],
+      "evidence_id": "fixture:route:anchor:origin:anchor:lodging"
+    },
+    {
+      "from_ref": "anchor:origin",
+      "to_ref": "fixture:place-a",
+      "distance_m": 4000,
+      "duration_seconds": 600,
+      "toll_krw": 0,
+      "polyline": [
+        {
+          "latitude": 34.76,
+          "longitude": 127.66
+        },
+        {
+          "latitude": 34.761,
+          "longitude": 127.661
+        }
+      ],
+      "evidence_id": "fixture:route:anchor:origin:fixture:place-a"
+    },
+    {
+      "from_ref": "anchor:origin",
+      "to_ref": "fixture:place-b",
+      "distance_m": 4000,
+      "duration_seconds": 600,
+      "toll_krw": 0,
+      "polyline": [
+        {
+          "latitude": 34.76,
+          "longitude": 127.66
+        },
+        {
+          "latitude": 34.77,
+          "longitude": 127.68
+        }
+      ],
+      "evidence_id": "fixture:route:anchor:origin:fixture:place-b"
+    },
+    {
+      "from_ref": "anchor:destination",
+      "to_ref": "anchor:origin",
+      "distance_m": 4000,
+      "duration_seconds": 600,
+      "toll_krw": 0,
+      "polyline": [
+        {
+          "latitude": 34.76,
+          "longitude": 127.66
+        },
+        {
+          "latitude": 34.76,
+          "longitude": 127.66
+        }
+      ],
+      "evidence_id": "fixture:route:anchor:destination:anchor:origin"
+    },
+    {
+      "from_ref": "anchor:destination",
+      "to_ref": "anchor:lodging",
+      "distance_m": 4000,
+      "duration_seconds": 600,
+      "toll_krw": 0,
+      "polyline": [
+        {
+          "latitude": 34.76,
+          "longitude": 127.66
+        },
+        {
+          "latitude": 34.75,
+          "longitude": 127.67
+        }
+      ],
+      "evidence_id": "fixture:route:anchor:destination:anchor:lodging"
+    },
+    {
+      "from_ref": "anchor:destination",
+      "to_ref": "fixture:place-a",
+      "distance_m": 4000,
+      "duration_seconds": 600,
+      "toll_krw": 0,
+      "polyline": [
+        {
+          "latitude": 34.76,
+          "longitude": 127.66
+        },
+        {
+          "latitude": 34.761,
+          "longitude": 127.661
+        }
+      ],
+      "evidence_id": "fixture:route:anchor:destination:fixture:place-a"
+    },
+    {
+      "from_ref": "anchor:destination",
+      "to_ref": "fixture:place-b",
+      "distance_m": 4000,
+      "duration_seconds": 600,
+      "toll_krw": 0,
+      "polyline": [
+        {
+          "latitude": 34.76,
+          "longitude": 127.66
+        },
+        {
+          "latitude": 34.77,
+          "longitude": 127.68
+        }
+      ],
+      "evidence_id": "fixture:route:anchor:destination:fixture:place-b"
+    },
+    {
+      "from_ref": "anchor:lodging",
+      "to_ref": "anchor:origin",
+      "distance_m": 4000,
+      "duration_seconds": 600,
+      "toll_krw": 0,
+      "polyline": [
+        {
+          "latitude": 34.75,
+          "longitude": 127.67
+        },
+        {
+          "latitude": 34.76,
+          "longitude": 127.66
+        }
+      ],
+      "evidence_id": "fixture:route:anchor:lodging:anchor:origin"
+    },
+    {
+      "from_ref": "anchor:lodging",
+      "to_ref": "anchor:destination",
+      "distance_m": 4000,
+      "duration_seconds": 600,
+      "toll_krw": 0,
+      "polyline": [
+        {
+          "latitude": 34.75,
+          "longitude": 127.67
+        },
+        {
+          "latitude": 34.76,
+          "longitude": 127.66
+        }
+      ],
+      "evidence_id": "fixture:route:anchor:lodging:anchor:destination"
+    },
+    {
+      "from_ref": "anchor:lodging",
+      "to_ref": "fixture:place-a",
+      "distance_m": 4000,
+      "duration_seconds": 600,
+      "toll_krw": 0,
+      "polyline": [
+        {
+          "latitude": 34.75,
+          "longitude": 127.67
+        },
+        {
+          "latitude": 34.761,
+          "longitude": 127.661
+        }
+      ],
+      "evidence_id": "fixture:route:anchor:lodging:fixture:place-a"
+    },
+    {
+      "from_ref": "anchor:lodging",
+      "to_ref": "fixture:place-b",
+      "distance_m": 4000,
+      "duration_seconds": 600,
+      "toll_krw": 0,
+      "polyline": [
+        {
+          "latitude": 34.75,
+          "longitude": 127.67
+        },
+        {
+          "latitude": 34.77,
+          "longitude": 127.68
+        }
+      ],
+      "evidence_id": "fixture:route:anchor:lodging:fixture:place-b"
+    },
+    {
+      "from_ref": "fixture:place-a",
+      "to_ref": "anchor:origin",
+      "distance_m": 4000,
+      "duration_seconds": 600,
+      "toll_krw": 0,
+      "polyline": [
+        {
+          "latitude": 34.761,
+          "longitude": 127.661
+        },
+        {
+          "latitude": 34.76,
+          "longitude": 127.66
+        }
+      ],
+      "evidence_id": "fixture:route:fixture:place-a:anchor:origin"
+    },
+    {
+      "from_ref": "fixture:place-a",
+      "to_ref": "anchor:destination",
+      "distance_m": 4000,
+      "duration_seconds": 600,
+      "toll_krw": 0,
+      "polyline": [
+        {
+          "latitude": 34.761,
+          "longitude": 127.661
+        },
+        {
+          "latitude": 34.76,
+          "longitude": 127.66
+        }
+      ],
+      "evidence_id": "fixture:route:fixture:place-a:anchor:destination"
+    },
+    {
+      "from_ref": "fixture:place-a",
+      "to_ref": "anchor:lodging",
+      "distance_m": 4000,
+      "duration_seconds": 600,
+      "toll_krw": 0,
+      "polyline": [
+        {
+          "latitude": 34.761,
+          "longitude": 127.661
+        },
+        {
+          "latitude": 34.75,
+          "longitude": 127.67
+        }
+      ],
+      "evidence_id": "fixture:route:fixture:place-a:anchor:lodging"
+    },
+    {
+      "from_ref": "fixture:place-a",
+      "to_ref": "fixture:place-b",
+      "distance_m": 4000,
+      "duration_seconds": 600,
+      "toll_krw": 0,
+      "polyline": [
+        {
+          "latitude": 34.761,
+          "longitude": 127.661
+        },
+        {
+          "latitude": 34.77,
+          "longitude": 127.68
+        }
+      ],
+      "evidence_id": "fixture:route:fixture:place-a:fixture:place-b"
+    },
+    {
+      "from_ref": "fixture:place-b",
+      "to_ref": "anchor:origin",
+      "distance_m": 4000,
+      "duration_seconds": 600,
+      "toll_krw": 0,
+      "polyline": [
+        {
+          "latitude": 34.77,
+          "longitude": 127.68
+        },
+        {
+          "latitude": 34.76,
+          "longitude": 127.66
+        }
+      ],
+      "evidence_id": "fixture:route:fixture:place-b:anchor:origin"
+    },
+    {
+      "from_ref": "fixture:place-b",
+      "to_ref": "anchor:destination",
+      "distance_m": 4000,
+      "duration_seconds": 600,
+      "toll_krw": 0,
+      "polyline": [
+        {
+          "latitude": 34.77,
+          "longitude": 127.68
+        },
+        {
+          "latitude": 34.76,
+          "longitude": 127.66
+        }
+      ],
+      "evidence_id": "fixture:route:fixture:place-b:anchor:destination"
+    },
+    {
+      "from_ref": "fixture:place-b",
+      "to_ref": "anchor:lodging",
+      "distance_m": 4000,
+      "duration_seconds": 600,
+      "toll_krw": 0,
+      "polyline": [
+        {
+          "latitude": 34.77,
+          "longitude": 127.68
+        },
+        {
+          "latitude": 34.75,
+          "longitude": 127.67
+        }
+      ],
+      "evidence_id": "fixture:route:fixture:place-b:anchor:lodging"
+    },
+    {
+      "from_ref": "fixture:place-b",
+      "to_ref": "fixture:place-a",
+      "distance_m": 4000,
+      "duration_seconds": 600,
+      "toll_krw": 0,
+      "polyline": [
+        {
+          "latitude": 34.77,
+          "longitude": 127.68
+        },
+        {
+          "latitude": 34.761,
+          "longitude": 127.661
+        }
+      ],
+      "evidence_id": "fixture:route:fixture:place-b:fixture:place-a"
+    }
+  ]
+}

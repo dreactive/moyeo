@@ -63,3 +63,15 @@ async def test_registry_remembers_search_observation_without_global_state():
         {"id": "room:new", "name": "같은이름", "latitude": 35, "longitude": 127, "provider_refs": {"x": "1"}}]}})
     assert "room:new" in tools.context["places"]
     assert "room:new" not in RegisteredTools(task()).context["places"]
+
+
+async def test_explicit_fixture_routes_are_not_created_for_changed_anchors():
+    from ai.providers.fixture import fixture_route
+    context = task()
+    args = {"from_ref": "anchor:origin", "to_ref": "fixture:place-a", "departure_at": None}
+    route = fixture_route(context, args)
+    assert route["evidence_id"].startswith("fixture:")
+    assert route["duration_seconds"] == 600
+    context["config"]["origin"]["latitude"] = 37.5
+    with pytest.raises(ValueError):
+        fixture_route(context, args)
