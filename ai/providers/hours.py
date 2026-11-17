@@ -13,5 +13,11 @@ def expand_hours(hours, days):
                 if not all(re.fullmatch(r"\d{2}:\d{2}", span.get(k) or "") for k in ("start", "end")):
                     continue
                 if span["start"] < span["end"]:
-                    intervals.append(dict(day=day, start=span["start"], end=span["end"]))
+                    cursor = span["start"]
+                    for pause in sorted(span.get("breakHours") or [], key=lambda p: p["start"]):
+                        if cursor < pause["start"] < span["end"]:
+                            intervals.append(dict(day=day, start=cursor, end=pause["start"]))
+                        cursor = max(cursor, pause["end"])
+                    if cursor < span["end"]:
+                        intervals.append(dict(day=day, start=cursor, end=span["end"]))
     return intervals

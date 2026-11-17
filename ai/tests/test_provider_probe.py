@@ -22,3 +22,12 @@ def test_weekly_hours_expand_only_for_known_visit_days():
     hours = [{"schedule": [{"day": "토", "start": "10:00", "end": "20:00"}]}]
     assert expand_hours(hours, ["2026-11-21", "2026-11-22"]) == [
         {"day": "2026-11-21", "start": "10:00", "end": "20:00"}]
+
+
+def test_hours_breaks_are_not_open_intervals():
+    from ai.providers.hours import expand_hours
+    hours = [{"schedule": [{"day": "매일", "start": "10:00", "end": "21:00",
+                           "breakHours": [{"start": "15:00", "end": "17:00"}]}]}]
+    assert expand_hours(hours, ["2026-11-21"]) == [
+        {"day": "2026-11-21", "start": "10:00", "end": "15:00"},
+        {"day": "2026-11-21", "start": "17:00", "end": "21:00"}]
