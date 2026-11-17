@@ -33,12 +33,12 @@ F1-F5 FE 구현 및 fixture 경계 검증 완료. 실제 인증/SSE/API/SDK/Qwen
 
 - Node v24.22.1.
 - workdir 위 workspace에서 node --test frontend/tests/*.test.js: **23 tests, 23 pass, 0 fail** (최종 기록 시).
-- frontend 작업 디렉터리에서 npm test도 같은 테스트를 실행한다.
+- frontend 작업 디렉터리에서 node --test tests/*.test.js: 23/23 pass. npm.cmd는 환경에 없어 실행 실패했다. package.json scripts는 선택 사항이며 의존성 설치는 필요 없다.
 - frontend/src/*.js 및 frontend/server.js 전체 node --check: exit 0.
 - 정적 HTTP smoke: /, /dev, styles.css, 모든 src/*.js, fixtures/*.json 및 /api/auth/me 총 **25 경로 통과**. 정적 자산200, JS MIME text/javascript, API404.
 - live request 실패503 전파 / explicit mode=fixture만 fixture 선택: api.test.js.
 - POST/SSE 중복 메시지 1개, 중복도 room seq 진행, 오래된 refresh/action 응답 거부, 닫힌/다른 방 구독 미수신: state/events tests.
-- 모든 20개 기록 시나리오의 전체 공동 렌더러, review/active_target 동일성: display.test.js.
+- 모든 21개 기록 시나리오의 전체 공동 렌더러, review/active_target 동일성: display.test.js.
 - 3/4 미확정 → 같은 target 4/4, revision2 확인 보존, stale target 거부, 본인 철회가 타인 표를 지우지 않음: fixture.test.js.
 - 새 초안에 없어도 검토안에 있는 개인 장소 유지, 개인 지도 변경이 전체 adapter를 바꾸지 않음: state/display tests.
 - 총액null/시가/메뉴미등록/공유단위/공급자기준일null, 예산 allowance120000/계획후50000: display.test.js.
@@ -141,3 +141,6 @@ d6645b0 fix(fe): clear stale trace output before a new authenticated lookup
 83476b9 test(fe): validate optional SDK adapter inputs without claiming live maps
 f0f167a refactor(fe): organize module imports and normalize final file endings
 786d8f6 fix(fe): keep other confirmations when fixture user withdraws
+
+38ab4c0 docs(fe): record F1-F5 verification evidence and integration handoff
+마감 결정: 사용자가 S2 통합을 지정했으므로 work/fe와 worktree를 그대로 보존한다. S1 push/PR/merge 없음.

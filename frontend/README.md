@@ -1,11 +1,11 @@
 # Frontend
 
-계약 v0.2, HTML/CSS/ES modules. 의존성 설치와 빌드 과정이 없습니다. Node 24 및 JSON module import를 지원하는 최신 브라우저를 기준으로 합니다.
+계약 v0.2, HTML/CSS/ES modules. npm이 없는 환경에서도 Node 직접 실행으로 동작합니다. 의존성 설치와 빌드 과정이 없습니다. Node 24 및 JSON module import를 지원하는 최신 브라우저를 기준으로 합니다.
 
 ```powershell
 cd frontend
-npm start
-npm test
+node server.js
+node --test tests/*.test.js
 ```
 
 - fixture: [사용자 화면](http://localhost:5173/?mode=fixture), [개발자 trace](http://localhost:5173/dev?mode=fixture).
