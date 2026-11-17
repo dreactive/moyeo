@@ -1,5 +1,25 @@
 """Narrow, source-preserving assistance; never a claim of model extraction quality."""
 import re
+from ai.questions import question
+
+
+def explicit_support(task, items):
+    claims, questions = [], []
+    for message in task["recent_messages"][-20:]:
+        text = message["text"]
+        if any(w in text for w in ("다들", "모두", "했대")) or not any(w in text for w in ("가자", "좋아", "찬성", "반대", "철회", "싫어")):
+            continue
+        stance = "withdraw" if "철회" in text else "oppose" if "반대" in text or "싫어" in text else "support"
+        matches = [i for i in items if i["title"].split()[-1] in text]
+        if len(matches) == 1:
+            item = matches[0]
+            claims.append(dict(item_id=item["id"], item_version=item["item_version"], author_id=message["author_id"],
+                               stance=stance, source_message_id=message["id"]))
+        else:
+            missing = question("support_target", None, "어느 항목에 대한 의견인가요?", message["author_id"])
+            missing["id"] = f"question:support_target:{stance}:" + message["id"]
+            questions.append(missing)
+    return claims, questions
 
 
 def explicit_constraints(task):

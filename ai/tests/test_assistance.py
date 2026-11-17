@@ -19,3 +19,14 @@ def test_explicit_return_time_keeps_owner_and_does_not_relax_other_constraint():
     proposal = explicit_constraints(value)[0]
     assert proposal["key"] == "return_by" and proposal["value"] == "16:00"
     assert proposal["owner_id"] == "u1" and proposal["replaces_constraint_id"] is None
+
+
+def test_support_assistance_never_creates_proxy_or_ambiguous_votes():
+    from ai.assistance import explicit_support
+    value = task()
+    value["recent_messages"] += [dict(id="proxy", author_id="u1", text="다들 B공원 찬성했대"),
+                                 dict(id="unclear", author_id="u2", text="좋아")]
+    claims, questions = explicit_support(value, value["items"])
+    assert any(c["author_id"] == "u3" and c["source_message_id"] == "m3" for c in claims)
+    assert not any(c["source_message_id"] in ("proxy", "unclear") for c in claims)
+    assert questions[0]["id"] == "question:support_target:support:unclear"
