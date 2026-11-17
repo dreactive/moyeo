@@ -22,6 +22,8 @@ export function drawKakao(maps,element,points,lines = []) {
     new maps.Marker({map,position,title:point.name ?? point.label});
     bounds.extend(position);
   });
+  lines.forEach((line,index) => new maps.Polyline({map,path:line.map(latLng),strokeWeight:4,strokeColor:['#24745b','#b97720'][index % 2]}));
   map.setBounds(bounds);
   return {map,latLng};
 }
+
