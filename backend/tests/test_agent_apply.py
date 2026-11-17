@@ -228,3 +228,13 @@ def test_new_alternative_evidence_preserves_existing_review(room, agent_result):
     assert room['review_plan'] == before
     assert len(room['confirmations']) == 1
     assert room['versions']['evidence_version'] == 1
+
+
+def test_question_identity_resolves_temporary_target_consistently():
+    from backend.domain import resolve_refs
+    question = {'id':'question:menu_selection:client:new','field':'menu_selection','target_ref':'client:new','related_item_ids':['client:new']}
+    resolved = resolve_refs(question, {'client:new':'item-real'})
+    assert resolved['id'] == 'question:menu_selection:item-real'
+    assert resolved['target_ref'] == 'item-real'
+    question['id'] = 'opaque-custom-question'
+    assert resolve_refs(question, {'client:new':'item-real'})['id'] == 'opaque-custom-question'

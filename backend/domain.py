@@ -48,7 +48,11 @@ REF_FIELDS = {'item_id','target_ref','selected_item_ids','related_item_ids','aff
 
 def resolve_refs(value, refs, field=None):
     if isinstance(value, dict):
-        return {key:resolve_refs(item, refs, key) for key,item in value.items()}
+        resolved = {key:resolve_refs(item, refs, key) for key,item in value.items()}
+        target = value.get('target_ref')
+        if isinstance(target, str) and target in refs and value.get('id') == f"question:{value.get('field')}:{target}":
+            resolved['id'] = f"question:{value['field']}:{refs[target]}"
+        return resolved
     if isinstance(value, list):
         return [resolve_refs(item, refs, field) for item in value]
     return refs.get(value, value) if isinstance(value, str) and field in REF_FIELDS else value
