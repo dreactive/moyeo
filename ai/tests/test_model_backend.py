@@ -42,3 +42,11 @@ def test_local_model_missing_paths_fail_without_download():
     from ai.models.qwen_loader import load_components
     with pytest.raises(ValueError, match='local'):
         load_components('missing-base', 'missing-adapter')
+
+
+def test_model_json_parser_does_not_accept_reasoning_as_data():
+    import pytest
+    from ai.models.qwen_generation import parse_object
+    assert parse_object('```json\n{"candidates": []}\n```') == {"candidates": []}
+    with pytest.raises(ValueError):
+        parse_object('I think {"price": 10000}')
