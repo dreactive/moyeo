@@ -39,6 +39,6 @@ index.html의 meta[name="kakao-map-app-key"] content에 **공개 JavaScript 키*
 
 ## S2 인계
 
-frontend/**와 docs/verification/frontend.md만 가져옵니다. Backend/AI/공용 계약/루트 설정 변경은 없습니다. 동결 DTO가 원본이며 과거/검토 항목명은 item_snapshots를 씁니다. 초록은 표시안과 confirmed_plan의 target 및 item_version이 일치할 때만 보입니다. 불일치 시 중립 ‘새 안 · 미확정’이고 FE가 지지 수로 색상을 계산하지 않습니다.
+frontend/**와 docs/verification/frontend.md만 가져옵니다. Backend/AI/공용 계약/루트 설정 변경은 없습니다. 동결 DTO가 원본이며 과거/검토 항목명은 item_snapshots를 씁니다. 초록은 표시안과 confirmed_plan의 target 및 item_version이 일치하고 현재 방의 참가자·조건·근거 version도 그 target과 같을 때만 보입니다. 새 초안의 plan_revision만 증가하면 고정된 검토안은 유지합니다. 불일치 시 중립 ‘새 안 · 미확정’이고 FE가 지지 수로 색상을 계산하지 않습니다.
 
 [검증·커밋 기록](../docs/verification/frontend.md)의 G3/G4 미검증 항목을 이어서 확인합니다. 최종 develop push와 master PR은 S2 담당입니다.
