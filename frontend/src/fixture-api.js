@@ -79,5 +79,12 @@ export function replayScenario(key) {
 
 
 function applyFixtureAnswer(question) {
+  const value = question.answer;
+  const visit = fixtureRoom.current_plan?.days.flatMap(day => day.visits).find(visit => visit.item_id === question.target_ref);
+  if (question.field === 'visit_duration' && visit) visit.stay_minutes = value.stay_minutes;
+  if (question.field === 'menu_selection' && visit) { visit.selected_menu_ids = [value.menu_id]; visit.assumptions = [JSON.stringify(value)]; }
+  if (question.field === 'constraint_value') fixtureRoom.constraints.find(item => item.id === question.target_ref).value = value.value;
+  fixtureRoom.agent_status = {run_id:'run-fixture-answer',state:'needs_input',label:'fixture 응답 저장 · 실제 재계획은 live에서 검증'};
   if (['origin','destination','lodging'].includes(question.field)) fixtureRoom.config[question.field] = question.answer;
 }
+
