@@ -11,6 +11,7 @@ import {requestJson,getDataMode} from './api.js';
 import {applySnapshot,subscribeState,setUser} from './state.js';
 import {showError} from './ui.js';
 export async function startRoomApp() {
+  bindAccount();
   html('mode', getDataMode() === 'fixture' ? '개발용 fixture · 실제 API 조회 아님' : 'LIVE · Backend 연결');
   subscribeState(snapshot => snapshot && renderRoom(snapshot));
   const user = await requestJson('/api/auth/me');
@@ -42,4 +43,20 @@ export function enterRoom(snapshot) {
 import {renderItems,renderConstraints,renderQuestions,renderConflicts} from './items.js';
 import {renderPlan,displayPlan} from './plan.js';
 import {renderCost} from './cost.js';
+
+function bindForm(id, task) {
+  document.getElementById(id).onsubmit = event => {
+    event.preventDefault();
+    run(() => task(Object.fromEntries(new FormData(event.target)),event.submitter?.value,event.target));
+  };
+}
+function showUser(user) { setUser(user); html('session',e(user?.name ?? '로그인 전')); }
+function bindAccount() {
+  bindForm('auth',async (data, action) => {
+    const body = action === 'register' ? data : {email:data.email,password:data.password};
+    showUser(await requestJson('/api/auth/' + action,{method:'POST',body}));
+    document.querySelector('#auth [name=password]').value = '';
+  });
+  bindForm('join',async body => enterRoom(await requestJson('/api/rooms/join',{method:'POST',body})));
+}
 
