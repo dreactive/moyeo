@@ -53,3 +53,15 @@ def ready_to_confirm(room, plan):
     if any(conflict['blocking'] and conflict['status'] == 'open' for conflict in room['conflicts']):
         return False
     return not any(condition['kind'] == 'hard' and condition['status'] == 'needs_owner_confirmation' for condition in room['constraints'])
+
+
+def finalize_plan(room):
+    plan = room['review_plan']
+    members = {member['user_id'] for member in room['members']}
+    voters = {vote['user_id'] for vote in room['confirmations'] if vote['stance'] == 'confirm' and vote['target'] == room['active_target']}
+    if plan is None or voters != members or not ready_to_confirm(room, plan):
+        return False
+    if room['confirmed_plan'] == plan:
+        return False
+    room['confirmed_plan'] = deepcopy(plan)
+    return True

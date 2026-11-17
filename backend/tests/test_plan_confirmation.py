@@ -44,3 +44,18 @@ def test_blocking_or_unchecked_requirements_prevent_green(room):
     plan['blocking_conflict_ids'] = []
     room['constraints'] = [{'kind':'hard','status':'needs_owner_confirmation'}]
     assert not ready_to_confirm(room, plan)
+
+
+def test_four_members_same_target_required(room):
+    from backend.services.planning import record_confirmation, finalize_plan
+    room['current_plan']['validation'] = 'ready'
+    room['constraints'] = []
+    target = room['current_plan']['confirmation_target']
+    for user_id in ('u1','u2','u3'):
+        record_confirmation(room, user_id, target, 'confirm')
+    assert not finalize_plan(room)
+    record_confirmation(room, 'u4', target, 'confirm')
+    assert finalize_plan(room)
+    assert room['confirmed_plan'] == room['review_plan']
+    room['current_plan']['days'] = []
+    assert room['confirmed_plan']['days']
