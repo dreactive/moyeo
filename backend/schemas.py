@@ -86,3 +86,24 @@ class Register(Request):
     name: str
     email: str
     password: str
+
+class AnchorAnswer(Request):
+    label: str
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    source_ref: str | None = None
+    address: str | None = None
+
+
+class MenuAnswer(Request):
+    menu_id: str
+    quantity: float = Field(gt=0)
+    scope: Literal['shared','per_person']
+
+
+class StayAnswer(Request):
+    stay_minutes: int = Field(gt=0)
+
+
+class SupportAnswer(Request):
+    item_id: str
