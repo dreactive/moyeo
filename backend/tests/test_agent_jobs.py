@@ -98,3 +98,35 @@ def test_dequeued_task_refreshes_latest_messages_and_versions(room):
     refreshed = jobs.refresh_task(task)
     assert refreshed['recent_messages'][-1]['id'] == 'new'
     assert refreshed['base_versions'] == room['versions']
+
+
+def test_stale_running_result_requeues_latest_input(room, agent_result):
+    import asyncio
+    from copy import deepcopy
+    from backend.services.agent_jobs import AgentJobs
+    from backend.db import Database
+    async def scenario():
+        db = Database(':memory:')
+        db.put('room:room-fixture', room)
+        class Port:
+            calls = 0
+            async def run(self, task, emit):
+                self.calls += 1
+                if self.calls == 1:
+                    updated = db.get('room:room-fixture')
+                    updated['versions']['constraint_version'] += 1
+                    updated['messages'].append(dict(updated['messages'][-1], id='late', text='return by 16:00'))
+                    db.put('room:room-fixture', updated)
+                else:
+                    assert task['recent_messages'][-1]['id'] == 'late'
+                result = deepcopy(agent_result)
+                result.update(run_id=task['run_id'], base_versions=task['base_versions'], plan_draft=None, observations=[], questions=[])
+                return result
+        port = Port()
+        jobs = AgentJobs(db, port)
+        worker = asyncio.create_task(jobs.work())
+        await jobs.enqueue('room-fixture','replan')
+        await asyncio.wait_for(jobs.queue.join(), 2)
+        worker.cancel()
+        assert port.calls == 2
+    asyncio.run(scenario())
