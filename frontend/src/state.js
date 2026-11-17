@@ -24,3 +24,7 @@ export function appendMessage(message) {
   listeners.forEach(listener => listener(snapshot));
 }
 
+export function applyRoomResponse(next,expectedRoom) {
+  if (next.room_id !== expectedRoom || snapshot?.room_id !== expectedRoom || next.seq < snapshot.seq) return;
+  applySnapshot(next);
+}

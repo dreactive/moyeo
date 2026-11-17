@@ -22,14 +22,14 @@ export async function startRoomApp() {
   if (savedRoom) enterRoom(await requestJson('/api/rooms/' + encodeURIComponent(savedRoom)));
 }
 startRoomApp().catch(showError);
-import {getSnapshot,appendMessage} from './state.js';
+import {getSnapshot,appendMessage,applyRoomResponse} from './state.js';
 import {openRoomEvents} from './events.js';
 import {run} from './ui.js';
 let closeEvents = () => {};
 let roomId = null;
 export async function refreshRoom(id = roomId) {
   const snapshot = await requestJson('/api/rooms/' + encodeURIComponent(id));
-  if (id === roomId && snapshot.seq >= (getSnapshot()?.seq ?? 0)) applySnapshot(snapshot);
+  if (id === roomId) applyRoomResponse(snapshot,id);
 }
 export function enterRoom(snapshot) {
   closeEvents();
@@ -87,8 +87,9 @@ function bindFixtureControls() {
 
 async function roomAction(path,body,method = 'POST') {
   if (!roomId) throw new Error('먼저 방에 입장하세요.');
-  const result = await requestJson('/api/rooms/' + encodeURIComponent(roomId) + '/' + path,{method,body});
-  if (result.room_id) applySnapshot(result); else await refreshRoom();
+  const id = roomId;
+  const result = await requestJson('/api/rooms/' + encodeURIComponent(id) + '/' + path,{method,body});
+  if (result.room_id) applyRoomResponse(result,id); else if (id === roomId) await refreshRoom(id);
 }
 function bindPlanActions() {
   document.addEventListener('click',event => {
@@ -166,3 +167,4 @@ document.addEventListener('click',event => {
   const button = event.target.closest('[data-place]');
   if (button) run(() => selectPlace(roomId,button.dataset.place));
 });
+
