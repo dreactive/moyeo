@@ -18,3 +18,10 @@ test('snapshot subscribers stop receiving updates after unsubscribe', () => {
   state.applySnapshot({current_plan:null});
   assert.equal(calls, 1);
 });
+test('POST and SSE copies of a person message appear only once', () => {
+  state.applySnapshot({room_id:'r',current_plan:null,messages:[]});
+  state.appendMessage({id:'m',room_id:'r',text:'hi'});
+  state.appendMessage({id:'m',room_id:'r',text:'hi'});
+  state.appendMessage({id:'other',room_id:'different'});
+  assert.equal(state.getSnapshot().messages.length,1);
+});

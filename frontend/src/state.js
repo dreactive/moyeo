@@ -18,3 +18,8 @@ export const getUser = () => user;
 export const setUser = value => { user = value; };
 
 
+export function appendMessage(message) {
+  if (snapshot?.room_id !== message.room_id || snapshot.messages.some(old => old.id === message.id)) return;
+  snapshot = {...snapshot,messages:[...snapshot.messages,message]};
+  listeners.forEach(listener => listener(snapshot));
+}
