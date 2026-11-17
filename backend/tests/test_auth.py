@@ -23,3 +23,10 @@ def test_sessions_are_opaque_and_resolve_user():
     token = issue_session(db, user['id'])
     assert user['id'] not in token
     assert require_user(db, token) == user
+
+
+def test_me_requires_cookie():
+    from backend.app import create_app
+    from fastapi.testclient import TestClient
+    with TestClient(create_app(database_path=':memory:')) as client:
+        assert client.get('/api/auth/me').status_code == 401

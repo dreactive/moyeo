@@ -16,7 +16,10 @@ def create_app(agent_port: AgentPort | None = None, *, database_path=None) -> Fa
         finally:
             await app.state.agent.aclose()
             app.state.db.close()
-    return FastAPI(title="Travel Agent", lifespan=lifespan)
+    app = FastAPI(title="Travel Agent", lifespan=lifespan)
+    from backend.routes.auth import router
+    app.include_router(router)
+    return app
 
 
 app = create_app()
