@@ -21,7 +21,7 @@ import asyncio
 async def room_event_stream(db, room_id, after_seq):
     while True:
         for event in db.get('events:' + room_id) or []:
-            if event['seq'] > after_seq:
-                after_seq = event['seq']
+            if event['data']['seq'] > after_seq:
+                after_seq = event['data']['seq']
                 yield event_frame(event)
         await asyncio.sleep(.15)

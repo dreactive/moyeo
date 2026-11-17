@@ -15,7 +15,7 @@ def test_stream_replays_only_after_cursor():
     from backend.db import Database
     async def scenario():
         db = Database(':memory:')
-        db.put('events:r', [{'seq':1,'event':'room.updated','data':{}},{'seq':2,'event':'agent.status','data':{}}])
+        db.put('events:r', [{'event':'room.updated','data':{'seq':1}},{'event':'agent.status','data':{'seq':2}}])
         stream = room_event_stream(db, 'r', 1)
         assert (await anext(stream)).startswith('id: 2\n')
         await stream.aclose()
