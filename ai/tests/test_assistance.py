@@ -50,3 +50,14 @@ def test_first_named_place_mention_has_consistent_client_ref_and_support():
     output = assist_extraction({}, value)
     assert output["item_proposals"][0]["title"] == "오동도"
     assert output["item_proposals"][0]["client_ref"] == output["support_observations"][0]["item_id"] == "client:new"
+
+
+def test_question_form_mention_creates_item_but_never_support():
+    from ai.assistance import assist_extraction
+    value = task()
+    value["recent_messages"] = [dict(id="mention", author_id="u1", text="가상 A식당?")]
+    assert assist_extraction({}, value)["support_observations"] == []
+    value["items"] = []
+    output = assist_extraction({}, value)
+    assert output["item_proposals"][0]["title"] == "가상 A식당"
+    assert output["support_observations"] == []

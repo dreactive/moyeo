@@ -10,9 +10,10 @@ def explicit_items(task):
     for message in task["recent_messages"][-20:]:
         text = message["text"].strip().rstrip(".!?")
         match = re.fullmatch(r"(.+?)\s*(?:가자|어때|좋아|찬성)", text)
-        if not match or any(w in text for w in ("다들", "모두", "말고", "대신")):
+        title = match[1] if match else text if message["text"].strip().endswith("?") else None
+        if not title or any(w in text for w in ("다들", "모두", "말고", "대신")):
             continue
-        title = re.sub(r"^(나는|난|우리|저는)\s+", "", match[1]).strip()
+        title = re.sub(r"^(나는|난|우리|저는)\s+", "", title).strip()
         if any(t in title for t in existing) or not any(w in title for w in (
             "식당", "공원", "카페", "박물관", "오동도", "케이블카", "아쿠아플라넷", "루지", "게장", "해장국", "전망대", "해수욕장")):
             continue
