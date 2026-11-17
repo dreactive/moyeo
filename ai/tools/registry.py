@@ -32,9 +32,11 @@ class RegisteredTools:
                           _base_versions=self.context.get("base_versions", {}))
             return build_itinerary(**arguments, config=config)
         if name == "search_places":
-            places = [p for p in self.context["places"].values() if "name" in p
+            from ai.providers.fixture import catalog
+            known = dict(catalog()["locations"], **self.context["places"])
+            places = [p for p in known.values() if "name" in p
                       and arguments["query"] in p["name"]]
-            return {"places": deepcopy(places)}
+            return {"places": deepcopy(places) if arguments["region"] == "여수" else []}
         if name == "get_car_route":
             try:
                 return observed_route(self.context, arguments)
@@ -46,6 +48,10 @@ class RegisteredTools:
         if name == "get_place_details":
             ref = arguments["place_ref"]
             if ref not in self.context["details"]:
-                raise ValueError("Place details not observed in this room")
+                from ai.providers.fixture import catalog
+                known = catalog()["details"].get(ref)
+                if not known or any(known["place"][k] != self.context["places"][ref][k] for k in ("latitude", "longitude")):
+                    raise ValueError("Place details not observed in this room/provider")
+                return deepcopy(known)
             return deepcopy(self.context["details"][ref])
         raise ValueError("Unregistered tool")
