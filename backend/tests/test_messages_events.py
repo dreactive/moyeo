@@ -26,3 +26,15 @@ def test_message_saved_before_blocked_agent():
         sent = client.post(path, json={'text':'hello'})
         assert sent.status_code == 201
         assert client.get(path).json()['messages'] == [sent.json()]
+
+
+def test_concurrent_messages_are_not_lost():
+    from concurrent.futures import ThreadPoolExecutor
+    from backend.services.messages import save_message
+    from backend.db import Database
+    db = Database(':memory:')
+    db.put('room:r', {'messages':[], 'seq':0})
+    with ThreadPoolExecutor(4) as pool:
+        messages = list(pool.map(lambda i: save_message(db, 'r', str(i), 'hello'), range(12)))
+    assert len(db.get('room:r')['messages']) == 12
+    assert sorted(message['seq'] for message in messages) == list(range(1,13))

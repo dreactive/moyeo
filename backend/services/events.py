@@ -1,6 +1,8 @@
 import json
+from backend.db import serialized
 
 
+@serialized
 def publish_event(db, room_id, event, payload):
     room = db.get('room:' + room_id)
     room['seq'] += 1
