@@ -13,6 +13,7 @@ async def test_replay_reports_modes_and_unexecuted_models_honestly():
     report = await replay_case(case, "fake", "fixture")
     assert report["passed"] and report["model_mode"] == "fake" and report["provider_mode"] == "fixture"
     assert report["metrics"]["tool_calls"] == 0
+    assert report["events"] and report["events"][0]["run_id"] == "eval:chat"
     missing = await replay_case(case, "local_qwen", "live", config={"base_model_path": "missing", "adapter_path": "missing"})
     assert missing["passed"] is False and missing["status"] == "not_run" and missing["limitations"]
 
