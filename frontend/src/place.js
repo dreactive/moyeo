@@ -8,3 +8,13 @@ export function renderPlace(details) {
   <h3>영업시간 원문</h3><p>${e(details.opening_hours?.raw_text ?? '미확인')} / 휴일 ${e(details.opening_hours?.holiday_text ?? '미확인')}</p>
   ${details.evidence.map(item => `<div class="card"><strong>${e(item.provider)} · ${e(item.field)} · ${e(item.status)} · ${e(item.mode)} · ${e(item.match_status)}</strong><p>원문 ${e(JSON.stringify(item.raw_value))}</p><p>조회 ${e(item.retrieved_at)} / 공급자 기준일 ${e(item.provider_updated_at ?? '미확인')}</p><a href="${e(safeUrl(item.source_url))}" target="_blank" rel="noopener noreferrer">출처</a></div>`).join('')}`);
 }
+import {requestJson} from './api.js';
+import {setSelectedPlace,getSelectedPlace,getSnapshot} from './state.js';
+import {renderPlaceMap} from './map.js';
+export async function selectPlace(roomId,ref) {
+  setSelectedPlace(ref);
+  const details = await requestJson('/api/rooms/' + encodeURIComponent(roomId) + '/places/' + encodeURIComponent(ref));
+  if (getSnapshot()?.room_id !== roomId || getSelectedPlace() !== ref) return;
+  if (!details) throw new Error('장소 조회 결과가 없습니다.');
+  renderPlace(details); renderPlaceMap(details.place);
+}

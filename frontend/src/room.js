@@ -1,7 +1,7 @@
 import {html,escapeHtml as e} from './ui.js';
 export function renderRoom(snapshot) {
   renderItems(snapshot); renderConstraints(snapshot); renderQuestions(snapshot); renderConflicts(snapshot);
-  renderPlan(snapshot); renderCost(displayPlan(snapshot)?.cost);
+  renderPlan(snapshot); renderCost(displayPlan(snapshot)?.cost); run(() => renderMaps(snapshot));
   html('messages',snapshot.messages.map(message => `<li id="message-${e(message.id)}"><strong>${e(snapshot.members.find(member => member.user_id === message.author_id)?.name ?? message.author_id)}</strong><p>${e(message.text)}</p><small>${e(message.created_at)}</small></li>`).join(''));
   html('room-heading', e(snapshot.title) + ' · 초대 ' + e(snapshot.invite_code));
   html('members', snapshot.members.map(member => e(member.name)).join(' · '));
@@ -11,6 +11,7 @@ import {requestJson,getDataMode} from './api.js';
 import {applySnapshot,subscribeState,setUser} from './state.js';
 import {showError} from './ui.js';
 export async function startRoomApp() {
+  initMaps({routeElement:document.getElementById('route-map'),placeElement:document.getElementById('place-map'),appKey:document.querySelector('meta[name="kakao-map-app-key"]').content});
   bindAccount(); bindSessionActions(); bindFixtureControls(); bindPlanActions(); bindDecisionActions(); bindTripInput(); bindHistory();
   html('mode', getDataMode() === 'fixture' ? '개발용 fixture · 실제 API 조회 아님' : 'LIVE · Backend 연결');
   subscribeState(snapshot => snapshot && renderRoom(snapshot));
@@ -148,3 +149,20 @@ function bindHistory() {
   });
 }
 
+import {initMaps,renderRouteMap,renderPlaceMap} from './map.js';
+import {selectPlace,renderPlace} from './place.js';
+import {getSelectedPlace} from './state.js';
+async function renderMaps(snapshot) {
+  const plan = displayPlan(snapshot);
+  const refs = [...new Set(plan?.days.flatMap(day => day.visits.map(visit => visit.place_ref)) ?? [])];
+  const details = await Promise.all(refs.map(ref => requestJson('/api/rooms/' + encodeURIComponent(snapshot.room_id) + '/places/' + encodeURIComponent(ref))));
+  if (displayPlan(getSnapshot()) !== plan) return;
+  renderRouteMap(plan,new Map(details.filter(Boolean).map(detail => [detail.place.id,detail.place])),snapshot.config);
+  if (getSelectedPlace()) await selectPlace(snapshot.room_id,getSelectedPlace());
+  else { renderPlace(null); renderPlaceMap(null); }
+}
+
+document.addEventListener('click',event => {
+  const button = event.target.closest('[data-place]');
+  if (button) run(() => selectPlace(roomId,button.dataset.place));
+});
