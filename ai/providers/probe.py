@@ -3,6 +3,19 @@ from datetime import datetime, timezone
 import httpx
 from ai.providers.apify import fetch_rows, normalize_place
 from ai.settings import load_settings
+import argparse
+import asyncio
+import json
+from pathlib import Path
+
+
+async def main(args):
+    report = await probe_place_data(args.provider, args.region,
+                                    load_settings({"env_file": args.env_file}), args.dates)
+    path = Path(args.output)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(json.dumps({k: v for k, v in report.items() if k != "details"}, ensure_ascii=True))
 
 
 async def probe_place_data(provider, region, settings=None, days=None):
@@ -29,3 +42,13 @@ def summarize(provider, region, rows):
                 priced_menu_count=sum(r.get("price_krw") is not None for r in valid),
                 usable_hours_count=sum(bool(r.get("intervals")) for r in valid),
                 source_refs=[], limitations=[])
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--provider", required=True)
+    parser.add_argument("--region", required=True)
+    parser.add_argument("--output", required=True)
+    parser.add_argument("--env-file")
+    parser.add_argument("--dates", nargs="*", default=[])
+    asyncio.run(main(parser.parse_args()))
