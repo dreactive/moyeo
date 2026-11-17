@@ -36,4 +36,8 @@ def build_cost_inputs(context):
     lines.append(cost_line("car:extras", None, assumption="유류/주차 비용 확인 필요"))
     users = [m["user_id"] for m in context["members"]]
     budgets = {u: context["config"].get("per_person_budget_krw") for u in users}
+    for constraint in context["constraints"]:
+        if (constraint["key"] in ("budget", "budget_krw") and constraint.get("status") == "confirmed"
+                and constraint["kind"] == "hard" and constraint["owner_id"] in budgets):
+            budgets[constraint["owner_id"]] = constraint["value"]
     return dict(lines=lines, member_ids=users, budget_by_user=budgets), questions

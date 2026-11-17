@@ -18,3 +18,12 @@ def test_unpriced_shared_menu_requires_input():
     meal = next(l for l in arguments["lines"] if l["category"] == "meal")
     assert meal["unit_price_krw"] is None
     assert any(q["field"] == "menu_selection" and q["target_ref"] == "item-a" for q in questions)
+
+
+def test_confirmed_personal_budget_overrides_default_only_for_owner():
+    from ai.cost_inputs import build_cost_inputs
+    value = task()
+    value["constraints"] = [dict(owner_id="u1", key="budget_krw", value=150000, kind="hard", status="confirmed"),
+                            dict(owner_id="u2", key="budget_krw", value=999, kind="hard", status="needs_owner_confirmation")]
+    args, _ = build_cost_inputs(value)
+    assert args["budget_by_user"]["u1"] == 150000 and args["budget_by_user"]["u2"] == 200000
