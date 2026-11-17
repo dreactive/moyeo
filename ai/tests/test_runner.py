@@ -20,7 +20,7 @@ async def test_observation_changes_next_selected_action():
             ref = request["context"]["observations"][0]["result"]["places"][0]["id"]
             return {"candidates": [tool("get_place_details", {"place_ref": ref})]}
         def score_candidates(self, context, candidates):
-            return [1.]
+            return [1.] + [0.] * (len(candidates) - 1)
     value = task()
     value["observations"] = [{"tool_name": "search_places", "arguments": {}, "observed_at": "2026-11-18T00:00:00+09:00",
                               "result": {"places": [{"id": "new-a", "name": "A"}]}, "source_refs": []}]
@@ -37,9 +37,10 @@ async def test_twenty_action_limit_does_not_fake_completion():
     from ai.models.fake_actions import tool
     class Model:
         def generate_json(self, request):
-            return {"candidates": [tool("search_places", {"query": "A", "region": "여수", "category": None})]}
+            query = "A" + str(len(request["context"]["observations"]))
+            return {"candidates": [tool("search_places", {"query": query, "region": "여수", "category": None})]}
         def score_candidates(self, context, candidates):
-            return [1.]
+            return [1.] + [0.] * (len(candidates) - 1)
     class Tools:
         calls = 0
         async def execute(self, name, arguments):
@@ -124,5 +125,16 @@ async def test_action_model_receives_code_derived_calculations_and_route_time():
             assert meal["unit_price_krw"] == 10000
             return {"candidates": [dict(action="ask", reason="test", tool_name=None, arguments={}, source_message_ids=[], source_refs=[])]}
         def score_candidates(self, context, candidates):
-            return [1.]
+            return [1.] + [0.] * (len(candidates) - 1)
     assert (await choose_action(task(), Model(), None, 1))["action"] == "ask"
+
+
+async def test_judge_can_select_later_day_instead_of_first_pipeline_step():
+    from ai.runner import choose_action
+    class Model:
+        def generate_json(self, request):
+            return {"candidates": []}
+        def score_candidates(self, context, candidates):
+            return [10. if c["arguments"].get("from_ref") == "anchor:lodging" else 0. for c in candidates]
+    action = await choose_action(task(), Model(), None, 1)
+    assert action["tool_name"] == "get_car_route" and action["arguments"]["from_ref"] == "anchor:lodging"

@@ -3,7 +3,7 @@ import time
 from httpx import HTTPError
 from datetime import datetime, timezone
 from ai.trace import emit
-from ai.candidates import build_candidates, select_candidate
+from ai.candidates import build_candidates, select_candidate, grounded_options, valid_options
 from ai.tools.context import build_tool_context
 from ai.tools.validation import validate_arguments
 from ai.context import build_context
@@ -81,7 +81,7 @@ async def choose_action(context, model, emit_trace, step):
                                              calculate_costs=build_cost_inputs(context)[0])
     generated = await asyncio.to_thread(model.generate_json, {"phase": "actions", "context": context})
     context["generated_candidates"] = generated.get("candidates", [])
-    candidates = build_candidates(context)
+    candidates = valid_options(context, build_candidates(context) + grounded_options(context))
     scores = await asyncio.to_thread(model.score_candidates, context, candidates)
     index = select_candidate(candidates, scores)
     action = candidates[index]
