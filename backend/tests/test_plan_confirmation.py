@@ -96,3 +96,24 @@ def test_http_withdraw_and_activate_clear_only_current_votes(api):
     activated = api.post(path+'/activate', json={'plan_revision':room['current_plan']['plan_revision']})
     assert activated.status_code == 200
     assert activated.json()['confirmations'] == []
+
+
+def test_new_draft_conflict_does_not_block_frozen_review(room):
+    from backend.services.planning import record_confirmation, finalize_plan
+    room['constraints'] = []
+    room['current_plan']['validation'] = 'ready'
+    target = room['current_plan']['confirmation_target']
+    record_confirmation(room, 'u1', target, 'confirm')
+    room['conflicts'] = [{'id':'new-draft-only','blocking':True,'status':'open'}]
+    for actor in ('u2','u3','u4'):
+        record_confirmation(room, actor, target, 'confirm')
+    assert finalize_plan(room)
+
+
+def test_withdraw_before_review_does_not_activate_plan(room):
+    import pytest
+    from fastapi import HTTPException
+    from backend.services.planning import record_confirmation
+    with pytest.raises(HTTPException):
+        record_confirmation(room, 'u1', room['current_plan']['confirmation_target'], 'withdraw')
+    assert room['review_plan'] is None
