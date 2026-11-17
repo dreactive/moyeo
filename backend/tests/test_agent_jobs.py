@@ -130,3 +130,30 @@ def test_stale_running_result_requeues_latest_input(room, agent_result):
         worker.cancel()
         assert port.calls == 2
     asyncio.run(scenario())
+
+
+def test_invalid_identity_does_not_trigger_retry_loop(room, agent_result):
+    import asyncio
+    from copy import deepcopy
+    from backend.services.agent_jobs import AgentJobs
+    from backend.db import Database
+    async def scenario():
+        db = Database(':memory:')
+        db.put('room:room-fixture', room)
+        class Port:
+            calls = 0
+            async def run(self, task, emit):
+                self.calls += 1
+                if self.calls > 2:
+                    raise ValueError('stop invalid retries')
+                result = deepcopy(agent_result)
+                result['run_id'] = 'wrong'
+                return result
+        port = Port()
+        jobs = AgentJobs(db, port)
+        worker = asyncio.create_task(jobs.work())
+        await jobs.enqueue('room-fixture','replan')
+        await asyncio.wait_for(jobs.queue.join(), 2)
+        worker.cancel()
+        assert port.calls == 1
+    asyncio.run(scenario())

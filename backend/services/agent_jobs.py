@@ -47,7 +47,7 @@ class AgentJobs:
                 set_status(self.db, task['room_id'], task['run_id'], 'running', 'Working')
                 result = await self.port.run(task, self.emit_trace)
                 applied = apply_agent_result(self.db, result)
-                if not applied and self.pending[task['room_id']] == 0:
+                if not applied and self.pending[task['room_id']] == 0 and self.db.get('room:' + task['room_id'])['versions'] != task['base_versions']:
                     await self.enqueue(task['room_id'], 'state_changed')
                 await self.emit_trace(dict(run_id=task['run_id'], step=0, event='state_applied', call_id=None, created_at=datetime.now(timezone.utc).isoformat(), payload={'applied':applied, 'summary':'Applied' if applied else 'Stale result', 'versions':self.db.get('room:' + task['room_id'])['versions']}))
                 state = 'done' if applied and result['completion'] == 'done' else 'needs_input'
