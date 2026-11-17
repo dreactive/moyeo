@@ -92,3 +92,12 @@ def test_condition_kind_change_is_pending_new_proposal(room):
     assert pending is not None
     assert pending['kind'] == 'preference'
     assert original['kind'] == 'hard'
+
+
+def test_agent_cannot_create_confirmations(room, agent_result):
+    from backend.services.agent_apply import apply_proposals
+    agent_result['confirmations'] = [{'user_id':'u1','stance':'confirm'}]
+    agent_result['confirmed_plan'] = room['current_plan']
+    apply_proposals(room, agent_result)
+    assert room['confirmations'] == []
+    assert room['confirmed_plan'] is None

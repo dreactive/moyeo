@@ -20,3 +20,9 @@ def api(room):
             db.put('session:s'+user_id, user_id)
         client.cookies.set('session', 'su1')
         yield client
+
+@pytest.fixture
+def agent_result():
+    import json
+    from pathlib import Path
+    return json.loads(Path('docs/contracts/examples/agent-result.example.json').read_text(encoding='utf-8'))
