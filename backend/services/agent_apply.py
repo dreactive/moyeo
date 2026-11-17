@@ -64,3 +64,21 @@ def prepare_result(room, result, old_observations):
     for conflict in updated['conflicts']:
         conflict['base_versions'] = deepcopy(updated['versions'])
     return updated, observations
+
+from backend.db import serialized
+from backend.services.observations import get_observations
+from backend.services.events import publish_event
+
+
+@serialized
+def apply_agent_result(db, result):
+    if not valid_result_base(db, result):
+        return False
+    room_id = result['room_id']
+    room, observations = prepare_result(db.get('room:' + room_id), result, get_observations(db, room_id))
+    run = db.get('run:' + result['run_id'])
+    run['applied'] = True
+    db.put_many({'room:' + room_id:room, 'run:' + result['run_id']:run})
+    db.observations[room_id] = observations
+    publish_event(db, room_id, 'room.updated', {'changed':['items','constraints','questions','conflicts','current_plan','versions']})
+    return True

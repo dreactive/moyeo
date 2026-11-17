@@ -141,3 +141,17 @@ def test_prepare_result_does_not_mutate_current_state(room, agent_result):
     assert updated['versions']['plan_revision'] == room['versions']['plan_revision'] + 1
     assert updated['current_plan']['cost'] == agent_result['plan_draft']['cost']
     assert observations == agent_result['observations']
+
+
+def test_apply_is_one_snapshot_revision(room, agent_result):
+    from backend.services.agent_apply import apply_agent_result
+    from backend.db import Database
+    db = Database(':memory:')
+    db.put('room:room-fixture', room)
+    db.put('run:run-fixture', {'room_id':'room-fixture','base_versions':dict(room['versions'])})
+    assert apply_agent_result(db, agent_result)
+    updated = db.get('room:room-fixture')
+    assert updated['current_plan']['plan_revision'] == updated['versions']['plan_revision']
+    assert updated['current_plan']['cost'] == agent_result['plan_draft']['cost']
+    assert db.observations['room-fixture'] == agent_result['observations']
+    assert not apply_agent_result(db, agent_result)
