@@ -54,3 +54,12 @@ async def test_registry_search_and_calculation_are_server_independent():
     from ai.cost_inputs import build_cost_inputs
     summary = await tools.execute("calculate_costs", build_cost_inputs(task())[0])
     assert summary["known_total_krw"] == 120000
+
+
+async def test_registry_remembers_search_observation_without_global_state():
+    from ai.tools.registry import RegisteredTools
+    tools = RegisteredTools(task())
+    tools.remember({"tool_name": "search_places", "arguments": {}, "result": {"places": [
+        {"id": "room:new", "name": "같은이름", "latitude": 35, "longitude": 127, "provider_refs": {"x": "1"}}]}})
+    assert "room:new" in tools.context["places"]
+    assert "room:new" not in RegisteredTools(task()).context["places"]

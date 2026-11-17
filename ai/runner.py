@@ -75,5 +75,8 @@ async def execute_selected(task, action, tools, emit_trace, step):
     await emit(emit_trace, task, step, "tool_result", call_id,
                dict(tool_name=name, normalized_result=result, source_refs=refs,
                     duration_ms=round((time.perf_counter() - started) * 1000, 2)))
-    return dict(tool_name=name, arguments=arguments, result=result,
-                observed_at=datetime.now(timezone.utc).isoformat(), source_refs=refs)
+    observation = dict(tool_name=name, arguments=arguments, result=result,
+                       observed_at=datetime.now(timezone.utc).isoformat(), source_refs=refs)
+    if hasattr(tools, "remember"):
+        tools.remember(observation)
+    return observation

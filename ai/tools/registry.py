@@ -11,6 +11,10 @@ class RegisteredTools:
         self.context = build_tool_context(context)
         self.mode, self.settings = mode, settings or {}
 
+    def remember(self, observation):
+        self.context["observations"].append(deepcopy(observation))
+        self.context = build_tool_context(self.context)
+
     async def execute(self, name, arguments):
         validate_arguments(name, arguments, self.context)
         if name == "calculate_costs":
