@@ -11,7 +11,7 @@ import {requestJson,getDataMode} from './api.js';
 import {applySnapshot,subscribeState,setUser} from './state.js';
 import {showError} from './ui.js';
 export async function startRoomApp() {
-  bindAccount();
+  bindAccount(); bindSessionActions();
   html('mode', getDataMode() === 'fixture' ? '개발용 fixture · 실제 API 조회 아님' : 'LIVE · Backend 연결');
   subscribeState(snapshot => snapshot && renderRoom(snapshot));
   const user = await requestJson('/api/auth/me');
@@ -58,5 +58,18 @@ function bindAccount() {
     document.querySelector('#auth [name=password]').value = '';
   });
   bindForm('join',async body => enterRoom(await requestJson('/api/rooms/join',{method:'POST',body})));
+}
+
+function bindSessionActions() {
+  document.getElementById('logout').onclick = () => run(async () => {
+    await requestJson('/api/auth/logout',{method:'POST'});
+    closeEvents(); roomId = null; sessionStorage.removeItem('trip-room');
+    applySnapshot(null); showUser(null); location.reload();
+  });
+  bindForm('message',async (body, action,form) => {
+    if (!roomId) throw new Error('먼저 방에 입장하세요.');
+    appendMessage(await requestJson('/api/rooms/' + encodeURIComponent(roomId) + '/messages',{method:'POST',body}));
+    form.reset();
+  });
 }
 
