@@ -81,3 +81,20 @@ def test_enqueue_registers_run_and_uses_product_observations(room):
     assert task['observations'] == db.observations['room-fixture']
     assert db.get('run:'+receipt['run_id'])['room_id'] == 'room-fixture'
 
+
+
+def test_dequeued_task_refreshes_latest_messages_and_versions(room):
+    import asyncio
+    from backend.services.agent_jobs import AgentJobs
+    from backend.db import Database
+    db = Database(':memory:')
+    db.put('room:room-fixture', room)
+    jobs = AgentJobs(db, None)
+    asyncio.run(jobs.enqueue('room-fixture','message_created'))
+    task = jobs.queue.get_nowait()
+    room['versions']['constraint_version'] += 1
+    room['messages'].append(dict(id='new',room_id='room-fixture',author_id='u1',seq=6,text='return by 16:00',created_at='2026-11-18T10:05:00+09:00'))
+    db.put('room:room-fixture', room)
+    refreshed = jobs.refresh_task(task)
+    assert refreshed['recent_messages'][-1]['id'] == 'new'
+    assert refreshed['base_versions'] == room['versions']

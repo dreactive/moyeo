@@ -26,10 +26,19 @@ class AgentJobs:
         await self.queue.put(task)
         return {key:task[key] for key in ('run_id','base_versions')}
 
+    def refresh_task(self, task):
+        room = self.db.get('room:' + task['room_id'])
+        if task['user_selection'] and task['base_versions'] != room['versions']:
+            raise ValueError('Conflict selection expired')
+        fresh = make_task(room, task['run_id'], task['goal'], get_observations(self.db, task['room_id']), task['user_selection'])
+        self.db.put('run:' + task['run_id'], {key:fresh[key] for key in ('room_id','base_versions')})
+        return fresh
+
     async def work(self):
         while True:
             task = await self.queue.get()
             try:
+                task = self.refresh_task(task)
                 self.active_run_id = task['run_id']
                 set_status(self.db, task['room_id'], task['run_id'], 'running', 'Working')
                 result = await self.port.run(task, self.emit_trace)
