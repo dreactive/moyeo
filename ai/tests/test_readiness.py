@@ -43,3 +43,21 @@ def test_assembly_independently_refuses_empty_plan_for_unresolved_item():
     assemble_result(value, result)
     assert result["completion"] == "needs_input" and result["plan_draft"]["validation"] != "ready"
 
+
+
+async def test_same_run_new_hard_proposal_cannot_be_ready_before_owner_confirmation():
+    from ai.runtime import create_runtime
+    value = task()
+    value.update(questions=[], recent_messages=[], goal="manual_replan")
+    value["current_plan"]["selected_item_ids"] = ["item-a"]
+    value["current_plan"]["days"][0]["visits"] = value["current_plan"]["days"][0]["visits"][:1]
+    value["config"]["fixed_costs"].append(dict(value["config"]["fixed_costs"][0],
+        id="car", category="car", description="유류·주차 포함", unit_price_krw=10000, paid=False))
+    runtime = create_runtime({"model_backend": "fake", "provider_mode": "fixture"})
+    control = await runtime.run(value, None)
+    assert control["completion"] == "done"
+    value["recent_messages"] = [dict(id="new", author_id="u1", text="내 예산은 1만원")]
+    result = await runtime.run(value, None)
+    await runtime.aclose()
+    assert result["completion"] == "needs_input" and result["plan_draft"]["validation"] != "ready"
+    assert result["constraint_proposals"][0]["value"] == 10000

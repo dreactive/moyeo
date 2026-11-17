@@ -11,6 +11,19 @@ from ai.tools.hours import validate_hours
 SUPPORTED_HARD_KEYS = ("budget", "budget_krw", "return_by")
 
 
+def hard_proposals_pending(task, result):
+    for proposal in result["constraint_proposals"]:
+        if proposal["kind"] != "hard":
+            continue
+        family = ("budget", "budget_krw") if proposal["key"] in ("budget", "budget_krw") else (proposal["key"],)
+        confirmed = any(c.get("status") == "confirmed" and c["kind"] == "hard" and
+                        c["owner_id"] == proposal["owner_id"] and c["key"] in family and c["value"] == proposal["value"]
+                        for c in task["constraints"])
+        if not confirmed:
+            return True
+    return False
+
+
 def budget_conflicts(task, cost, item_ids):
     arguments = build_cost_inputs(task)[0]
     budgets, users = arguments["budget_by_user"], arguments["member_ids"]
@@ -70,7 +83,8 @@ def assemble_result(task, result):
                 and legs == expected["build_itinerary"]["route_legs"]
                 and not any(validate_hours(v, context["details"].get(v["place_ref"], {}), task["base_versions"])[1]
                             for d in itinerary["days"] for v in d["visits"]))
-    validation = "conflict" if result["conflicts"] else "needs_input" if result["questions"] or cost["total_krw"] is None or not complete else "ready"
+    pending = result["questions"] or cost["total_krw"] is None or not complete or hard_proposals_pending(task, result)
+    validation = "conflict" if result["conflicts"] else "needs_input" if pending else "ready"
     result["plan_draft"] = dict(selected_item_ids=[v["item_id"] for d in itinerary["days"] for v in d["visits"]],
                                days=itinerary["days"], cost=cost, validation=validation,
                                blocking_conflict_ids=[c["id"] for c in result["conflicts"] if c["blocking"]])
