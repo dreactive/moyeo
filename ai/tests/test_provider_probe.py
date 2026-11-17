@@ -113,3 +113,24 @@ async def test_apify_tourist_probe_caps_two_with_one_per_keyword():
         return httpx.Response(200, json=[])
     async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
         await fetch_rows(client, "test", keywords=["관광지1", "관광지2"], limit=2)
+
+
+def test_same_building_coordinates_do_not_join_different_businesses():
+    from ai.providers.matching import match_record
+    place = dict(name="식당A", address="전남 여수시 도로1", latitude=34.7, longitude=127.6, provider_refs={})
+    wrong = dict(place_id="wrong", name="식당B", roadAddress="전남 여수시 도로1", y="34.7", x="127.6")
+    assert match_record(place, [wrong]) is None
+
+
+def test_matching_road_number_ignores_province_alias_and_building_annotation():
+    from ai.providers.matching import match_record
+    address = "전남광주통합특별시 여수시 통제영5길 11"
+    place = dict(name="서울해장국", address=address, latitude=34.7, longitude=127.6, provider_refs={})
+    row = dict(place_id="1", name="서울해장국", roadAddress="전남광주 여수시 통제영5길 11 1층 서울해장국", y="34.7", x="127.6")
+    assert match_record(place, [row]) == row and place["address"] == address
+    assert match_record(place, [dict(row, roadAddress="전남광주 여수시 통제영5길 12")]) is None
+def test_township_road_identity_preserves_optional_eup_myeon():
+    from ai.providers.matching import address_key
+    assert address_key("전남광주통합특별시 여수시 돌산읍 무술목길 50") == address_key(
+        "전남광주 여수시 돌산읍 무술목길 50 모이핀 오션점")
+    assert address_key("여수시 돌산읍 무술목길 50") != address_key("여수시 다른면 무술목길 50")

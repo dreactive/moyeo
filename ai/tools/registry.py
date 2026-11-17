@@ -5,12 +5,14 @@ from ai.tools.costs import calculate_costs
 from ai.tools.itinerary import build_itinerary
 from ai.tools.validation import validate_arguments
 from ai.settings import load_settings
+from ai.questions import valid_questions
 
 
 class RegisteredTools:
     def __init__(self, context, mode="fixture", settings=None):
         self.context = build_tool_context(context)
         self.mode, self.settings = mode, settings or {}
+        self.context["_provider_mode"] = mode
         self.credentials = load_settings(self.settings) if mode == "live" else {}
 
     def remember(self, observation):
@@ -19,6 +21,7 @@ class RegisteredTools:
 
     def restore(self, context):
         self.context = build_tool_context(context)
+        self.context["_provider_mode"] = self.mode
 
     async def execute(self, name, arguments):
         validate_arguments(name, arguments, self.context)
@@ -30,7 +33,9 @@ class RegisteredTools:
         if name == "build_itinerary":
             config = dict(self.context["config"], _details=self.context["details"],
                           _base_versions=self.context.get("base_versions", {}))
-            return build_itinerary(**arguments, config=config)
+            result = build_itinerary(**arguments, config=config)
+            result["questions"] = valid_questions(self.context, result["questions"])
+            return result
         if name == "search_places":
             from ai.providers.fixture import catalog
             known = dict(catalog()["locations"], **self.context["places"])

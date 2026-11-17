@@ -4,6 +4,24 @@ from ai.cost_inputs import build_cost_inputs
 from ai.context import build_context
 from ai.conflicts import conflict
 from ai.tools.costs import allocate
+from ai.planning import planned_visits, itinerary_arguments, planning_inputs_ready
+from ai.tools.context import build_tool_context
+from ai.tools.hours import validate_hours
+
+SUPPORTED_HARD_KEYS = ("budget", "budget_krw", "return_by")
+
+
+def hard_proposals_pending(task, result):
+    for proposal in result["constraint_proposals"]:
+        if proposal["kind"] != "hard":
+            continue
+        family = ("budget", "budget_krw") if proposal["key"] in ("budget", "budget_krw") else (proposal["key"],)
+        confirmed = any(c.get("status") == "confirmed" and c["kind"] == "hard" and
+                        c["owner_id"] == proposal["owner_id"] and c["key"] in family and c["value"] == proposal["value"]
+                        for c in task["constraints"])
+        if not confirmed:
+            return True
+    return False
 
 
 def budget_conflicts(task, cost, item_ids):
@@ -29,7 +47,9 @@ def reuse_current_plan(task, result):
     changed = any(result[k] for k in ("constraint_proposals", "item_proposals", "support_observations", "questions"))
     valid = (plan.get("validation") == "ready" and plan.get("cost", {}).get("total_krw") is not None
              and all(plan.get(k) == v for k, v in task["base_versions"].items())
-             and not task.get("user_selection") and not any(q["status"] == "open" for q in task["questions"]))
+             and not task.get("user_selection") and not any(q["status"] == "open" for q in task["questions"])
+             and not any(c["kind"] == "hard" and c.get("status") != "superseded" and
+                         (c.get("status") != "confirmed" or c["key"] not in SUPPORTED_HARD_KEYS) for c in task["constraints"]))
     if changed or not valid:
         return False
     keys = ("selected_item_ids", "days", "cost", "validation", "blocking_conflict_ids")
@@ -39,7 +59,10 @@ def reuse_current_plan(task, result):
 
 
 def assemble_result(task, result):
-    calculations = {o["tool_name"]: o["result"] for o in result["observations"]}
+    context = build_tool_context(build_context(task, result["observations"]))
+    expected = dict(build_itinerary=itinerary_arguments(context), calculate_costs=build_cost_inputs(context)[0])
+    calculations = {o["tool_name"]: o["result"] for o in result["observations"]
+                    if o["tool_name"] in expected and o.get("arguments", expected[o["tool_name"]]) == expected[o["tool_name"]]}
     if not {"build_itinerary", "calculate_costs"} <= calculations.keys():
         return False
     itinerary, cost = (calculations[k] for k in ("build_itinerary", "calculate_costs"))
@@ -48,9 +71,20 @@ def assemble_result(task, result):
     result["questions"].extend(build_cost_inputs(build_context(task, result["observations"]))[1])
     item_ids = list(dict.fromkeys(v["item_id"] for d in itinerary["days"] for v in d["visits"]))
     result["conflicts"].extend(budget_conflicts(task, cost, item_ids))
-    if cost["total_krw"] is None:
-        result["questions"].append(question("constraint_value", None, "가격/차량 비용 중 미확인 금액이 있습니다."))
-    validation = "conflict" if result["conflicts"] else "needs_input" if result["questions"] else "ready"
+    for condition in task["constraints"]:
+        if condition["kind"] == "hard" and condition.get("status") != "superseded" and (
+                condition.get("status") != "confirmed" or condition["key"] not in SUPPORTED_HARD_KEYS):
+            result["questions"].append(question("constraint_value", condition["id"],
+                "이 필수 조건의 확인 또는 충족 근거가 더 필요합니다.", condition["owner_id"]))
+    actual = [(v["item_id"], v["place_ref"], v["date"]) for d in itinerary["days"] for v in d["visits"]]
+    wanted = [(v["item_id"], v["place_ref"], v["date"]) for v in planned_visits(context)]
+    legs = [r for d in itinerary["days"] for r in d["route_legs"]]
+    complete = (planning_inputs_ready(context) and sorted(actual) == sorted(wanted)
+                and legs == expected["build_itinerary"]["route_legs"]
+                and not any(validate_hours(v, context["details"].get(v["place_ref"], {}), task["base_versions"])[1]
+                            for d in itinerary["days"] for v in d["visits"]))
+    pending = result["questions"] or cost["total_krw"] is None or not complete or hard_proposals_pending(task, result)
+    validation = "conflict" if result["conflicts"] else "needs_input" if pending else "ready"
     result["plan_draft"] = dict(selected_item_ids=[v["item_id"] for d in itinerary["days"] for v in d["visits"]],
                                days=itinerary["days"], cost=cost, validation=validation,
                                blocking_conflict_ids=[c["id"] for c in result["conflicts"] if c["blocking"]])

@@ -1,5 +1,7 @@
 from datetime import date, datetime, timedelta
 from ai.tools.itinerary import schedule_visit
+from ai.tools.context import build_tool_context
+from ai.tools.routes import route_matches
 
 
 def resolved_item_visits(context):
@@ -42,6 +44,28 @@ def planned_visits(context):
     return visits
 
 
+def planning_inputs_ready(context):
+    context = build_tool_context(context)
+    plan = context.get("current_plan")
+    expected = ({i["id"] for i in context["items"] if i.get("kind") == "place"} if plan is None else
+                set(plan.get("selected_item_ids", [v["item_id"] for d in plan.get("days", []) for v in d["visits"]])))
+    expected.update(context.get("_new_item_refs", []))
+    visits = planned_visits(context)
+    anchors = ("origin", "destination") + (("lodging",) if context["config"]["start_date"] != context["config"]["end_date"] else ())
+    if any("anchor:" + name not in context["places"] for name in anchors):
+        return False
+    if (plan is None and not expected) or not expected <= {v["item_id"] for v in visits} or pending_routes(context):
+        return False
+    if any(v["place_ref"] not in context["details"] for v in visits):
+        return False
+    if context.get("_provider_mode") == "live":
+        if any(e["mode"] != "live" for v in visits for e in context["details"][v["place_ref"]]["evidence"]):
+            return False
+        if any(o["result"]["evidence_id"].startswith("fixture:") for o in selected_route_observations(context)):
+            return False
+    return True
+
+
 def itinerary_arguments(context):
     return dict(visits=planned_visits(context),
                 anchors={k: context["config"].get(k) for k in ("origin", "destination", "lodging")},
@@ -52,6 +76,7 @@ def itinerary_arguments(context):
 
 
 def next_route(context, only_day=None):
+    context = build_tool_context(context)
     config, visits = context["config"], planned_visits(context)
     first, last = (date.fromisoformat(config[k]) for k in ("start_date", "end_date"))
     for offset in range((last - first).days + 1):
@@ -65,7 +90,7 @@ def next_route(context, only_day=None):
         for visit in day_visits + [dict(place_ref=destination)]:
             arguments = dict(from_ref=previous, to_ref=visit["place_ref"], departure_at=cursor.isoformat())
             observed = next((o["result"] for o in reversed(context["observations"])
-                             if o["tool_name"] == "get_car_route" and o["arguments"] == arguments), None)
+                             if route_matches(o, context, arguments)), None)
             if observed is None:
                 return arguments
             if "item_id" in visit:
@@ -81,6 +106,7 @@ def pending_routes(context):
 
 
 def selected_route_observations(context):
+    context = build_tool_context(context)
     config, visits, selected = context["config"], planned_visits(context), []
     first, last = (date.fromisoformat(config[k]) for k in ("start_date", "end_date"))
     for offset in range((last - first).days + 1):
@@ -91,7 +117,7 @@ def selected_route_observations(context):
         for visit in [v for v in visits if v["date"] == day] + [dict(place_ref=target)]:
             args = dict(from_ref=previous, to_ref=visit["place_ref"], departure_at=cursor.isoformat())
             observed = next((o for o in reversed(context["observations"])
-                             if o["tool_name"] == "get_car_route" and o["arguments"] == args), None)
+                             if route_matches(o, context, args)), None)
             if observed is None:
                 break
             selected.append(observed)

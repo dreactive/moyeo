@@ -165,3 +165,16 @@ async def test_manual_replan_does_not_reuse_old_ready_plan():
     result = await runtime.run(value, None)
     await runtime.aclose()
     assert {"calculate_costs", "build_itinerary"} <= {o["tool_name"] for o in result["observations"]}
+
+
+def test_unverified_minority_hard_condition_requires_its_owner_without_relaxing():
+    from ai.outcome import assemble_result
+    from ai.result import empty_result
+    value = task()
+    value["constraints"] = [dict(id="diet", owner_id="u4", key="avoid_spicy", value=True, kind="hard", status="confirmed")]
+    result = empty_result(value)
+    result["observations"] = [dict(tool_name="build_itinerary", result=dict(days=value["current_plan"]["days"], questions=[], conflicts=[])),
+        dict(tool_name="calculate_costs", result=dict(total_krw=120000, planned_balance_krw={"u1": 170000}))]
+    assemble_result(value, result)
+    assert any(q["field"] == "constraint_value" and q["target_ref"] == "diet" and q["owner_id"] == "u4" for q in result["questions"])
+    assert value["constraints"][0]["value"] is True and result["completion"] == "needs_input"

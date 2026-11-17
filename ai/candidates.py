@@ -50,7 +50,7 @@ def grounded_options(context):
     if not routes and all(v["place_ref"] in context["details"] for v in visits):
         for name, arguments in (("build_itinerary", itinerary_arguments(context)),
                                 ("calculate_costs", build_cost_inputs(context)[0])):
-            if name not in observed:
+            if not any(o["tool_name"] == name and o.get("arguments") == arguments for o in context["observations"]):
                 options.append(tool_option(name, arguments, "확보한 관측과 사용자 입력을 코드로 계산"))
     options.append(dict(action="ask", reason="부족하거나 모호한 여행 조건을 확인해주세요.",
                         tool_name=None, arguments={}, source_message_ids=[], source_refs=[]))

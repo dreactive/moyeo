@@ -3,6 +3,11 @@ from hashlib import sha256
 import json
 
 
+def route_evidence_id(places, arguments):
+    endpoints = [{k: places[arguments[ref]][k] for k in ("latitude", "longitude")} for ref in ("from_ref", "to_ref")]
+    return "kakao:route:" + sha256(json.dumps([arguments, endpoints], sort_keys=True).encode()).hexdigest()[:20]
+
+
 async def get_car_route(client, key, places, arguments):
     if not key:
         raise ValueError("KAKAO_MOBILITY_API_KEY missing")
@@ -24,10 +29,10 @@ async def get_car_route(client, key, places, arguments):
     summary = route["summary"]
     vertices = [road["vertexes"] for section in route.get("sections", []) for road in section.get("roads", [])]
     polyline = [dict(latitude=points[i + 1], longitude=points[i]) for points in vertices for i in range(0, len(points), 2)]
-    ref = sha256(json.dumps([arguments, params], sort_keys=True).encode()).hexdigest()[:20]
+    ref = route_evidence_id(places, arguments)
     return dict(from_ref=arguments["from_ref"], to_ref=arguments["to_ref"],
                 distance_m=summary["distance"], duration_seconds=summary["duration"],
-                toll_krw=summary.get("fare", {}).get("toll"), polyline=polyline, evidence_id="kakao:route:" + ref)
+                toll_krw=summary.get("fare", {}).get("toll"), polyline=polyline, evidence_id=ref)
 
 
 async def search_places(client, key, query, region):
