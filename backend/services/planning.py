@@ -85,3 +85,15 @@ def select_conflict_option(room, conflict_id, option_id, actor_id):
     if option.get('requires_owner_id') not in (None, actor_id):
         raise HTTPException(403, 'Owner selection required')
     return deepcopy(dict(conflict_id=conflict_id, option_id=option_id, effect=option['effect'], base_versions=conflict['base_versions']))
+
+
+def item_snapshots(room, draft):
+    items = {item['id']:item for item in room['items']}
+    places = {visit['item_id']:visit['place_ref'] for day in draft['days'] for visit in day['visits']}
+    snapshots = []
+    for item_id in draft['selected_item_ids']:
+        item = items[item_id]
+        snapshot = {key:deepcopy(item[key]) for key in ('id','item_version','kind','title','source_message_ids')}
+        snapshot['place_ref'] = places.get(item_id)
+        snapshots.append(snapshot)
+    return snapshots

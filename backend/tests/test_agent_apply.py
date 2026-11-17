@@ -44,3 +44,12 @@ def test_agent_constraint_proposal_never_confirms_or_impersonates(room):
     import pytest
     with pytest.raises(ValueError):
         add_constraint_proposal(room, proposal)
+
+
+def test_plan_item_snapshots_copy_current_content(room):
+    from backend.services.planning import item_snapshots
+    plan = room['current_plan']
+    snapshots = item_snapshots(room, plan)
+    room['items'][0]['title'] = 'Later edit'
+    assert snapshots[0]['title'] != 'Later edit'
+    assert snapshots[0]['place_ref'] == 'fixture:place-a'
