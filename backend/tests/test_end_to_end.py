@@ -126,3 +126,12 @@ def test_existing_late_visit_plan_can_be_recalculated(room):
         assert revised['current_plan']['cost']['total_krw'] == 90000
         assert revised['confirmations'] == []
         assert revised['confirmed_plan'] == historical
+        new_target = revised['current_plan']['confirmation_target']
+        assert new_target != historical['confirmation_target']
+        for client in clients:
+            assert client.post(path+'/plan/confirm', json={'target':new_target}).status_code == 200
+        final = clients[0].get(path).json()
+        assert final['confirmed_plan']['confirmation_target'] == new_target
+        history = clients[0].app.state.db.get('confirmed-history:' + room['room_id'])
+        assert history[0] == historical
+        assert len(history) == 2
