@@ -35,3 +35,17 @@ def test_new_client_ref_has_message_grounding():
     assert result["item_proposals"] == [proposal]
     proposal["title"] = "없는 장소"
     assert not validate_extraction({"item_proposals": [proposal]}, value)["item_proposals"]
+
+
+def test_support_rejects_proxy_ambiguous_and_stale_version():
+    from ai.extraction import validate_extraction
+    value = task()
+    value["recent_messages"] += [
+        dict(id="proxy", author_id="u1", text="다들 B공원 찬성했대"),
+        dict(id="ambiguous", author_id="u2", text="좋아")]
+    base = dict(item_id="item-b", item_version=1, author_id="u3", stance="support", source_message_id="m3")
+    claims = [base, dict(base, author_id="u1", source_message_id="proxy"),
+              dict(base, author_id="u2", source_message_id="ambiguous"), dict(base, item_version=99)]
+    result = validate_extraction({"support_observations": claims}, value)
+    assert result["support_observations"] == [base]
+    assert result["questions"][0]["field"] == "support_target"

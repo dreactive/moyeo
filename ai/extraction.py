@@ -1,4 +1,18 @@
 """Validate provenance before accepting model-generated proposals."""
+from ai.questions import question
+
+
+def validate_support(claim, message, item):
+    if not message or not item or message["author_id"] != claim.get("author_id"):
+        return None, None
+    text = message["text"]
+    if claim.get("item_version") != item["item_version"] or any(w in text for w in ("다들", "모두", "했대")):
+        return None, None
+    if item["title"].split()[-1] not in text:
+        return None, question("support_target", None, "어느 항목에 대한 의견인가요?", claim["author_id"])
+    stance = "withdraw" if "철회" in text else "oppose" if "반대" in text else "support"
+    explicit = any(w in text for w in ("가자", "좋아", "찬성", "철회", "반대"))
+    return (claim, None) if explicit and claim.get("stance") == stance else (None, None)
 
 
 def validate_extraction(output, task):
@@ -24,4 +38,12 @@ def validate_extraction(output, task):
             continue
         if ref not in {i["client_ref"] for i in accepted["item_proposals"]}:
             accepted["item_proposals"].append(proposal)
+    items = {i["id"]: i for i in task["items"]}
+    items.update({i["client_ref"]: dict(i, item_version=1) for i in accepted["item_proposals"]})
+    for claim in output.get("support_observations", []):
+        valid, missing = validate_support(claim, messages.get(claim.get("source_message_id")), items.get(claim.get("item_id")))
+        if valid and valid not in accepted["support_observations"]:
+            accepted["support_observations"].append(valid)
+        if missing and missing not in accepted["questions"]:
+            accepted["questions"].append(missing)
     return accepted
