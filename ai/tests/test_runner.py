@@ -22,7 +22,8 @@ async def test_observation_changes_next_selected_action():
         def score_candidates(self, context, candidates):
             return [1.]
     value = task()
-    value["observations"] = [{"result": {"places": [{"id": "new-a", "name": "A"}]}, "source_refs": []}]
+    value["observations"] = [{"tool_name": "search_places", "arguments": {}, "observed_at": "2026-11-18T00:00:00+09:00",
+                              "result": {"places": [{"id": "new-a", "name": "A"}]}, "source_refs": []}]
     first = await choose_action(value, Model(), None, 1)
     value["observations"][0]["result"]["places"][0]["id"] = "new-b"
     second = await choose_action(value, Model(), None, 2)
@@ -111,3 +112,17 @@ async def test_ready_unchanged_plan_finishes_without_judge_or_lookup():
     await run_steps(value, None, None, None, result)
     assert result["completion"] == "done" and not result["questions"]
     assert result["plan_draft"]["selected_item_ids"] == ["item-a", "item-b"]
+
+
+async def test_action_model_receives_code_derived_calculations_and_route_time():
+    from ai.runner import choose_action
+    class Model:
+        def generate_json(self, request):
+            context = request["context"]
+            assert context["needed_route"]["departure_at"] == "2026-11-21T09:00:00+09:00"
+            meal = next(l for l in context["available_calculations"]["calculate_costs"]["lines"] if l["category"] == "meal")
+            assert meal["unit_price_krw"] == 10000
+            return {"candidates": [dict(action="ask", reason="test", tool_name=None, arguments={}, source_message_ids=[], source_refs=[])]}
+        def score_candidates(self, context, candidates):
+            return [1.]
+    assert (await choose_action(task(), Model(), None, 1))["action"] == "ask"

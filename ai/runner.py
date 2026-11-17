@@ -13,6 +13,8 @@ from ai.result import empty_result
 from ai.extraction import validate_extraction
 from ai.assistance import assist_extraction
 from ai.selection import apply_selection
+from ai.planning import itinerary_arguments, next_route
+from ai.cost_inputs import build_cost_inputs
 
 
 async def extract_proposals(task, model, emit_trace):
@@ -74,6 +76,9 @@ async def run_steps(task, model, tools, emit_trace, result):
 
 async def choose_action(context, model, emit_trace, step):
     context = build_tool_context(context)
+    context["needed_route"] = next_route(context)
+    context["available_calculations"] = dict(build_itinerary=itinerary_arguments(context),
+                                             calculate_costs=build_cost_inputs(context)[0])
     generated = await asyncio.to_thread(model.generate_json, {"phase": "actions", "context": context})
     context["generated_candidates"] = generated.get("candidates", [])
     candidates = build_candidates(context)
