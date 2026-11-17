@@ -26,12 +26,14 @@ def validate_answer(room, question, actor_id, value):
 from backend.services.consensus import edit_constraint
 
 
-def answer_question(room, question_id, actor_id, value):
+def answer_question(room, question_id, actor_id, value, observations=None):
     question = next((q for q in room['questions'] if q['id'] == question_id), None)
     if question is None:
         raise HTTPException(404, 'Question not found')
     value = validate_answer(room, question, actor_id, value)
     field = question['field']
+    if field == 'menu_selection':
+        validate_menu_answer(room, question, value['menu_id'], observations or [])
     if field == 'support_target':
         resolve_support_answer(room, question, actor_id, value['item_id'])
     if field in ('origin','destination','lodging'):
@@ -60,3 +62,16 @@ def resolve_support_answer(room, question, actor_id, item_id):
     if not apply_support(room, observation, actor_id):
         raise HTTPException(409, 'Support source changed')
     question['target_ref'] = item_id
+
+
+def validate_menu_answer(room, question, menu_id, observations):
+    plan = room['current_plan']
+    places = {item['place_ref'] for item in plan['item_snapshots'] if item['id'] == question['target_ref']} if plan else set()
+    menus = {
+        menu['id']
+        for observation in observations
+        if observation['tool_name'] == 'get_place_details' and observation['result']['place']['id'] in places
+        for menu in observation['result']['menus']
+    }
+    if menu_id not in menus:
+        raise HTTPException(422, 'Menu does not belong to the target place')

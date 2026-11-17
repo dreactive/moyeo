@@ -99,7 +99,7 @@ async def answer(room_id: str, question_id: str, body: ValueAnswer, request: Req
     db = request.app.state.db
     with db.lock:
         room = require_room(db, room_id, user['id'])
-        answer_question(room, question_id, user['id'], body.value)
+        answer_question(room, question_id, user['id'], body.value, get_observations(db, room_id))
         db.put('room:' + room_id, room)
         publish_event(db, room_id, 'room.updated', {'changed':['questions','config','constraints','versions','confirmations']})
     await request.app.state.jobs.enqueue(room_id, 'question_answered')

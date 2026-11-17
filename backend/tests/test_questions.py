@@ -45,3 +45,13 @@ def test_support_target_answer_only_updates_original_author(room):
     answer_question(room, question['id'], 'u4', {'item_id':'item-a'})
     assert 'u4' in room['items'][0]['opponent_ids']
     assert room['confirmations'] == []
+
+
+def test_menu_answer_must_belong_to_target_place(room, agent_result):
+    from backend.services.questions import answer_question
+    question = dict(room['questions'][0], id='menu-q',field='menu_selection',target_ref='item-a')
+    room['questions'].append(question)
+    with pytest.raises(HTTPException):
+        answer_question(room, question['id'], 'u1', {'menu_id':'foreign-menu','quantity':1,'scope':'per_person'}, agent_result['observations'])
+    answer_question(room, question['id'], 'u1', {'menu_id':'fixture:menu-a','quantity':1,'scope':'per_person'}, agent_result['observations'])
+    assert question['answer']['menu_id'] == 'fixture:menu-a'
