@@ -1,12 +1,14 @@
 import json
 from pathlib import Path
+from ai.context import extraction_context
 
 
 def generate_object(model, tokenizer, request):
     phase = "extract" if request["phase"] == "extract" else "generate"
     system = (Path(__file__).parents[1] / "prompts" / (phase + ".txt")).read_text(encoding="utf-8")
+    context = extraction_context(request["context"]) if phase == "extract" else request["context"]
     prompt = tokenizer.apply_chat_template([dict(role="system", content=system),
-             dict(role="user", content=json.dumps(request["context"], ensure_ascii=False))],
+             dict(role="user", content=json.dumps(context, ensure_ascii=False))],
              tokenize=False, add_generation_prompt=True)
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
     length = inputs["input_ids"].shape[1]

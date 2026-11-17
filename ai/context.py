@@ -1,6 +1,13 @@
 from copy import deepcopy
 
 
+def extraction_context(context):
+    return dict(recent_messages=context.get("recent_messages", [])[-20:],
+                members=context.get("members", []), questions=context.get("questions", []),
+                constraints=context.get("constraints", []),
+                items=[{k: i[k] for k in ("id", "item_version", "title")} for i in context.get("items", [])])
+
+
 def build_context(task, observations):
     context = deepcopy(task)
     context["recent_messages"] = context["recent_messages"][-20:]

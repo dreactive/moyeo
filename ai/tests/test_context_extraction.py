@@ -51,3 +51,14 @@ def test_support_rejects_proxy_ambiguous_and_stale_version():
     assert result["questions"][0]["field"] == "support_target"
     assert result["questions"][0]["id"] == "question:support_target:ambiguous"
     assert result["questions"][0]["owner_id"] == "u2"
+
+
+def test_extraction_context_does_not_reintroduce_plan_text_as_message_sources():
+    from ai.context import extraction_context
+    import json
+    value = task()
+    value["current_plan"]["old_note"] = "이전 여행안에서만 나온 장소"
+    context = extraction_context(value)
+    assert "이전 여행안에서만 나온 장소" not in json.dumps(context, ensure_ascii=False)
+    assert context["recent_messages"][0]["id"] == "m0"
+    assert context["items"][0]["id"] == "item-a"
