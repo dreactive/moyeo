@@ -30,3 +30,17 @@ async def test_route_anchors_units_and_missing_leg():
     assert (route["distance_m"], route["duration_seconds"]) == (1200, 180)
     with pytest.raises(ValueError):
         await tools.execute("get_car_route", {"from_ref": "fixture:place-a", "to_ref": "anchor:destination"})
+
+
+async def test_route_cache_does_not_cross_departure_time():
+    from ai.tools.registry import RegisteredTools
+    context = task()
+    context["observations"] = [{"tool_name": "get_car_route",
+        "arguments": {"from_ref": "anchor:origin", "to_ref": "anchor:destination",
+                      "departure_at": "2026-11-21T09:00:00+09:00"},
+        "result": {"from_ref": "anchor:origin", "to_ref": "anchor:destination",
+                   "distance_m": 1000, "duration_seconds": 300, "polyline": []}}]
+    with pytest.raises(ValueError):
+        await RegisteredTools(context).execute("get_car_route",
+            {"from_ref": "anchor:origin", "to_ref": "anchor:destination",
+             "departure_at": "2026-11-21T17:00:00+09:00"})
