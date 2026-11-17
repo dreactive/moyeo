@@ -109,7 +109,7 @@ async def test_apify_tourist_probe_caps_two_with_one_per_keyword():
     from ai.providers.apify import fetch_rows
     def respond(request):
         body = json.loads(request.content)
-        assert body["maxItems"] == 2 and body["maxResults"] == 1
+        assert body["maxItems"] == 2 and body["maxResultsPerKeyword"] == 1
         return httpx.Response(200, json=[])
     async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
         await fetch_rows(client, "test", keywords=["관광지1", "관광지2"], limit=2)
