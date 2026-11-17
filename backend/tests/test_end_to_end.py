@@ -52,3 +52,15 @@ def test_empty_four_person_room_creates_initial_plan(room):
         snapshot = clients[0].get(path).json()
         assert len(snapshot['items'][0]['supporter_ids']) == 3
         assert snapshot['confirmations'] == []
+        config = dict(room['config'])
+        car = dict(config['fixed_costs'][0], id='car-input', category='car', description='유류·주차·통행료 포함 차량비', unit_price_krw=10000, paid=False)
+        clients[0].patch(path+'/trip', json={'day_start_time':'10:00','fixed_costs':config['fixed_costs']+[car]})
+        clients[0].portal.call(clients[0].app.state.jobs.queue.join)
+        snapshot = clients[0].get(path).json()
+        question = next(q for q in snapshot['questions'] if q['field'] == 'menu_selection' and q['status'] == 'open')
+        answered = clients[0].post(path+'/questions/'+question['id']+'/answer', json={'value':{'menu_id':'fixture:menu-a','quantity':1,'scope':'per_person'}})
+        assert answered.status_code == 200
+        clients[0].portal.call(clients[0].app.state.jobs.queue.join)
+        snapshot = clients[0].get(path).json()
+        assert snapshot['current_plan']['validation'] == 'ready'
+        assert snapshot['current_plan']['cost']['total_krw'] == 130000
