@@ -32,6 +32,17 @@ export async function requestFixture(path, {method = 'GET',body} = {}) {
     if (parts[5]) return structuredClone(fixtureRoom.messages.find(message => message.id === parts[5]));
     return {messages:structuredClone(fixtureRoom.messages),last_seq:fixtureRoom.seq};
   }
+  if (parts[4] === 'questions' || parts[4] === 'constraints') {
+    const item = fixtureRoom[parts[4]].find(item => item.id === parts[5]);
+    if (!item || (item.owner_id && item.owner_id !== fixtureUser.id)) throw new Error('fixture: 소유자만 응답할 수 있습니다.');
+    if (parts[4] === 'questions') {
+      Object.assign(item,{status:'answered',answer:body.value,answered_by:fixtureUser.id});
+      applyFixtureAnswer(item);
+    } else if (method === 'PATCH') item.value = body.value;
+    else item.status = 'confirmed';
+    fixtureRoom.seq++;
+    return method === 'PATCH' ? structuredClone(item) : structuredClone(fixtureRoom);
+  }
   if (parts[4] === 'plan') {
     if (parts[5] === 'activate') return replayScenario('activated');
     if (parts[5] === 'withdraw') return replayScenario('ready');
@@ -66,3 +77,7 @@ export function replayScenario(key) {
 
 
 
+
+function applyFixtureAnswer(question) {
+  if (['origin','destination','lodging'].includes(question.field)) fixtureRoom.config[question.field] = question.answer;
+}
