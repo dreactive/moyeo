@@ -89,6 +89,8 @@ def test_existing_late_visit_plan_can_be_recalculated(room):
     room['current_plan']['days'][0]['visits'] = []
     late.update(date='2026-11-22',start_at='2026-11-22T17:00:00+09:00',end_at='2026-11-22T18:00:00+09:00')
     room['current_plan']['days'][1]['visits'] = [late]
+    room['current_plan']['selected_item_ids'] = [late['item_id']]
+    room['current_plan']['item_snapshots'] = [item for item in room['current_plan']['item_snapshots'] if item['id'] == late['item_id']]
     import json
     from pathlib import Path
     detail = json.loads(Path('backend/tests/fixtures/late-place-details.json').read_text(encoding='utf-8'))
