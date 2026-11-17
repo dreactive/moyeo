@@ -9,6 +9,16 @@ export async function requestFixture(path, {method = 'GET',body} = {}) {
   if (parts[2] === 'auth') return parts[3] === 'logout' ? {ok:true} : structuredClone(fixtureUser);
   if (parts[4] === 'places') return structuredClone(fixturePlaces.get(parts[5]));
   if (parts.length === 4 && method === 'GET') return structuredClone(fixtureRoom);
+  if (parts[4] === 'messages') {
+    if (method === 'POST') {
+      const message = {id:crypto.randomUUID(),room_id:fixtureRoom.room_id,seq:++fixtureRoom.seq,author_id:fixtureUser.id,text:body.text,created_at:new Date().toISOString()};
+      fixtureRoom.messages.push(message);
+      emitFixture('onMessage',{room_id:fixtureRoom.room_id,seq:fixtureRoom.seq,message});
+      return structuredClone(message);
+    }
+    if (parts[5]) return structuredClone(fixtureRoom.messages.find(message => message.id === parts[5]));
+    return {messages:structuredClone(fixtureRoom.messages),last_seq:fixtureRoom.seq};
+  }
   throw new Error('fixture 미지원 요청: ' + method + ' ' + path);
 }
 const subscriptions = new Map();
@@ -31,3 +41,4 @@ export function replayScenario(key) {
   emitFixture('onRoomUpdated',{room_id:fixtureRoom.room_id,seq,changed:['fixture_scenario']});
   return structuredClone(fixtureRoom);
 }
+
