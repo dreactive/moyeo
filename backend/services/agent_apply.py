@@ -43,13 +43,12 @@ from backend.services.planning import build_plan
 
 
 def apply_plan(room, draft, old_observations, observations):
-    if draft is None:
-        return
-    evidence = relevant_evidence(draft, observations)
-    if evidence != relevant_evidence(draft, old_observations):
+    plans = [plan for plan in (draft, room['current_plan'], room['review_plan']) if plan is not None]
+    if any(relevant_evidence(plan, observations) != relevant_evidence(plan, old_observations) for plan in plans):
         room['versions']['evidence_version'] += 1
         room.update(review_plan=None, active_target=None, confirmations=[])
-    room['current_plan'] = build_plan(room, draft, evidence)
+    if draft is not None:
+        room['current_plan'] = build_plan(room, draft, relevant_evidence(draft, observations))
 
 from backend.services.observations import merge_observations
 

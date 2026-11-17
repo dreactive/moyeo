@@ -164,3 +164,17 @@ def test_worker_applies_results_and_keeps_observations(api):
     room = api.get('/api/rooms/room-fixture').json()
     assert room['current_plan']['content_hash'] != 'a'*64
     assert api.app.state.db.observations['room-fixture']
+
+
+def test_used_evidence_change_without_draft_invalidates_review(room, agent_result):
+    from backend.services.agent_apply import apply_plan
+    from backend.services.planning import freeze_review
+    from copy import deepcopy
+    old = deepcopy(agent_result['observations'])
+    new = deepcopy(old)
+    freeze_review(room, room['current_plan']['confirmation_target'])
+    new[0]['result']['menus'][0]['price_krw'] = 12000
+    apply_plan(room, None, old, new)
+    assert room['versions']['evidence_version'] == 2
+    assert room['review_plan'] is None
+    assert room['active_target'] is None
