@@ -30,3 +30,10 @@ test('editing an anchor label preserves a newer coordinate from another particip
   const latest={origin:{...baseline.origin,latitude:34.8}};
   assert.deepEqual(tripInput.tripPatch(edited,baseline,latest),{origin:{label:'출발역',latitude:34.8,longitude:127.6}});
 });
+test('editing one cost preserves remote prices, metadata and newly added costs', () => {
+  const baseline={fixed_costs:[{id:'c1',description:'숙박',unit_price_krw:80000,subtotal_krw:null}]};
+  const edited={fixed_costs:[{...baseline.fixed_costs[0],description:'숙박 메모'}]};
+  const latest={fixed_costs:[{...baseline.fixed_costs[0],unit_price_krw:90000,subtotal_krw:90000},{id:'c2',description:'교통'}]};
+  const result=tripInput.tripPatch(edited,baseline,latest);
+  assert.deepEqual(result.fixed_costs,[{...latest.fixed_costs[0],description:'숙박 메모'},latest.fixed_costs[1]]);
+});

@@ -17,5 +17,14 @@ export function tripPatch(edited,baseline,latest) {
   for (const key of ['origin','destination','lodging']) {
     if (patch[key] && baseline[key] && latest[key]) patch[key] = {...latest[key],...changedTripFields(patch[key],baseline[key])};
   }
+  if (patch.fixed_costs) patch.fixed_costs = mergeCostEdits(edited.fixed_costs,baseline.fixed_costs,latest.fixed_costs);
   return patch;
+}
+function mergeCostEdits(edited,baseline,latest) {
+  const find = (lines,id) => lines.find(line => line.id === id);
+  return latest.filter(line => !find(baseline,line.id) || find(edited,line.id)).map(line => {
+    const before = find(baseline,line.id);
+    const after = find(edited,line.id);
+    return before && after ? {...line,...changedTripFields(after,before)} : line;
+  }).concat(edited.filter(line => !find(baseline,line.id)));
 }
