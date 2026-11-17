@@ -46,3 +46,11 @@ test('SSE room sequence prevents an older refresh from losing a saved message', 
   assert.equal(state.getSnapshot().messages.length,1);
   assert.equal(state.getSnapshot().seq,3);
 });
+test('duplicate SSE delivery still advances the room sequence', () => {
+  state.applySnapshot({room_id:'r',seq:1,current_plan:null,messages:[]});
+  const message={id:'m',room_id:'r',seq:1};
+  state.appendMessage(message);
+  state.appendMessage(message,3);
+  assert.equal(state.getSnapshot().seq,3);
+  assert.equal(state.getSnapshot().messages.length,1);
+});
