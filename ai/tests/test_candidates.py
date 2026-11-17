@@ -76,3 +76,13 @@ def test_grounded_choices_include_independent_routes_and_ask():
     assert {c["arguments"]["from_ref"] for c in routes} == {"anchor:origin", "anchor:lodging"}
     assert any(c["action"] == "ask" for c in options)
     assert all(c["tool_name"] != "calculate_costs" for c in options)
+
+
+def test_invalid_or_already_observed_tools_are_excluded_before_scoring():
+    from ai.candidates import valid_options, tool_option
+    from ai.tests.test_place_route_tools import task
+    options = [
+        tool_option("get_place_details", {"place_ref": "fixture:place-a"}, "already known"),
+        tool_option("get_place_details", {"place_ref": "invented"}, "invalid"),
+        tool_option("search_places", {"query": "", "region": "여수", "category": None}, "empty")]
+    assert valid_options(task(), options) == []

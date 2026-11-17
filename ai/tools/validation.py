@@ -17,6 +17,8 @@ def validate_arguments(name, arguments, context):
         raise ValueError("Unregistered tool or missing/unexpected arguments")
     if any(not isinstance(arguments[k], t) for k, t in schema.items()):
         raise ValueError("Invalid argument type")
+    if name == "search_places" and (not arguments["query"].strip() or arguments["region"] != context["config"].get("region")):
+        raise ValueError("Search needs a nonempty query in the configured region")
     for key in ("place_ref", "from_ref", "to_ref"):
         if key in arguments and arguments[key] not in context["places"]:
             raise ValueError("Unobserved place reference")

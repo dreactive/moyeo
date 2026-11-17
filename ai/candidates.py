@@ -1,5 +1,5 @@
 import math
-from ai.tools.validation import PARAMETERS
+from ai.tools.validation import PARAMETERS, validate_arguments
 from ai.planning import pending_routes, planned_visits, itinerary_arguments
 from ai.tools.context import build_tool_context
 from ai.cost_inputs import build_cost_inputs
@@ -8,6 +8,24 @@ from ai.cost_inputs import build_cost_inputs
 def tool_option(name, arguments, reason):
     return dict(action="tool", reason=reason, tool_name=name, arguments=arguments,
                 source_message_ids=[], source_refs=[])
+
+
+def valid_options(context, candidates):
+    context = build_tool_context(context)
+    accepted = []
+    for candidate in candidates:
+        if candidate["action"] == "tool":
+            try:
+                validate_arguments(candidate["tool_name"], candidate["arguments"], context)
+            except (ValueError, KeyError, TypeError):
+                continue
+            if any(o["tool_name"] == candidate["tool_name"] and o["arguments"] == candidate["arguments"]
+                   for o in context["observations"]):
+                continue
+        if not any(c["action"] == candidate["action"] and c["tool_name"] == candidate["tool_name"]
+                   and c["arguments"] == candidate["arguments"] for c in accepted):
+            accepted.append(candidate)
+    return accepted
 
 
 def grounded_options(context):
