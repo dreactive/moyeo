@@ -2,7 +2,7 @@ import re
 
 
 def address_key(address):
-    road = re.search(r"([가-힣]+(?:시|군|구))\s+([가-힣0-9·.]+(?:로|길))\s*(\d+(?:-\d+)?)", address)
+    road = re.search(r"([가-힣]+(?:시|군|구))\s+(?:([가-힣]+(?:읍|면))\s+)?([가-힣0-9·.]+(?:로|길))\s*(\d+(?:-\d+)?)", address)
     return road.groups() if road else address.replace(" ", "")
 
 

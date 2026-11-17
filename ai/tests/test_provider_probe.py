@@ -129,3 +129,8 @@ def test_matching_road_number_ignores_province_alias_and_building_annotation():
     row = dict(place_id="1", name="서울해장국", roadAddress="전남광주 여수시 통제영5길 11 1층 서울해장국", y="34.7", x="127.6")
     assert match_record(place, [row]) == row and place["address"] == address
     assert match_record(place, [dict(row, roadAddress="전남광주 여수시 통제영5길 12")]) is None
+def test_township_road_identity_preserves_optional_eup_myeon():
+    from ai.providers.matching import address_key
+    assert address_key("전남광주통합특별시 여수시 돌산읍 무술목길 50") == address_key(
+        "전남광주 여수시 돌산읍 무술목길 50 모이핀 오션점")
+    assert address_key("여수시 돌산읍 무술목길 50") != address_key("여수시 다른면 무술목길 50")
