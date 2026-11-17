@@ -43,3 +43,16 @@ def edit_constraint(room, constraint_id, actor_id, value):
         room['constraints'].append(constraint)
     constraint.update(value=value, status='needs_owner_confirmation')
     return constraint
+
+
+def confirm_constraint(room, constraint_id, actor_id):
+    constraint = owned_constraint(room, constraint_id, actor_id)
+    if constraint['status'] != 'needs_owner_confirmation':
+        return constraint
+    for previous in room['constraints']:
+        if previous['id'] != constraint_id and previous['owner_id'] == actor_id and previous['key'] == constraint['key']:
+            previous['status'] = 'superseded'
+    constraint['status'] = 'confirmed'
+    room['versions']['constraint_version'] += 1
+    room.update(active_target=None, review_plan=None, confirmations=[])
+    return constraint

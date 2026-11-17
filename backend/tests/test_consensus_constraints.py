@@ -36,3 +36,15 @@ def test_constraint_relaxation_requires_owner(room):
     pending = edit_constraint(room, original['id'], original['owner_id'], 150000)
     assert original['value'] == previous
     assert pending['status'] == 'needs_owner_confirmation'
+
+
+def test_constraint_confirmation_supersedes_only_owner_key(room):
+    from backend.services.consensus import edit_constraint, confirm_constraint
+    original = room['constraints'][0]
+    original['status'] = 'confirmed'
+    owner = original['owner_id']
+    pending = edit_constraint(room, original['id'], owner, 150000)
+    confirm_constraint(room, pending['id'], owner)
+    assert original['status'] == 'superseded'
+    assert pending['status'] == 'confirmed'
+    assert room['active_target'] is None
