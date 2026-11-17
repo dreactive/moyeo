@@ -22,3 +22,25 @@ async def confirm(room_id: str, body: Confirm, request: Request, user=Depends(cu
         room = require_room(db, room_id, user['id'])
     room['messages'] = room['messages'][-50:]
     return room
+
+@router.post('/withdraw')
+async def withdraw(room_id: str, body: Confirm, request: Request, user=Depends(current_user)):
+    db = request.app.state.db
+    with db.lock:
+        room = require_room(db, room_id, user['id'])
+        record_confirmation(room, user['id'], body.target.model_dump(), 'withdraw')
+        db.put('room:' + room_id, room)
+        publish_event(db, room_id, 'room.updated', {'changed':['confirmations']})
+    room['messages'] = room['messages'][-50:]
+    return room
+
+@router.post('/activate')
+async def activate(room_id: str, body: Activate, request: Request, user=Depends(current_user)):
+    db = request.app.state.db
+    with db.lock:
+        room = require_room(db, room_id, user['id'])
+        activate_plan(room, body.plan_revision)
+        db.put('room:' + room_id, room)
+        publish_event(db, room_id, 'room.updated', {'changed':['review_plan','active_target','confirmations']})
+    room['messages'] = room['messages'][-50:]
+    return room

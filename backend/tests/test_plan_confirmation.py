@@ -83,3 +83,16 @@ def test_plan_confirmation_http(api):
         response = api.post('/api/rooms/room-fixture/plan/confirm', json={'target':target})
         assert response.status_code == 200
         assert (response.json()['confirmed_plan'] is not None) == (i == 4)
+
+
+def test_http_withdraw_and_activate_clear_only_current_votes(api):
+    path = '/api/rooms/room-fixture/plan'
+    room = api.get('/api/rooms/room-fixture').json()
+    target = room['current_plan']['confirmation_target']
+    api.post(path+'/confirm', json={'target':target})
+    withdrawn = api.post(path+'/withdraw', json={'target':target})
+    assert withdrawn.status_code == 200
+    assert withdrawn.json()['confirmations'][0]['stance'] == 'withdraw'
+    activated = api.post(path+'/activate', json={'plan_revision':room['current_plan']['plan_revision']})
+    assert activated.status_code == 200
+    assert activated.json()['confirmations'] == []
