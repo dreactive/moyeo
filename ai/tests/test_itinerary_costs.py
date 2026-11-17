@@ -81,3 +81,15 @@ def test_holiday_and_unknown_hours_are_distinct():
     assert conflicts[0]["type"] == "opening_hours" and not questions
     conflicts, questions = validate_hours(visit, {"opening_hours": None}, {})
     assert not conflicts and questions[0]["target_ref"] == "a"
+
+
+def test_confirmed_personal_return_limit_is_enforced_by_builder():
+    from ai.tools.itinerary import build_itinerary
+    config = {"start_date": "2026-11-21", "end_date": "2026-11-21"}
+    visit = {"item_id": "a", "place_ref": "p", "date": "2026-11-21",
+             "preferred_start_at": "2026-11-21T15:00:00+09:00", "stay_minutes": 60}
+    legs = [{"from_ref": "anchor:origin", "to_ref": "p", "duration_seconds": 0},
+            {"from_ref": "p", "to_ref": "anchor:destination", "duration_seconds": 1800}]
+    constraints = [{"key": "return_by", "value": "16:00", "kind": "hard", "status": "confirmed"}]
+    result = build_itinerary([visit], {"origin": {}, "destination": {}}, constraints, legs, config)
+    assert any(c["type"] == "time" for c in result["conflicts"])

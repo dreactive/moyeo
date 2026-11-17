@@ -35,7 +35,17 @@ def build_itinerary(visits, anchors, constraints, route_legs, config):
             day["visits"].append(scheduled)
             day["route_legs"].append(leg)
             cursor, previous = datetime.fromisoformat(scheduled["end_at"]), visit["place_ref"]
-    return dict(days=days, questions=questions, conflicts=[])
+    conflicts = []
+    for day in days:
+        destination = "anchor:destination" if day["date"] == config["end_date"] else "anchor:lodging"
+        limits = [config.get("day_end_time", "18:00")]
+        if day["date"] == config["end_date"]:
+            limits += [c["value"] for c in constraints if c["key"] == "return_by"
+                       and c["kind"] == "hard" and c["status"] == "confirmed"]
+        found, missing = finish_day(day, destination, route_legs, min(limits), config.get("_base_versions", {}))
+        conflicts.extend(found)
+        questions.extend(missing)
+    return dict(days=days, questions=questions, conflicts=conflicts)
 
 
 def schedule_visit(visit, cursor, duration_seconds):
