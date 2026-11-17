@@ -6,20 +6,20 @@ Date: 2026-11-18, Asia/Seoul. This report separates independent, fixture/fake in
 
 - Common base: 20db9c11b2f8a6bdbfa1824720ca9aa502fe71a3.
 - S2 integration: C:/Users/user/Desktop/Competition/2026_AI_Agent_Hackaton2/.worktrees/trip-s2-be, branch work/be.
-- S1 verified handoff: work/fe c01f8c1 (including fee36dd and eight G3 follow-up commits), merged into S2. Frontend source remains owned by S1.
-- S3 handoff: pending. No uncommitted AI source has been integrated.
+- S1 verified handoff: work/fe 615172b (including c01f8c1 and four common-basis follow-up commits), merged into S2. Frontend source remains owned by S1.
+- S3 core handoff: b7c2a6b explicitly approved and merged for G2. Final additional SHA and GPU release remain pending. No uncommitted AI source has been integrated.
 - Source checkout, submission package/PDFs, ignored weights, personal AGENTS/skill and existing user keys remain preserved.
 
 ## Gates
 
 | Gate | Actual mode and command | Observed result | Status |
 |---|---|---|---|
-| G1 FE | node --test frontend/tests/*.test.js | 33 passed, no failures; includes request/target race, first SSE recovery, edited-field PATCH, official snapshot colors. | PASS independent fixture |
+| G1 FE | node --test frontend/tests/*.test.js | 40 passed, no failures; includes request/target race, first SSE recovery, edited-field PATCH, official snapshot colors. | PASS independent fixture |
 | G1 BE | backend/.venv/Scripts/python.exe -m pytest -c backend/pytest.ini backend/tests -q | 109 passed, one Starlette httpx deprecation warning. Fresh subprocess AI/torch import blocking and cold app import passed. | PASS independent fixture |
-| G1 AI | S3 independent evidence | Awaiting final SHA, README and tests. | PENDING |
-| G2 BE/AI | LocalAIBridge fake/fixture | Stub factory/lifespan/delegation/failure tests pass. Real S3 runtime connection not yet counted. | PENDING real runtime |
+| G1 AI | S2 integration venv, ai/tests at b7c2a6b | 96 passed in 1.77 seconds; final additional handoff pending. | PASS core independent fake/fixture |
+| G2 BE/AI | Real LocalAIBridge + S3 runtime fake/fixture | 3 integration scenarios pass: real JSON apply/observations/trace; four HTTP accounts from empty room through menu/car inputs, ready 130000 and unanimous confirmation; declared late-day existing plan through owner deadline, conflict, drop, recalculation, new unanimous target and immutable history. | PASS fake/fixture runtime |
 | G3 FE/BE | http://127.0.0.1:8000, actual FastAPI + SQLite + FixtureAgentPort | Four cookie logins, 3/4 pending and 4/4 same-target confirmation, one POST delivered over real SSE to the three other clients, dev token gate, public JS key only in HTML. | PASS HTTP fixture |
-| G3 UI | Parent IAB observation | Login, invitation, pinned review/confirmed target and four votes, place/menu/evidence details, two actual Kakao SDK map components observed. S1 follow-up display/form/SSE fixes integrated and final UI recheck pending. | PARTIAL UI fixture |
+| G3 UI | Parent IAB observation | Login, invitation, pinned review/confirmed target and four votes, place/menu/evidence details, two actual Kakao SDK map components observed. S1 follow-up display/form/SSE fixes integrated and final UI recheck pending. | PASS UI fixture; basis invalidation separately FE 40-test verified |
 | G4 | local_qwen/live providers/four-person planning | Integration environment prepared only. No completed S2 Qwen/live four-person run yet. | NOT PASSED |
 
 Local reproducible transport scripts/output: backend/.artifacts/g3_server.py, g3_http.py, independent-tests.txt, frontend-tests.txt. Artifacts are intentionally ignored. Synthetic demo accounts and credentials are local test setup; they are not user accounts on an external service. The ready seed is explicitly a fixture plan hashed by Backend build_plan; subsequent port output is the fixed needs_input example. HTTP success is not a claim of natural-language planning.
@@ -46,3 +46,14 @@ Original develop and remote refs were unchanged during independent work. Only S2
 Parent IAB rechecked the fresh room-g3-2ab86e3d after restarting with a new isolated SQLite file and unique room/invite IDs. Observed: actual cookie login/join; current draft separate from pinned review revision2; review==confirmed same actual content hash and 4/4 votes; both same-version fixture items green; place details/source text; two actual Kakao SDK tile/marker/polyline map components. Screenshot: C:/Users/user/.codex/visualizations/2026/11/17/01a1e9f0-734d-7000-8d80-dc48c5f02a61/g3-integration.jpg. This is fixture places/prices plus actual SDK/HTTP integration, not live planning. G3 UI is PASS.
 
 An earlier test bootstrap reseeded room state while retaining old events in the same test DB. That invalid fixture could move the browser cursor ahead of the reseeded snapshot. The bootstrap now creates a fresh DB and unique room ID for every run; the FE stale-response guards were preserved. HTTP/SSE and UI were rerun successfully on the consistent fresh fixture. Real user/source data was not reset.
+
+
+## G2 complete fake/fixture path
+
+Command: backend/.data/integration-venv/Scripts/python.exe -X utf8 -m pytest -c backend/pytest.ini backend/tests/test_end_to_end.py -q -m integration => **3 passed**, one Starlette warning, 1.50 seconds. Tests use the actual S3 runtime and registered tools. They do not load Torch or claim live facts.
+
+The first scenario verifies JSON application, room observations, human-message isolation and actual fake decision/state_applied traces. The second creates four HTTP accounts and a new room, extracts the first place, counts three unique supporters with a repeated utterance, resolves the menu and explicitly declared fuel/parking/toll cost, calculates a ready 130000 KRW plan and requires four equal targets before green. The third starts from a declared existing 17:00 second-day visit, confirms its baseline, adds an owner-only 16:00 deadline, obtains a blocking conflict, selects the stored drop option, recalculates, and collects a new unanimous target while retaining both immutable confirmed snapshots.
+
+The late-visit data is a Backend-owned fictional fixture. Its second-day hours are explicitly declared in backend/tests/fixtures/README.md and remain mode=fixture; original AI/common examples were not edited. The dropped-only late-visit case checks selection/revision/history; the separate empty-room case checks an included item's green state.
+
+Integration found and fixed generated question identity drift: question IDs derived from a temporary client_ref are normalized together with target_ref only when they exactly match the generated question pattern. Custom opaque/support-source IDs remain unchanged. This prevents the original and resolved IDs from leaving duplicate open menu cards after a valid answer. Unit RED→GREEN and complete four-person HTTP flow verify the fix.
