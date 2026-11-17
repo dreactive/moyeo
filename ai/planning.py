@@ -46,7 +46,7 @@ def itinerary_arguments(context):
     return dict(visits=planned_visits(context),
                 anchors={k: context["config"].get(k) for k in ("origin", "destination", "lodging")},
                 constraints=context["constraints"],
-                route_legs=[o["result"] for o in context["observations"] if o["tool_name"] == "get_car_route"])
+                route_legs=[o["result"] for o in selected_route_observations(context)])
 
 
 
@@ -64,7 +64,7 @@ def next_route(context, only_day=None):
         destination = "anchor:destination" if day == config["end_date"] else "anchor:lodging"
         for visit in day_visits + [dict(place_ref=destination)]:
             arguments = dict(from_ref=previous, to_ref=visit["place_ref"], departure_at=cursor.isoformat())
-            observed = next((o["result"] for o in context["observations"]
+            observed = next((o["result"] for o in reversed(context["observations"])
                              if o["tool_name"] == "get_car_route" and o["arguments"] == arguments), None)
             if observed is None:
                 return arguments
@@ -78,3 +78,24 @@ def pending_routes(context):
     first, last = (date.fromisoformat(context["config"][k]) for k in ("start_date", "end_date"))
     routes = [next_route(context, (first + timedelta(days=n)).isoformat()) for n in range((last - first).days + 1)]
     return [r for r in routes if r is not None]
+
+
+def selected_route_observations(context):
+    config, visits, selected = context["config"], planned_visits(context), []
+    first, last = (date.fromisoformat(config[k]) for k in ("start_date", "end_date"))
+    for offset in range((last - first).days + 1):
+        day = (first + timedelta(days=offset)).isoformat()
+        cursor = datetime.fromisoformat(day + "T" + config.get("day_start_time", "09:00") + ":00+09:00")
+        previous = "anchor:origin" if offset == 0 else "anchor:lodging"
+        target = "anchor:destination" if day == config["end_date"] else "anchor:lodging"
+        for visit in [v for v in visits if v["date"] == day] + [dict(place_ref=target)]:
+            args = dict(from_ref=previous, to_ref=visit["place_ref"], departure_at=cursor.isoformat())
+            observed = next((o for o in reversed(context["observations"])
+                             if o["tool_name"] == "get_car_route" and o["arguments"] == args), None)
+            if observed is None:
+                break
+            selected.append(observed)
+            if "item_id" in visit:
+                cursor = datetime.fromisoformat(schedule_visit(visit, cursor, observed["result"]["duration_seconds"])["end_at"])
+            previous = visit["place_ref"]
+    return selected

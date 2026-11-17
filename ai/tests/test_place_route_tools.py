@@ -77,3 +77,22 @@ async def test_explicit_fixture_routes_are_not_created_for_changed_anchors():
     context["config"]["origin"]["latitude"] = 37.5
     with pytest.raises(ValueError):
         fixture_route(context, args)
+
+
+async def test_itinerary_uses_only_route_observed_for_actual_departure():
+    from ai.planning import itinerary_arguments
+    from ai.tools.registry import RegisteredTools
+    value = task()
+    value["current_plan"]["days"][0]["visits"] = value["current_plan"]["days"][0]["visits"][:1]
+    value["current_plan"]["days"][0]["visits"][0]["start_at"] = None
+    def observed(a, b, when, seconds, evidence):
+        return dict(tool_name="get_car_route", arguments=dict(from_ref=a, to_ref=b, departure_at=when),
+            result=dict(from_ref=a, to_ref=b, distance_m=1000, duration_seconds=seconds, toll_krw=0, polyline=[], evidence_id=evidence))
+    value["observations"] += [
+        observed("anchor:origin", "fixture:place-a", "2026-11-20T09:00:00+09:00", 600, "old"),
+        observed("anchor:origin", "fixture:place-a", "2026-11-21T09:00:00+09:00", 3600, "new"),
+        observed("fixture:place-a", "anchor:lodging", "2026-11-21T11:00:00+09:00", 600, "to-lodging"),
+        observed("anchor:lodging", "anchor:destination", "2026-11-22T09:00:00+09:00", 600, "return")]
+    result = await RegisteredTools(value).execute("build_itinerary", itinerary_arguments(value))
+    assert result["days"][0]["visits"][0]["start_at"] == "2026-11-21T10:00:00+09:00"
+    assert result["days"][0]["route_legs"][0]["evidence_id"] == "new"
