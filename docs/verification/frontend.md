@@ -144,3 +144,16 @@ f0f167a refactor(fe): organize module imports and normalize final file endings
 
 38ab4c0 docs(fe): record F1-F5 verification evidence and integration handoff
 마감 결정: 사용자가 S2 통합을 지정했으므로 work/fe와 worktree를 그대로 보존한다. S1 push/PR/merge 없음.
+
+## F4 후속 리뷰 — 상세 응답 경합 (2026-11-18)
+
+P2 재현: 같은 방/장소의 GET 두 개를 fake Promise로 제어했다. 새 요청이 22,222원으로 먼저 완료되고 옛 요청이 11,111원으로 나중에 완료되면 이전 구현이 옛 가격/근거를 표시하는 실패를 관측했다.
+
+- 9d207a7: 증가하는 상세 요청 sequence를 캡처하고 최신 요청만 렌더링한다.
+- 9aac375: 표시 중인 review_plan 우선 confirmation_target을 값으로 복사한다. 응답 시 다섯 필드(참가자/조건/근거/plan version 및 content_hash)가 바뀌면 폐기한다. 새 요청이 아직 시작되지 않은 경우도 보호한다.
+- 51c3778: 새 초안만 바뀌고 검토 target이 유지되면 정상 응답이 수락됨을 검증한다.
+- 추가 재현: revision1 GET 대기 → revision2/evidence2 snapshot → 같은 장소 새 GET 먼저 완료 → 옛 GET 완료. 22,222원/price-22222가 유지되고 price-11111은 표시되지 않는다.
+
+변경 범위: frontend/src/place.js, frontend/tests/place.test.js, 이 검증 기록만. HTTP/DTO 변경 없음. Node 제어 응답 테스트이며 실제 API/SDK 관측 증거로 바꾸지 않는다.
+최종 검증: node --test frontend/tests/*.test.js **27/27 pass**, node --check frontend/src/place.js 통과, staged diff/변경 경로 검토. 기존 23개 테스트도 모두 통과했다.
+통합 추가 범위: 기존 인계 6f11ccd 다음의 커밋만 순서대로 가져온다. work/fe는 보존, push/PR/merge는 S2 소유다.

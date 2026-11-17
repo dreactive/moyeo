@@ -62,3 +62,18 @@ test('a new draft does not invalidate details for the unchanged pinned review', 
   await pending;
   assert.match(output.place,/22,222원/);
 });
+test('revision two price and evidence survive a late revision one response for the same place', async () => {
+  const {requests,output} = prepare();
+  const older = selectPlace(room.room_id,place.place.id);
+  const next = structuredClone(room);
+  Object.assign(next.current_plan.confirmation_target,{plan_revision:2,evidence_version:2});
+  applySnapshot(next);
+  const newer = selectPlace(room.room_id,place.place.id);
+  requests[1].resolve(Response.json(details(22222)));
+  await newer;
+  requests[0].resolve(Response.json(details(11111)));
+  await older;
+  assert.match(output.place,/22,222원/);
+  assert.match(output.place,/price-22222/);
+  assert.doesNotMatch(output.place,/price-11111/);
+});
