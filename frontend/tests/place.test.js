@@ -37,3 +37,15 @@ test('older detail request cannot overwrite a newer response for the same place'
   assert.match(output.place,/22,222원/);
   assert.doesNotMatch(output.place,/price-11111/);
 });
+test('a changed displayed plan target invalidates an in-flight detail response without a replacement request', async () => {
+  for (const key of Object.keys(room.current_plan.confirmation_target)) {
+    const {requests,output} = prepare();
+    const pending = selectPlace(room.room_id,place.place.id);
+    const next = structuredClone(room);
+    next.current_plan.confirmation_target[key] += 'changed';
+    applySnapshot(next);
+    requests[0].resolve(Response.json(details(11111)));
+    await pending;
+    assert.equal(output.place,undefined,key);
+  }
+});
