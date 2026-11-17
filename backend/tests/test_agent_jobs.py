@@ -35,3 +35,34 @@ def test_status_is_published_without_chat():
     assert db.get('room:r')['agent_status']['state'] == 'running'
     assert db.get('room:r')['messages'] == []
     assert db.get('events:r')[0]['event'] == 'agent.status'
+
+
+def test_single_worker_never_overlaps_runs():
+    import asyncio
+    from backend.services.agent_jobs import AgentJobs
+    from backend.db import Database
+    from backend.services.rooms import new_room
+    async def scenario():
+        class Port:
+            active = 0
+            peak = 0
+            async def run(self, task, emit):
+                self.active += 1
+                self.peak = max(self.peak, self.active)
+                await asyncio.sleep(.01)
+                self.active -= 1
+                return {'completion':'done'}
+        db = Database(':memory:')
+        room = new_room({'id':'u','name':'a'}, {'title':'t'})
+        room['room_id'] = 'r'
+        db.put('room:r', room)
+        port = Port()
+        jobs = AgentJobs(db, port)
+        worker = asyncio.create_task(jobs.work())
+        await jobs.enqueue('r', 'replan')
+        await jobs.enqueue('r', 'replan')
+        await asyncio.wait_for(jobs.queue.join(), 2)
+        worker.cancel()
+        assert port.peak == 1
+        assert db.get('room:r')['agent_status']['state'] == 'done'
+    asyncio.run(scenario())

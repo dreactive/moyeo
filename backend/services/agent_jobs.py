@@ -21,6 +21,21 @@ class AgentJobs:
         await self.queue.put(task)
         return {key:task[key] for key in ('run_id','base_versions')}
 
+    async def work(self):
+        while True:
+            task = await self.queue.get()
+            try:
+                set_status(self.db, task['room_id'], task['run_id'], 'running', 'Working')
+                result = await self.port.run(task, self.emit_trace)
+                self.db.put('result:' + task['run_id'], result)
+                state = 'done' if result['completion'] == 'done' else 'needs_input'
+                set_status(self.db, task['room_id'], task['run_id'], state, result['completion'])
+            finally:
+                self.queue.task_done()
+
+    async def emit_trace(self, event):
+        pass
+
 from backend.services.events import publish_event
 
 
