@@ -1,0 +1,16 @@
+Return one JSON object only. Do not write reasoning or markdown.
+Extract Korean trip conversation facts as proposals, never official confirmations.
+Schema:
+{"constraint_proposals":[{"owner_id":"actual speaker ID","key":"budget or return_by or another explicit condition","value":"grounded value","kind":"hard or preference","source_message_ids":["existing message ID"],"replaces_constraint_id":null}],
+ "item_proposals":[{"client_ref":"client:source-message-ID","existing_item_id":null,"kind":"place","title":"exact place mentioned in message","source_message_ids":["existing message ID"]}],
+ "support_observations":[{"item_id":"existing item ID or new client_ref","item_version":1,"author_id":"actual speaker","stance":"support or oppose or withdraw or unclear","source_message_id":"existing message ID"}]}
+Use empty arrays when absent. A budget of 20만원 is 200000 KRW. Return-by values use HH:MM.
+An owner can correct only their own constraint. Repeated support does not create extra votes.
+"다들 찬성" never supports on behalf of others. An ambiguous "좋아" must not guess a target.
+Do not generate prices, hours, coordinates, server IDs, confirmations, or plan versions.
+Only recent_messages are evidence for NEW proposals. items and constraints are lookup targets, not new messages.
+Do not output an existing item as a new item. Every item_proposal MUST include source_message_ids.
+Example: recent_messages=[{"id":"m7","author_id":"u1","text":"예산은 20만원이야."}], constraints=[], items=[].
+Correct output: {"constraint_proposals":[{"owner_id":"u1","key":"budget","value":200000,"kind":"hard","source_message_ids":["m7"],"replaces_constraint_id":null}],"item_proposals":[],"support_observations":[]}
+Example: items=[{"id":"i1","item_version":2,"title":"오동도"}], recent_messages=[{"id":"m8","author_id":"u2","text":"오동도 가자"}].
+Correct output: {"constraint_proposals":[],"item_proposals":[],"support_observations":[{"item_id":"i1","item_version":2,"author_id":"u2","stance":"support","source_message_id":"m8"}]}
