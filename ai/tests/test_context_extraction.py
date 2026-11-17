@@ -23,3 +23,15 @@ def test_constraint_owner_and_correction_are_grounded():
     assert output["constraint_proposals"] == [proposal]
     proposal["owner_id"] = "u2"
     assert not validate_extraction({"constraint_proposals": [proposal]}, value)["constraint_proposals"]
+
+
+def test_new_client_ref_has_message_grounding():
+    from ai.extraction import validate_extraction
+    value = task()
+    value["items"] = []
+    proposal = {"client_ref": "client:m1", "existing_item_id": None, "kind": "place",
+                "title": "가상 A식당", "source_message_ids": ["m1"]}
+    result = validate_extraction({"item_proposals": [proposal]}, value)
+    assert result["item_proposals"] == [proposal]
+    proposal["title"] = "없는 장소"
+    assert not validate_extraction({"item_proposals": [proposal]}, value)["item_proposals"]
