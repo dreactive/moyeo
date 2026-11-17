@@ -1,3 +1,27 @@
+from datetime import date, datetime, timedelta
+from ai.tools.itinerary import schedule_visit
+
+
+def resolved_item_visits(context):
+    target = None if context.get("current_plan") is None else set(context.get("_new_item_refs", []))
+    visits = []
+    for item in context["items"]:
+        if item.get("kind") != "place" or (target is not None and item["id"] not in target):
+            continue
+        for observation in reversed(context["observations"]):
+            args = observation["arguments"]
+            if observation["tool_name"] != "search_places" or args.get("query") != item["title"] or args.get("region") != context["config"]["region"]:
+                continue
+            places = observation["result"]["places"]
+            exact = [p for p in places if p["name"] == item["title"]]
+            matches = exact or places
+            if len(matches) == 1:
+                visits.append(dict(item_id=item["id"], place_ref=matches[0]["id"], date=context["config"]["start_date"],
+                                   preferred_start_at=None, stay_minutes=None, selected_menu_ids=[]))
+            break
+    return visits
+
+
 def planned_visits(context):
     plan = context.get("current_plan") or {}
     refs = {i["id"]: i.get("place_ref") for i in plan.get("item_snapshots", [])}
@@ -5,6 +29,7 @@ def planned_visits(context):
                  date=d["date"], preferred_start_at=v.get("start_at"),
                  stay_minutes=v.get("stay_minutes"), selected_menu_ids=v.get("selected_menu_ids", []))
             for d in plan.get("days", []) for v in d["visits"]]
+    visits.extend(resolved_item_visits(context))
     for q in context.get("questions", []):
         if q["status"] != "answered" or q.get("owner_id") not in (None, q.get("answered_by")):
             continue
@@ -22,8 +47,6 @@ def itinerary_arguments(context):
                 anchors={k: context["config"].get(k) for k in ("origin", "destination", "lodging")},
                 constraints=context["constraints"],
                 route_legs=[o["result"] for o in context["observations"] if o["tool_name"] == "get_car_route"])
-from datetime import date, datetime, timedelta
-from ai.tools.itinerary import schedule_visit
 
 
 
