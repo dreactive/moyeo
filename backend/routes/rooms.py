@@ -66,3 +66,29 @@ async def trip(room_id: str, body: dict, request: Request, user=Depends(current_
             publish_event(db, room_id, 'room.updated', {'changed':['config','versions','confirmations']})
     await request.app.state.jobs.enqueue(room_id, 'trip_changed')
     return snapshot(room_id, request, user)
+
+from backend.schemas import ValueAnswer
+from backend.services.consensus import edit_constraint, confirm_constraint
+
+
+@router.patch('/{room_id}/constraints/{constraint_id}')
+async def edit_condition(room_id: str, constraint_id: str, body: ValueAnswer, request: Request, user=Depends(current_user)):
+    db = request.app.state.db
+    with db.lock:
+        room = require_room(db, room_id, user['id'])
+        condition = edit_constraint(room, constraint_id, user['id'], body.value)
+        db.put('room:' + room_id, room)
+        publish_event(db, room_id, 'room.updated', {'changed':['constraints']})
+    return condition
+
+
+@router.post('/{room_id}/constraints/{constraint_id}/confirm')
+async def confirm_condition(room_id: str, constraint_id: str, request: Request, user=Depends(current_user)):
+    db = request.app.state.db
+    with db.lock:
+        room = require_room(db, room_id, user['id'])
+        confirm_constraint(room, constraint_id, user['id'])
+        db.put('room:' + room_id, room)
+        publish_event(db, room_id, 'room.updated', {'changed':['constraints','versions','confirmations']})
+    await request.app.state.jobs.enqueue(room_id, 'constraint_confirmed')
+    return snapshot(room_id, request, user)
