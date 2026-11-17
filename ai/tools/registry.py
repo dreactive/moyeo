@@ -1,5 +1,6 @@
 from copy import deepcopy
 from ai.tools.context import build_tool_context
+from ai.tools.routes import observed_route
 
 
 class RegisteredTools:
@@ -8,6 +9,8 @@ class RegisteredTools:
         self.mode, self.settings = mode, settings or {}
 
     async def execute(self, name, arguments):
+        if name == "get_car_route":
+            return observed_route(self.context, arguments)
         if name == "get_place_details":
             ref = arguments["place_ref"]
             if ref not in self.context["details"]:
