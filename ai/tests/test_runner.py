@@ -97,3 +97,17 @@ async def test_rule_assistance_is_labeled_and_does_not_skip_base_generation():
     assert model.calls == 1 and result["constraint_proposals"][0]["value"] == 200000
     assert events[0]["payload"]["extraction_mode"] == "rule-assisted"
     assert events[0]["payload"]["model_mode"] == "local_qwen"
+
+
+async def test_ready_unchanged_plan_finishes_without_judge_or_lookup():
+    from ai.runner import run_steps
+    from ai.result import empty_result
+    value = task()
+    value["recent_messages"] = []
+    value["current_plan"]["validation"] = "ready"
+    value["questions"] = []
+    value["current_plan"].update(value["base_versions"])
+    result = empty_result(value)
+    await run_steps(value, None, None, None, result)
+    assert result["completion"] == "done" and not result["questions"]
+    assert result["plan_draft"]["selected_item_ids"] == ["item-a", "item-b"]

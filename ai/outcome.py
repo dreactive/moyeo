@@ -1,4 +1,19 @@
 from ai.questions import question
+from copy import deepcopy
+
+
+def reuse_current_plan(task, result):
+    plan = task.get("current_plan") or {}
+    changed = any(result[k] for k in ("constraint_proposals", "item_proposals", "support_observations", "questions"))
+    valid = (plan.get("validation") == "ready" and plan.get("cost", {}).get("total_krw") is not None
+             and all(plan.get(k) == v for k, v in task["base_versions"].items())
+             and not task.get("user_selection") and not any(q["status"] == "open" for q in task["questions"]))
+    if changed or not valid:
+        return False
+    keys = ("selected_item_ids", "days", "cost", "validation", "blocking_conflict_ids")
+    result["plan_draft"] = {k: deepcopy(plan[k]) for k in keys}
+    result["completion"] = "done"
+    return True
 
 
 def assemble_result(task, result):

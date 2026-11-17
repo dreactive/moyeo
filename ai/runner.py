@@ -7,7 +7,7 @@ from ai.tools.context import build_tool_context
 from ai.tools.validation import validate_arguments
 from ai.context import build_context
 from ai.questions import question
-from ai.outcome import assemble_result
+from ai.outcome import assemble_result, reuse_current_plan
 from ai.result import empty_result
 from ai.extraction import validate_extraction
 from ai.assistance import assist_extraction
@@ -47,6 +47,8 @@ async def run_agent(task, model, tools, emit_trace):
 
 
 async def run_steps(task, model, tools, emit_trace, result):
+    if reuse_current_plan(task, result):
+        return
     for step in range(1, 21):
         context = build_context(task, result["observations"])
         action = await choose_action(context, model, emit_trace, step)
