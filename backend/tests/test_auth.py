@@ -4,3 +4,12 @@ def test_password_hash_is_salted():
     assert first != hash_password('correct horse')
     assert verify_password('correct horse', first)
     assert not verify_password('wrong', first)
+
+
+def test_account_registration_hides_hash():
+    from backend.auth import register_user
+    from backend.db import Database
+    db = Database(':memory:')
+    user = register_user(db, '민수', 'a@example.test', 'password123')
+    assert set(user) == {'id', 'name', 'email'}
+    assert db.get('user:' + user['id'])['password_hash'] != 'password123'
