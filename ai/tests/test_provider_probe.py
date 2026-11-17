@@ -81,3 +81,13 @@ async def test_probe_missing_credentials_is_not_live_success():
     report = await probe_place_data("apify", "여수", settings={"APIFY_TOKEN": ""})
     assert report["matched_place_count"] == 0 and report["limitations"]
     assert report["mode"] == "live" and report["status"] == "not_run"
+
+
+def test_menu_identity_survives_reordering_and_zero_text_is_preserved():
+    from ai.providers.apify import normalize_menu
+    a = {"name": "A", "price": 0}
+    b = {"name": "B", "price": 20000}
+    first = [normalize_menu(m, "r", i, "now")[0] for i, m in enumerate([a, b])]
+    again = [normalize_menu(m, "r", i, "now")[0] for i, m in enumerate([b, a])]
+    assert first[0]["id"] == again[1]["id"] and first[1]["id"] == again[0]["id"]
+    assert first[0]["price_text"] == "0"

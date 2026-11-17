@@ -1,6 +1,7 @@
 from ai.providers.normalize import price_krw
 from ai.providers.hours import expand_hours
 import json
+from hashlib import sha256
 
 
 async def fetch_rows(client, token, *, keywords=None, urls=None):
@@ -43,9 +44,12 @@ def evidence(record_id, field, raw, normalized, retrieved_at, evidence_id):
 
 
 def normalize_menu(raw, record_id, index, retrieved_at):
-    ref = f"apify:{record_id}:menu:{index}"
+    signature = json.dumps([raw["name"], raw.get("servingBasis"), raw.get("description")], ensure_ascii=False)
+    stable_id = str(raw.get("menuId") or sha256(signature.encode()).hexdigest()[:16])
+    ref = f"apify:{record_id}:menu:{stable_id}"
     price = price_krw(raw.get("price"))
+    text = raw.get("priceText") if raw.get("priceText") is not None else raw.get("price")
     menu = dict(id=ref, name=raw["name"], price_krw=price,
-                price_text=str(raw.get("priceText") or raw.get("price") or ""),
+                price_text=str("" if text is None else text),
                 serving_basis=raw.get("servingBasis"), evidence_id=ref + ":price")
     return menu, evidence(record_id, "menu_price", raw.get("price"), price, retrieved_at, ref + ":price")
