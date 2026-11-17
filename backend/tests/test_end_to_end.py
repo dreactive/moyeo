@@ -100,3 +100,15 @@ def test_existing_late_visit_plan_can_be_recalculated(room):
         assert receipt.status_code == 202
         assert snapshot['current_plan']['validation'] == 'ready', {'questions':snapshot['questions'],'conflicts':snapshot['conflicts'],'status':snapshot['agent_status']}
         assert len(snapshot['current_plan']['days'][1]['visits']) == 1
+        target = snapshot['current_plan']['confirmation_target']
+        for client in clients:
+            assert client.post(path+'/plan/confirm', json={'target':target}).status_code == 200
+        historical = clients[0].get(path).json()['confirmed_plan']
+        clients[3].post(path+'/messages', json={'text':'나는 16시까지 귀가해야 해'})
+        clients[0].portal.call(clients[0].app.state.jobs.queue.join)
+        snapshot = clients[0].get(path).json()
+        condition = next(c for c in snapshot['constraints'] if c['key'] == 'return_by')
+        assert condition['owner_id'] == 'u4'
+        assert condition['status'] == 'needs_owner_confirmation'
+        assert clients[0].post(path+'/constraints/'+condition['id']+'/confirm').status_code == 403
+        assert snapshot['confirmed_plan'] == historical
