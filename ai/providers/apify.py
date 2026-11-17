@@ -1,5 +1,5 @@
 from ai.providers.normalize import price_krw
-from ai.providers.hours import expand_hours
+from ai.providers.hours import expand_hours, closed_dates
 import json
 from hashlib import sha256
 
@@ -29,8 +29,9 @@ def normalize_place(raw, days, retrieved_at):
     intervals = expand_hours(hours, days) or None
     ref = "apify:" + record_id + ":hours"
     opening = dict(raw_text=json.dumps(hours, ensure_ascii=False), intervals=intervals,
-                   holiday_text=json.dumps([{k: h.get(k) for k in ("comingRegularClosedDays", "comingIrregularClosedDays")}
-                                            for h in hours], ensure_ascii=False), evidence_id=ref)
+                   holiday_text=json.dumps(dict(closed_dates=closed_dates(hours, days),
+                       descriptions=[s.get("description") for h in hours for s in h.get("schedule") or []]),
+                       ensure_ascii=False), evidence_id=ref)
     return dict(place=place, menus=[p[0] for p in pairs], opening_hours=opening,
                 evidence=[p[1] for p in pairs] + [evidence(record_id, "opening_hours", hours, intervals, retrieved_at, ref)])
 

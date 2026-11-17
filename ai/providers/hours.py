@@ -1,5 +1,21 @@
 from datetime import date
 import re
+import json
+
+
+def closed_dates(hours, days):
+    closed = []
+    for day in days:
+        weekday = "월화수목금토일"[date.fromisoformat(day).weekday()]
+        for section in hours or []:
+            explicit = json.dumps([section.get("comingRegularClosedDays"),
+                                   section.get("comingIrregularClosedDays")], ensure_ascii=False).replace(".", "-")
+            spans = section.get("schedule") or []
+            weekly = any(s.get("day") in (weekday, weekday + "요일", "매일") and
+                         "휴무" in (s.get("description") or "") for s in spans)
+            if weekly or day in explicit:
+                closed.append(day)
+    return sorted(set(closed))
 
 
 def expand_hours(hours, days):

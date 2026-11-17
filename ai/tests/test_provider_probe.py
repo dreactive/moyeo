@@ -91,3 +91,14 @@ def test_menu_identity_survives_reordering_and_zero_text_is_preserved():
     again = [normalize_menu(m, "r", i, "now")[0] for i, m in enumerate([b, a])]
     assert first[0]["id"] == again[1]["id"] and first[1]["id"] == again[0]["id"]
     assert first[0]["price_text"] == "0"
+
+
+def test_explicit_weekday_closure_is_a_conflict_not_unknown_hours():
+    from ai.providers.apify import normalize_place
+    from ai.tools.hours import validate_hours
+    raw = {"place_id": "r", "name": "closed", "x": "127", "y": "34", "businessHours": [
+        {"schedule": [{"day": "수", "start": "", "end": "", "description": "정기휴무"}]}]}
+    detail = normalize_place(raw, ["2026-11-18"], "now")
+    visit = {"item_id": "i", "date": "2026-11-18", "start_at": "2026-11-18T12:00:00+09:00", "end_at": "2026-11-18T13:00:00+09:00"}
+    conflicts, questions = validate_hours(visit, detail, {})
+    assert conflicts and not questions
