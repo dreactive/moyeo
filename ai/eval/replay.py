@@ -55,7 +55,7 @@ async def replay_case(case, model_mode, provider_mode, config=None, runtime=None
     try:
         runtime = runtime or create_runtime(dict(config or {}, model_backend=model_mode, provider_mode=provider_mode))
         result = await runtime.run(case_task(case), emit)
-        report.update(status="executed", run_ids=[result["run_id"]], result=result)
+        report.update(status="executed", run_ids=[result["run_id"]], result=result, events=events)
         report["assertions"] = [dict(path=path, expected=expected, actual=read_path(result, path),
                                     passed=read_path(result, path) == expected)
                                 for path, expected in case.get("expected", {}).items()]

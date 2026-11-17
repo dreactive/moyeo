@@ -2,6 +2,7 @@ import json
 from ai.models.qwen_loader import load_components
 from ai.models.qwen_generation import generate_object
 from ai.tools.definitions import TOOL_DEFINITIONS
+from ai.context import model_context
 
 
 def score_objects(model, tokenizer, context, candidates):
@@ -19,10 +20,10 @@ class LocalQwenBackend:
 
     def generate_json(self, request):
         with self.model.disable_adapter():
-            return generate_object(self.model, self.tokenizer, request)
+            return generate_object(self.model, self.tokenizer, dict(request, context=model_context(request.get("context", {}))))
 
     def score_candidates(self, context, candidates):
-        return score_objects(self.model, self.tokenizer, context, candidates)
+        return score_objects(self.model, self.tokenizer, model_context(context), candidates)
 
     def close(self):
         self.model, self.tokenizer = None, None
