@@ -31,3 +31,13 @@ def test_trip_config_matches_frozen_input():
     from backend.schemas import TripConfig
     source = json.loads(Path('docs/contracts/examples/agent-input.example.json').read_text(encoding='utf-8'))
     assert TripConfig.model_validate(source['config']).model_dump() == source['config']
+
+
+def test_fixture_does_not_apply_unknown_seed_item_refs():
+    import asyncio
+    from backend.adapters.fixture_agent import FixtureAgentPort
+    task = dict(run_id='new',room_id='new-room',base_versions={},items=[],recent_messages=[])
+    result = asyncio.run(FixtureAgentPort().run(task, None))
+    assert result['plan_draft'] is None
+    assert result['questions'] == []
+    assert result['completion'] == 'needs_input'
