@@ -92,3 +92,17 @@ async def confirm_condition(room_id: str, constraint_id: str, request: Request, 
         publish_event(db, room_id, 'room.updated', {'changed':['constraints','versions','confirmations']})
     await request.app.state.jobs.enqueue(room_id, 'constraint_confirmed')
     return snapshot(room_id, request, user)
+
+from backend.services.questions import answer_question
+
+
+@router.post('/{room_id}/questions/{question_id}/answer')
+async def answer(room_id: str, question_id: str, body: ValueAnswer, request: Request, user=Depends(current_user)):
+    db = request.app.state.db
+    with db.lock:
+        room = require_room(db, room_id, user['id'])
+        answer_question(room, question_id, user['id'], body.value)
+        db.put('room:' + room_id, room)
+        publish_event(db, room_id, 'room.updated', {'changed':['questions','config','constraints','versions','confirmations']})
+    await request.app.state.jobs.enqueue(room_id, 'question_answered')
+    return snapshot(room_id, request, user)

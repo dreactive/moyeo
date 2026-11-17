@@ -27,3 +27,10 @@ def test_question_answer_records_input_without_mutating_review(room):
     assert q['answered_by'] == 'u1'
     assert room['current_plan']['days'][0]['visits'][1]['stay_minutes'] == old
     assert room['active_target'] is None
+
+
+def test_question_http_replans_target(api):
+    response = api.post('/api/rooms/room-fixture/questions/question-stay/answer', json={'value':{'stay_minutes':40}})
+    assert response.status_code == 200
+    question = next(q for q in response.json()['questions'] if q['id'] == 'question-stay')
+    assert question['answer'] == {'stay_minutes':40}
