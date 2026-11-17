@@ -25,7 +25,7 @@ Installation used an isolated backend/.venv, FastAPI, SQLite, httpx, pytest, uvi
 - Bash task helper was unavailable/hung under the sandbox. PowerShell and .planning/backend-progress.md track B1-B5 directly. The approved implementation plan already existed; no design or approval gate was repeated.
 - Small coherent JSON/SQLite/HTTP boundaries occasionally exceed the approximate 300-character target so the unit remains runnable. Work was written, verified, and committed incrementally, never written as one complete implementation then mechanically split.
 - One SSE commit (65c17b0) accidentally followed a failed test because PowerShell did not stop on native command failure. 584e712 corrected the stored event shape; subsequent commit commands explicitly stop when pytest exits nonzero. This is not counted as an initial passing verification.
-- Ambiguous support uses an opaque question ID carrying AI-classified stance and source message ID (question:support_target:{stance}:{message_id}); Backend verifies original author and current item. It never re-extracts natural language or creates another person's/official vote. S3 coordination is pending confirmation of the same ID rule.
+- Ambiguous support uses an opaque question ID carrying AI-classified stance and source message ID (question:support_target:{stance}:{message_id}); Backend verifies original author and current item. It never re-extracts natural language or creates another person's/official vote. S3 confirmed and implements the same ID rule.
 - A new personal condition proposal changes the structured input version; original confirmed conditions remain until owner confirmation supersedes them. A same-value hard/preference change is a new pending proposal.
 - Observations and sanitized trace are separate room-scoped process memory, while room snapshots/events/confirmation history are SQLite. This respects the provider retention boundary and keeps product data alive when trace is disabled.
 
@@ -42,3 +42,10 @@ Latest Backend-only suite after reference/cursor/fresh-review fixes: **109 passe
 Accepted message cursors are stored atomically with applied room/run state. New runs receive unprocessed source messages in chronological batches of at most 20 and drain remaining backlog; this avoids replaying already applied proposals and losing bursts longer than 20. Structured room state remains in every task. Backend never infers the text itself.
 
 Fresh review fixes after initial report: alternative-only evidence preserves old review/votes; old used evidence still invalidates without a draft; active request run/room identity is checked before result application; menu IDs must belong to the target place's observations; status writes share the room mutation lock; state_applied follows the actual maximum agent step. Tests capture the original failures.
+
+
+## S2 final Backend/FE verification before final AI handoff
+
+2026-11-18, work/be 1c9aba7: Backend independent suite **111 passed, 3 integration cases deselected**, one Starlette httpx deprecation warning, 4.19 seconds. FE at 615172b: **40 passed**. The separate real S3 runtime fake/fixture integration suite is **3 passed**, including an empty four-account room and owner deadline/conflict/reconfirmation flow. These are distinct from local_qwen/live G4.
+
+The G2 question identity regression normalizes generated question IDs together with temporary target refs. Both the focused unit and complete menu-answer path pass. Final integration status and remote delivery supersede earlier progress statements in this report; see integration.md.
