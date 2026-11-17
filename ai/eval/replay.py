@@ -4,6 +4,31 @@ import time
 from pathlib import Path
 from copy import deepcopy
 from ai.runtime import create_runtime
+import subprocess
+import sys
+
+
+async def evaluate(cases, model_mode, provider_mode, config):
+    root = Path(__file__).resolve().parents[2]
+    sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, capture_output=True, text=True, check=True).stdout.strip()
+    dirty = subprocess.run(["git", "status", "--porcelain", "--", "ai", "docs/verification/ai.md"],
+                           cwd=root, capture_output=True, text=True, check=True).stdout
+    runtime, reports, started = None, [], time.perf_counter()
+    try:
+        runtime = create_runtime(dict(config, model_backend=model_mode, provider_mode=provider_mode))
+        load_seconds = round(time.perf_counter() - started, 4)
+        for case in cases:
+            reports.append(await replay_case(case, model_mode, provider_mode, config, runtime))
+    except (ValueError, RuntimeError, OSError) as error:
+        reports = [dict(case_id=c["id"], passed=False, status="not_run", limitations=[type(error).__name__]) for c in cases]
+        load_seconds = round(time.perf_counter() - started, 4)
+    finally:
+        if runtime is not None:
+            await runtime.aclose()
+    return dict(model_mode=model_mode, provider_mode=provider_mode, git_sha=sha, git_dirty=bool(dirty.strip()),
+                python_version=sys.version.split()[0], model_load_seconds=load_seconds, total_cases=len(cases),
+                passed_cases=sum(r["passed"] for r in reports), passed=bool(reports) and all(r["passed"] for r in reports),
+                cases=reports)
 
 
 def case_task(case):
