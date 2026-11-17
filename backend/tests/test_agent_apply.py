@@ -4,3 +4,13 @@ def test_sources_are_room_scoped_and_owned(room):
     assert not valid_sources(room, ['m4'], 'u1')
     assert not valid_sources(room, ['missing'])
     assert not valid_sources(room, [])
+
+
+def test_new_item_assigns_backend_id_and_maps_client_ref(room):
+    from backend.domain import add_item_proposal
+    proposal = {'client_ref':'new-cafe','existing_item_id':None,'kind':'place','title':'Cafe','source_message_ids':['m4']}
+    item = add_item_proposal(room, proposal)
+    assert item['id'] != 'new-cafe'
+    assert item['item_version'] == 1
+    assert item['supporter_ids'] == []
+    assert item in room['items']
