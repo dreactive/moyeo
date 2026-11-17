@@ -1,26 +1,17 @@
-# S3 AI 검증·인계 기록
+# S3 AI verification — 2026-11-18
 
-소유자: S3만 수정. 상태: 미실행. 기준: [AI 계획](../superpowers/plans/2026-11-18-ai.md), 계약 v0.2.
+Plan: docs/superpowers/plans/2026-11-18-ai.md, baseline 20db9c1.
+Owner paths: ai/** and this document. Push/PR/integration belong to S2.
 
-- [ ] A0 Backend 없는 runtime·fake/fixture JSON 입출력
-- [ ] A1 공급자/모델 연결 구현 및 검증 상태 기록 (실제 결과는 아래 별도)
-- [ ] A2 도구·시간표·경비 계산·참조 복원
-- [ ] A3 근거 있는 추출·정정·지지·후보
-- [ ] A4 단일 Agent 반복 판단·관측·trace
-- [ ] A5 독립 재생·S2 인계
+## Workspace and rulings
 
-## 오프라인 실행 증거
+- Workspace: C:/Users/user/.codex/visualizations/2026/11/17/01a1ea46-36e4-7542-b516-bcd5bda0f153/trip-s3-ai
+- Branch: work/ai.
+- Native create_worktree failed twice with “Could not find a Git repository at sourceRoot” (Windows and slash spelling). Git rev-parse confirmed repository and baseline. Manual creation needed escalation for the source Git metadata; succeeded once. Native attach then returned “checkout exists but is not a managed worktree”. Coordinator authorized reusing this exact worktree. No product writes in source checkout.
+- Ruling: use this isolated Git worktree explicitly for every shell command; native metadata detection is stale. Cost if wrong: desktop attachments absent, but Git isolation remains observable.
+- Environment: Windows python alias inaccessible. Dedicated ai/.venv created from the bundled Python 3.12.14; system site packages inherited for existing local model packages. Core requirements separately pinned. Initial sandbox pip DNS failed; escalated installation succeeded.
+- Ruling: keep execution ledger here inside owned paths instead of writing shared .superpowers files. A0→A4 runtime interface matches; A1→A2 PlaceDetails observations restore per-room references; A2→A4 arithmetic stays in tools; A3→A4 validated extraction only.
 
-| 단계 / C번호 | 코드·계약 버전 | 모드 | 명령·입출력 | 관측·증거 경로 | 판정 |
-|---|---|---|---|---|---|
+## Progress
 
-## 실제 모델·API 실행 증거
-
-| 대상 | 키·가중치 준비 상태 | 실행 명령 | 실제 여수 값·모델 결과 | 한계·기준일 | 판정 |
-|---|---|---|---|---|---|
-
-키가 없으면 오프라인 개발을 계속하고 live는 미실행으로 남긴다. model/provider fixture를 실제 성공으로 집계하지 않는다.
-
-## S2 인계
-
-commit SHA / create_runtime 설정 / 공개 메서드 검사 결과 / 의존성 / 모델 경로 / 공급자 조합 / 실제 실행 종료·GPU 인계 / 제약을 기록한다. 계약 변경 제안은 이 기록에 남기고 공용 파일을 직접 수정하지 않는다.
+- A0: in progress. No live success claimed.
