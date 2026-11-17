@@ -11,9 +11,12 @@ export function renderPlace(details) {
 import {requestJson} from './api.js';
 import {setSelectedPlace,getSelectedPlace,getSnapshot} from './state.js';
 import {renderPlaceMap} from './map.js';
+let detailRequestSequence = 0;
 export async function selectPlace(roomId,ref) {
+  const requestSequence = ++detailRequestSequence;
   setSelectedPlace(ref);
   const details = await requestJson('/api/rooms/' + encodeURIComponent(roomId) + '/places/' + encodeURIComponent(ref));
+  if (requestSequence !== detailRequestSequence) return;
   if (getSnapshot()?.room_id !== roomId || getSelectedPlace() !== ref) return;
   if (!details) throw new Error('장소 조회 결과가 없습니다.');
   renderPlace(details); renderPlaceMap(details.place);
