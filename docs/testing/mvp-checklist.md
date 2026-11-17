@@ -27,7 +27,7 @@
 
 ## C. 빨강·노랑·초록과 충돌 — S2 B3, S1 F3, S3 의미 추출
 
-- [ ] C13. ‘A식당?’을 언급하면 빨강이고 색상 외 ‘언급됨’ 라벨이 보인다.
+- [x] C13. ‘A식당?’을 언급하면 빨강이고 색상 외 ‘언급됨’ 라벨이 보인다.
 - [x] C14. 4명 중 제안자와 다른 2명이 같은 항목을 명시 지지하면 노랑이다. 2명만이면 빨강이다.
 - [x] C15. 같은 사람의 반복 지지는 1명이다. ‘다들 동의했어’가 타인의 지지를 생성하지 않는다.
 - [x] C16. 대상이 불분명한 ‘좋아’는 임의 항목 지지로 연결하지 않는다. 철회·반대는 해당 사람 지지를 갱신한다.
@@ -83,7 +83,7 @@ API 키 없는 개발용 fixture 검증, 허용된 실제 응답을 이용한 re
 
 ## S2 통합 실행 판정 — 2026-11-18
 
-기준: BE 4761c56(독립111), FE615172b(40), AI b7c2a6b core(96). 최종 AI/G4 수집 전 중간 통합 기록이다. 실행 명령과 원문 결과는 각 verification 보고서와 통합 기록에 있다. 표의 모드·제한이 판정 범위다.
+기준: BE 4761c56(독립111), FE615172b(40), AI5f2bc5b(111), 합성 평가18/18. 최종 AI/G4 수집 전 중간 통합 기록이다. 실행 명령과 원문 결과는 각 verification 보고서와 통합 기록에 있다. 표의 모드·제한이 판정 범위다.
 
 | C번호 | 판정·모드 | 실행·관측 근거 (담당 S2, AI/FE 독립 증거 포함) |
 |---|---|---|
@@ -91,7 +91,7 @@ API 키 없는 개발용 fixture 검증, 허용된 실제 응답을 이용한 re
 | C02 | PENDING final AI handoff/G4 | 실제 공급자·모델 최종 보고와 연결된 실행 근거 수집 중. |
 | C03 | PENDING final AI handoff/G4 | 실제 공급자·모델 최종 보고와 연결된 실행 근거 수집 중. |
 | C04 | PENDING final AI handoff/G4 | 실제 공급자·모델 최종 보고와 연결된 실행 근거 수집 중. |
-| C05 | PASS fake/fixture | AI runtime 계약·모델 대역 교체, BE lazy bridge 테스트. AI core 96 / BE111 / FE40; 실제 모델 동등 품질 주장 없음. |
+| C05 | PASS fake/fixture | AI runtime 계약·모델 대역 교체, BE lazy bridge 테스트. AI111 / BE111 / FE40; 실제 모델 동등 품질 주장 없음. |
 | C06 | PASS HTTP fake/fixture | G2 test_empty_four_person_room_creates_initial_plan: 실제 가입 cookie 4개·코드 입장·동일 참가 명단. |
 | C07 | PARTIAL HTTP fixture | G3 실제 TCP POST→다른 3 cookie SSE 수신 PASS, FE 중복 제거/자동 snapshot 복구 PASS. 부모 IAB 1화면 관측; 세 브라우저 화면 동시 시연은 별도 미관측. |
 | C08 | PASS fixture + G2 | 사람 메시지 보존, agent.status/우측 UI. G2 JSON 적용 후 사람 채팅 원본 동일. |
@@ -99,7 +99,7 @@ API 키 없는 개발용 fixture 검증, 허용된 실제 응답을 이용한 re
 | C10 | PASS structured fixture | BE consensus_constraints·questions 소유권, G2 u4 조건의 u1 confirm403/u4 confirm200. |
 | C11 | PASS fake/fixture | AI runtime chat/chitchat·중복 호출 제외 테스트와 BE processed cursor. 실제 공급자 호출량 장기 측정은 아님. |
 | C12 | PASS fixture | AI missing anchors/menu basis 테스트; FE 입력 카드 렌더; null 보존. 미확인 값을 만들어 ready로 표시하지 않음. |
-| C13 | PENDING final AI handoff/G4 | 실제 공급자·모델 최종 보고와 연결된 실행 근거 수집 중. |
+| C13 | PASS rule-assisted fixture | AI question_form_mention_creates_item_but_never_support 통과; BE mentioned 상태와 FE 빨강·언급됨 라벨 검증. 순수 모델 언급 추출 품질 주장 아님. |
 | C14 | PASS G2 fake/fixture | 제안자+1명은 mentioned, +2명은 supported. Backend 임계값3·FE 라벨/색상 렌더. |
 | C15 | PASS G2 + unit fixture | 동일인 반복 후 supporter_ids3 유지, proxy·오래된 버전 source 거부. |
 | C16 | PASS fixture | AI ambiguous/proxy 검증, BE support_target 원저자만 답변, oppose/withdraw 도메인 갱신. 공식 표 없음. |
@@ -127,7 +127,7 @@ API 키 없는 개발용 fixture 검증, 허용된 실제 응답을 이용한 re
 | C38 | PASS HTTP fixture | G3 room cookie+X-Dev-Token 통과, 토큰 없음403; BE 일반 API/SSE trace 비노출·키 제거. |
 | C39 | PENDING final AI handoff/G4 | 실제 공급자·모델 최종 보고와 연결된 실행 근거 수집 중. |
 | C40 | PENDING local_qwen/live | G2 fake/fixture HTTP 전체 흐름은 PASS. S3 최종 인계·GPU 종료 후 별도 G4 예정; 실제 UI 전체 동시 시연은 아직 없음. |
-| C41 | PASS independent | FE40 tests + standalone fixture, BE111 tests no ai/torch import, AI96 core fake/fixture JSON; G2/G3와 별도. |
+| C41 | PASS independent | FE40 tests + standalone fixture, BE111 tests no ai/torch import, AI111 core fake/fixture JSON + 재생18/18; G2/G3와 별도. |
 | C42 | PENDING final handoff | root/BE 실행 안내·환경 분리 작성; S3 ai/README 최종 인계와 최종 링크/재실행 검증 대기. |
 | C43 | PASS provenance | 각 보고서가 fixture/replay/live와 rule-assisted 추출·미측정 모델 품질·미선택 공급자를 구별. 남은 G4 숨기지 않음. |
 | C44 | PASS preservation review | 부모 전체 submission9파일·원본 PDF SHA 보존, baseline 대비 submission/data/PDF diff 없음. 서비스와 대회 패키지 구분. |

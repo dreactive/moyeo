@@ -16,7 +16,7 @@ Date: 2026-11-18, Asia/Seoul. This report separates independent, fixture/fake in
 |---|---|---|---|
 | G1 FE | node --test frontend/tests/*.test.js | 40 passed, no failures; includes request/target race, first SSE recovery, edited-field PATCH, official snapshot colors. | PASS independent fixture |
 | G1 BE | backend/.venv/Scripts/python.exe -m pytest -c backend/pytest.ini backend/tests -q | 111 passed, 3 integration cases deselected, one Starlette httpx deprecation warning. Fresh subprocess AI/torch import blocking and cold app import passed. | PASS independent fixture |
-| G1 AI | S2 integration venv, ai/tests at b7c2a6b | 96 passed in 1.77 seconds; final additional handoff pending. | PASS core independent fake/fixture |
+| G1 AI | S2 integration venv, ai/tests at 5f2bc5b | 111 passed in 3.12 seconds; synthetic replay 18/18; final model/docs handoff pending. | PASS core independent fake/fixture |
 | G2 BE/AI | Real LocalAIBridge + S3 runtime fake/fixture | 3 integration scenarios pass: real JSON apply/observations/trace; four HTTP accounts from empty room through menu/car inputs, ready 130000 and unanimous confirmation; declared late-day existing plan through owner deadline, conflict, drop, recalculation, new unanimous target and immutable history. | PASS fake/fixture runtime |
 | G3 FE/BE | http://127.0.0.1:8000, actual FastAPI + SQLite + FixtureAgentPort | Four cookie logins, 3/4 pending and 4/4 same-target confirmation, one POST delivered over real SSE to the three other clients, dev token gate, public JS key only in HTML. | PASS HTTP fixture |
 | G3 UI | Parent IAB observation | Login, invitation, pinned review/confirmed target and four votes, place/menu/evidence details, two actual Kakao SDK map components observed. S1 follow-up fixes integrated; final G3 UI recheck below passed. | PASS UI fixture; latest basis invalidation separately FE 40-test verified |
@@ -57,3 +57,12 @@ The first scenario verifies JSON application, room observations, human-message i
 The late-visit data is a Backend-owned fictional fixture. Its second-day hours are explicitly declared in backend/tests/fixtures/README.md and remain mode=fixture; original AI/common examples were not edited. The dropped-only late-visit case checks selection/revision/history; the separate empty-room case checks an included item's green state.
 
 Integration found and fixed generated question identity drift: question IDs derived from a temporary client_ref are normalized together with target_ref only when they exactly match the generated question pattern. Custom opaque/support-source IDs remain unchanged. This prevents the original and resolved IDs from leaving duplicate open menu cards after a valid answer. Unit RED→GREEN and complete four-person HTTP flow verify the fix.
+
+
+## Reviewed AI readiness/matching integration
+
+Merged parent-reviewed 5f2bc5b into work/be (merge e38a440). S2 independently ran AI light suite **111 passed, 3.12s** and `python -m ai.eval.replay --model fake --providers fixture --cases ai/eval/cases.jsonl --output backend/.artifacts/ai-replay-final.json` => **18/18 passed**. No GPU was used by S2 in these checks.
+
+The stronger AI coverage gate exposed an inconsistent Backend-owned late-visit test seed: its selected_item_ids still contained a removed first-day visit. The test input now declares exactly its remaining late visit and corresponding item snapshot (3e86b3a). The actual full fake/fixture integration suite then passed again: **3 passed, 1.66s**, one Starlette warning. No product completeness check was weakened.
+
+Parent independently replayed actual Kakao/recorded-live Apify matches for three businesses against the corrected canonical road/address matching; different-business negative cases still reject. This uses existing responses, not new Apify calls. G4 remains pending the final AI run and GPU release.
