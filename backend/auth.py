@@ -18,3 +18,18 @@ def register_user(db, name, email, password):
     db.put('user:' + user['id'], dict(user, password_hash=hash_password(password)))
     db.put('email:' + email.lower(), user['id'])
     return user
+
+
+def issue_session(db, user_id):
+    token = secrets.token_urlsafe(32)
+    db.put('session:' + token, user_id)
+    return token
+
+
+def require_user(db, token):
+    from fastapi import HTTPException
+    user_id = db.get('session:' + (token or ''))
+    user = db.get('user:' + user_id) if user_id else None
+    if user is None:
+        raise HTTPException(401, 'Login required')
+    return {key: user[key] for key in ('id', 'name', 'email')}
