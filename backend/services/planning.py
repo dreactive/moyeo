@@ -125,10 +125,10 @@ def apply_selected_condition(room, selection, actor_id):
         raise HTTPException(403, 'Only condition owner may select relaxation')
     return edit_constraint(room, effect['constraint_id'], actor_id, effect['new_value'])
 
-from backend.services.observations import known_place_ids
 
 
 def validate_effect(room, effect, observations):
+    from backend.services.observations import known_place_ids
     kind = effect['kind']
     if kind == 'change_constraint':
         condition = next((c for c in room['constraints'] if c['id'] == effect['constraint_id']), None)

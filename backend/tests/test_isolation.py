@@ -49,3 +49,10 @@ with TestClient(create_app(database_path=':memory:')) as client:
     env = dict(os.environ, PYTHONPATH=str(root))
     result = subprocess.run([sys.executable,'-c',program], cwd=tmp_path, env=env, capture_output=True, text=True, timeout=20)
     assert result.returncode == 0, result.stderr
+
+
+def test_observation_module_can_be_imported_first():
+    import subprocess
+    import sys
+    result = subprocess.run([sys.executable,'-c','import backend.services.observations; import backend.app'], capture_output=True, text=True, timeout=20)
+    assert result.returncode == 0, result.stderr
