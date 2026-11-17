@@ -39,3 +39,14 @@ def test_menu_normalization_preserves_missing_and_same_record_evidence():
     assert menu["price_krw"] is None and menu["price_text"] == "시가"
     assert evidence["provider_record_id"] == "123" and evidence["mode"] == "live"
     assert evidence["status"] == "missing" and menu["serving_basis"] is None
+
+
+def test_branch_identity_and_missing_fields():
+    from ai.providers.apify import normalize_place
+    first = {"place_id": "1", "name": "동명이점", "x": "127.6", "y": "34.7", "address": "여수 A",
+             "menus": [{"name": "정식", "price": "10000"}], "businessHours": []}
+    other = dict(first, place_id="2", address="여수 B", menus=[])
+    a, b = (normalize_place(row, ["2026-11-21"], "now") for row in (first, other))
+    assert a["place"]["id"] != b["place"]["id"] and b["menus"] == []
+    assert b["opening_hours"]["intervals"] is None
+    assert b["evidence"][0]["provider_record_id"] == "2"
