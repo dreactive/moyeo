@@ -4,10 +4,13 @@ import json
 from hashlib import sha256
 
 
-async def fetch_rows(client, token, *, keywords=None, urls=None):
+async def fetch_rows(client, token, *, keywords=None, urls=None, limit=5):
     if not token:
         raise ValueError("APIFY_TOKEN missing")
-    body = dict(maxResults=5, maxItems=5, includeDetails=True, includeReviews=False)
+    if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 5:
+        raise ValueError("Apify sample limit must be 1..5")
+    body = dict(maxResults=1 if len(keywords or []) > 1 else limit, maxItems=limit,
+                includeDetails=True, includeReviews=False)
     body.update({"urls": urls[:5]} if urls else {"searchKeywords": (keywords or [])[:5]})
     response = await client.post("https://api.apify.com/v2/acts/huggable_quote~naver-map-scraper/run-sync-get-dataset-items",
                                  headers={"Authorization": "Bearer " + token},

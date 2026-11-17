@@ -102,3 +102,14 @@ def test_explicit_weekday_closure_is_a_conflict_not_unknown_hours():
     visit = {"item_id": "i", "date": "2026-11-18", "start_at": "2026-11-18T12:00:00+09:00", "end_at": "2026-11-18T13:00:00+09:00"}
     conflicts, questions = validate_hours(visit, detail, {})
     assert conflicts and not questions
+
+
+async def test_apify_tourist_probe_caps_two_with_one_per_keyword():
+    import httpx, json
+    from ai.providers.apify import fetch_rows
+    def respond(request):
+        body = json.loads(request.content)
+        assert body["maxItems"] == 2 and body["maxResults"] == 1
+        return httpx.Response(200, json=[])
+    async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+        await fetch_rows(client, "test", keywords=["관광지1", "관광지2"], limit=2)
