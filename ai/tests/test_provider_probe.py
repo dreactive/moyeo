@@ -50,3 +50,13 @@ def test_branch_identity_and_missing_fields():
     assert a["place"]["id"] != b["place"]["id"] and b["menus"] == []
     assert b["opening_hours"]["intervals"] is None
     assert b["evidence"][0]["provider_record_id"] == "2"
+
+
+def test_cross_provider_match_requires_more_than_name():
+    from ai.providers.matching import match_record
+    place = {"name": "같은식당", "address": "여수 A", "latitude": 34.7, "longitude": 127.6, "provider_refs": {}}
+    wrong = {"place_id": "1", "name": "같은식당", "address": "여수 B", "y": "35.7", "x": "128.6"}
+    assert match_record(place, [wrong]) is None
+    correct = dict(wrong, place_id="2", address="여수 A", y="34.7", x="127.6")
+    assert match_record(place, [wrong, correct])["place_id"] == "2"
+    assert match_record(place, [correct, dict(correct, place_id="3")]) is None
