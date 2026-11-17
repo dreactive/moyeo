@@ -26,4 +26,3 @@ export function drawKakao(maps,element,points,lines = []) {
   map.setBounds(bounds);
   return {map,latLng};
 }
-

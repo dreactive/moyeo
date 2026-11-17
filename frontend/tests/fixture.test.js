@@ -48,4 +48,3 @@ test('recorded end-to-end scenario keeps three approvals unconfirmed then confir
   assert.equal(room.confirmed_plan.plan_revision,1);
   assert.ok(room.items.every(item => item.state==='confirmed'));
 });
-

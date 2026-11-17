@@ -20,4 +20,3 @@ if (typeof document !== 'undefined') {
     run(async () => renderTraces(await loadTraces(data)));
   };
 }
-

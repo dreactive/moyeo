@@ -1,4 +1,19 @@
 import {html,escapeHtml as e} from './ui.js';
+import {requestJson,getDataMode} from './api.js';
+import {applySnapshot,subscribeState,setUser} from './state.js';
+import {showError} from './ui.js';
+import {getSnapshot,appendMessage,applyRoomResponse} from './state.js';
+import {openRoomEvents} from './events.js';
+import {run} from './ui.js';
+import {renderItems,renderConstraints,renderQuestions,renderConflicts} from './items.js';
+import {renderPlan,displayPlan} from './plan.js';
+import {renderCost} from './cost.js';
+import {scenarios,replayScenario,setFixtureUser,emitFixture} from './fixture-api.js';
+import {readAnchor} from './trip-input.js';
+import {appendCost,readFixedCosts} from './fixed-costs.js';
+import {initMaps,renderRouteMap,renderPlaceMap} from './map.js';
+import {selectPlace,renderPlace} from './place.js';
+import {getSelectedPlace} from './state.js';
 export function renderRoom(snapshot) {
   renderItems(snapshot); renderConstraints(snapshot); renderQuestions(snapshot); renderConflicts(snapshot);
   renderPlan(snapshot); renderCost(displayPlan(snapshot)?.cost); run(() => renderMaps(snapshot));
@@ -7,9 +22,6 @@ export function renderRoom(snapshot) {
   html('members', snapshot.members.map(member => e(member.name)).join(' · '));
   html('agent', e(snapshot.agent_status.label) + ' / ' + e(snapshot.agent_status.state) + ' / ' + e(snapshot.agent_status.run_id));
 }
-import {requestJson,getDataMode} from './api.js';
-import {applySnapshot,subscribeState,setUser} from './state.js';
-import {showError} from './ui.js';
 export async function startRoomApp() {
   initMaps({routeElement:document.getElementById('route-map'),placeElement:document.getElementById('place-map'),appKey:document.querySelector('meta[name="kakao-map-app-key"]').content});
   bindAccount(); bindSessionActions(); bindFixtureControls(); bindPlanActions(); bindDecisionActions(); bindTripInput(); bindHistory();
@@ -22,9 +34,6 @@ export async function startRoomApp() {
   if (savedRoom) enterRoom(await requestJson('/api/rooms/' + encodeURIComponent(savedRoom)));
 }
 startRoomApp().catch(showError);
-import {getSnapshot,appendMessage,applyRoomResponse} from './state.js';
-import {openRoomEvents} from './events.js';
-import {run} from './ui.js';
 let closeEvents = () => {};
 let roomId = null;
 export async function refreshRoom(id = roomId) {
@@ -42,9 +51,6 @@ export function enterRoom(snapshot) {
     onAgentStatus:() => run(() => refreshRoom()),onReconnect:() => run(() => refreshRoom())});
 }
 
-import {renderItems,renderConstraints,renderQuestions,renderConflicts} from './items.js';
-import {renderPlan,displayPlan} from './plan.js';
-import {renderCost} from './cost.js';
 
 function bindForm(id, task) {
   document.getElementById(id).onsubmit = event => {
@@ -75,7 +81,6 @@ function bindSessionActions() {
   });
 }
 
-import {scenarios,replayScenario,setFixtureUser,emitFixture} from './fixture-api.js';
 function bindFixtureControls() {
   if (getDataMode() !== 'fixture') return;
   document.getElementById('fixture-controls').hidden = false;
@@ -116,8 +121,6 @@ function bindDecisionActions() {
   });
 }
 
-import {readAnchor} from './trip-input.js';
-import {appendCost,readFixedCosts} from './fixed-costs.js';
 function bindTripInput() {
   document.getElementById('add-cost').onclick = () => appendCost();
   document.addEventListener('click',event => event.target.closest('[data-remove-cost]')?.closest('[data-cost-id]').remove());
@@ -150,9 +153,6 @@ function bindHistory() {
   });
 }
 
-import {initMaps,renderRouteMap,renderPlaceMap} from './map.js';
-import {selectPlace,renderPlace} from './place.js';
-import {getSelectedPlace} from './state.js';
 async function renderMaps(snapshot) {
   const plan = displayPlan(snapshot);
   const refs = [...new Set(plan?.days.flatMap(day => day.visits.map(visit => visit.place_ref)) ?? [])];
@@ -173,4 +173,3 @@ document.getElementById('retry').onclick = () => run(async () => {
   if (roomId) await refreshRoom();
   else showUser(await requestJson('/api/auth/me'));
 });
-

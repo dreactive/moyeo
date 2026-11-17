@@ -26,4 +26,3 @@ async function prepareSdk(appKey) {
     if (sdk && lastPlace) renderPlaceMap(lastPlace);
   } catch(error) { routeElement.insertAdjacentHTML('afterbegin','<p>' + e(error.message) + '</p>'); }
 }
-
