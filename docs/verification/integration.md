@@ -66,3 +66,12 @@ Merged parent-reviewed 5f2bc5b into work/be (merge e38a440). S2 independently ra
 The stronger AI coverage gate exposed an inconsistent Backend-owned late-visit test seed: its selected_item_ids still contained a removed first-day visit. The test input now declares exactly its remaining late visit and corresponding item snapshot (3e86b3a). The actual full fake/fixture integration suite then passed again: **3 passed, 1.66s**, one Starlette warning. No product completeness check was weakened.
 
 Parent independently replayed actual Kakao/recorded-live Apify matches for three businesses against the corrected canonical road/address matching; different-business negative cases still reject. This uses existing responses, not new Apify calls. G4 remains pending the final AI run and GPU release.
+
+
+## Final AI handoff integrated
+
+AI8c55e36 is merged at S2 a8287bb. S2 integration venv independently executed **113 AI tests passed, 2.86s**, **18/18 fake/fixture replay cases**, and **3 G2 integration tests passed, 1.64s** (one Starlette warning). S1 final615172b/FE40 remains included. Final AI README resolves the previous pending root link.
+
+S3 actual component run at a9154f1, clean start, completed normally in590.215s (model load5.3098s):5 real tool decisions,3 fresh Kakao route observations, ready134000 KRW/unknown0/conflicts0. All5 literal assertions, finite argmax and selected arguments matched actual calls. The later98117d4 rejects fractional sub-won arithmetic and has113-test regression; the live result is not relabelled as that later SHA. The initial unbounded-map-context failure and ~9m50s final latency remain documented. Product geometry is preserved; only model input omits coordinates.
+
+S3 confirmed model/process shutdown and GPU release before S2 started G4. G4 uses a8287bb clean product code, one runtime, actual uvicorn TCP four password logins, unchanged recorded-live Apify details (Aqua Planet/Jinnamgwan), explicit synthetic anchor/menu quantity/visit/fixed-cost inputs, and fresh live Kakao routes. Mode labels do not claim blank-room free-form search quality. Actual G4 outcome follows below when complete.
