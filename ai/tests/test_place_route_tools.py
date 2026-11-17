@@ -44,3 +44,12 @@ async def test_route_cache_does_not_cross_departure_time():
         await RegisteredTools(context).execute("get_car_route",
             {"from_ref": "anchor:origin", "to_ref": "anchor:destination",
              "departure_at": "2026-11-21T17:00:00+09:00"})
+
+
+async def test_registry_search_and_calculation_are_server_independent():
+    from ai.tools.registry import RegisteredTools
+    tools = RegisteredTools(task())
+    result = await tools.execute("search_places", {"query": "A식당", "region": "여수", "category": None})
+    assert [p["id"] for p in result["places"]] == ["fixture:place-a"]
+    summary = await tools.execute("calculate_costs", {"lines": [], "member_ids": ["u1"], "budget_by_user": {"u1": 200000}})
+    assert summary["known_total_krw"] == 0
