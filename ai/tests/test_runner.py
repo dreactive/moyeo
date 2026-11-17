@@ -62,3 +62,20 @@ def test_plan_result_uses_only_executed_calculations_and_retains_null():
     assert assemble_result(value, result)
     assert result["completion"] == "needs_input"
     assert set(result["plan_draft"]) == {"selected_item_ids", "days", "cost", "validation", "blocking_conflict_ids"}
+
+
+async def test_invalid_model_scores_return_needs_input_without_tool_call():
+    from ai.runner import run_agent
+    from ai.models.fake_actions import tool
+    class Model:
+        def generate_json(self, request):
+            return {} if request["phase"] == "extract" else {"candidates": [tool("search_places",
+                {"query": "A", "region": "여수", "category": None})]}
+        def score_candidates(self, context, candidates):
+            return [float("nan")]
+    class Tools:
+        async def execute(self, name, arguments):
+            raise AssertionError("Invalid decision executed")
+    result = await run_agent(task(), Model(), Tools(), None)
+    assert result["completion"] == "needs_input"
+    assert result["questions"] and not result["observations"]

@@ -8,6 +8,27 @@ from ai.tools.validation import validate_arguments
 from ai.context import build_context
 from ai.questions import question
 from ai.outcome import assemble_result
+from ai.result import empty_result
+from ai.extraction import validate_extraction
+
+
+async def run_agent(task, model, tools, emit_trace):
+    task = build_context(task, [])
+    result = empty_result(task)
+    if task["config"].get("transport", "car") != "car":
+        result["completion"] = "unsupported"
+        return result
+    try:
+        extraction = await asyncio.to_thread(model.generate_json, {"phase": "extract", "context": task})
+        result.update(validate_extraction(extraction, task))
+        if task["goal"] in ("chat", "messages", "extract"):
+            result["completion"] = "needs_input" if result["questions"] else "done"
+        else:
+            await run_steps(task, model, tools, emit_trace, result)
+    except (ValueError, KeyError, TypeError, RuntimeError, OSError) as error:
+        result["questions"].append(question("constraint_value", None,
+                                           f"모델/도구 검증 실패: {type(error).__name__}. 입력/설정을 확인해주세요."))
+    return result
 
 
 async def run_steps(task, model, tools, emit_trace, result):
