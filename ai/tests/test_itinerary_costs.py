@@ -26,3 +26,14 @@ def test_unknown_unpaid_cost_does_not_erase_known_paid_balance():
     assert result["remaining_budget_krw"] == {"u1": 160000, "u2": 160000}
     assert result["planned_balance_krw"] == {"u1": None, "u2": None}
     assert result["unknown_line_count"] == 1
+
+
+def test_visit_time_uses_route_seconds_and_explicit_stay_assumption():
+    from datetime import datetime
+    from ai.tools.itinerary import schedule_visit
+    visit = {"item_id": "a", "place_ref": "p", "date": "2026-11-21",
+             "preferred_start_at": None, "stay_minutes": None, "selected_menu_ids": []}
+    scheduled = schedule_visit(visit, datetime.fromisoformat("2026-11-21T09:00:00+09:00"), 180)
+    assert scheduled["start_at"] == "2026-11-21T09:03:00+09:00"
+    assert scheduled["end_at"] == "2026-11-21T10:03:00+09:00"
+    assert scheduled["assumptions"]
