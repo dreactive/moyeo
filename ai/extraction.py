@@ -8,12 +8,14 @@ def validate_support(claim, message, item):
     text = message["text"]
     if claim.get("item_version") != item["item_version"] or any(w in text for w in ("다들", "모두", "했대")):
         return None, None
+    stance = "withdraw" if "철회" in text else "oppose" if "반대" in text or "싫어" in text else "support"
+    explicit = any(w in text for w in ("가자", "좋아", "찬성", "철회", "반대", "싫어"))
+    if not explicit or claim.get("stance") not in (stance, "unclear"):
+        return None, None
     if item["title"].split()[-1] not in text:
         missing = question("support_target", None, "어느 항목에 대한 의견인가요?", claim["author_id"])
-        missing["id"] = "question:support_target:" + message["id"]
+        missing["id"] = f"question:support_target:{stance}:" + message["id"]
         return None, missing
-    stance = "withdraw" if "철회" in text else "oppose" if "반대" in text else "support"
-    explicit = any(w in text for w in ("가자", "좋아", "찬성", "철회", "반대"))
     return (claim, None) if explicit and claim.get("stance") == stance else (None, None)
 
 

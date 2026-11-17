@@ -49,7 +49,7 @@ def test_support_rejects_proxy_ambiguous_and_stale_version():
     result = validate_extraction({"support_observations": claims}, value)
     assert result["support_observations"] == [base]
     assert result["questions"][0]["field"] == "support_target"
-    assert result["questions"][0]["id"] == "question:support_target:ambiguous"
+    assert result["questions"][0]["id"] == "question:support_target:support:ambiguous"
     assert result["questions"][0]["owner_id"] == "u2"
 
 
