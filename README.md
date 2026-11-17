@@ -44,7 +44,7 @@
 ```powershell
 python -m venv backend/.venv
 backend/.venv/Scripts/python.exe -m pip install -r backend/requirements.txt
-backend/.venv/Scripts/python.exe -m uvicorn backend.app:app --host 127.0.0.1 --port 8000
+backend/.venv/Scripts/python.exe -m uvicorn backend.app:app --host 127.0.0.1 --port 8000 --timeout-graceful-shutdown 5
 ```
 
 [사용자 화면](http://127.0.0.1:8000/)과 [개발자 화면](http://127.0.0.1:8000/dev)은 같은 origin에서 API·cookie·방 SSE를 사용한다. frontend가 없어도 Backend API는 실행된다. 기본 `AGENT_MODE=fixture`는 고정 Backend 예제이며 임의 대화를 이해하는 모델이 아니다. FE만의 정해진 화면 시나리오는 [fixture 화면](http://127.0.0.1:8000/?mode=fixture)으로 연다. 이때 HTTP 인증·실제 모델·실제 장소 조회를 검증한 것으로 보지 않는다.
@@ -57,7 +57,7 @@ $env:TRIP_ENV_FILE=(Resolve-Path .env).Path
 $env:AGENT_MODE='local_ai'
 $env:MODEL_BACKEND='fake'
 $env:PROVIDER_MODE='fixture'
-backend/.venv/Scripts/python.exe -m uvicorn backend.app:app --host 127.0.0.1 --port 8000
+backend/.venv/Scripts/python.exe -m uvicorn backend.app:app --host 127.0.0.1 --port 8000 --timeout-graceful-shutdown 5
 ```
 
 실제 Qwen은 Python 3.12 통합 환경에 선택 의존성을 설치하고 로컬 모델 경로를 지정한다. 아래 베이스 경로는 실제 준비한 디렉터리로 바꾼다. 모델을 자동 다운로드하지 않는다.
@@ -68,7 +68,7 @@ $env:BASE_MODEL_PATH='C:/path/to/Qwen2.5-1.5B-Instruct'
 $env:ADAPTER_PATH=(Resolve-Path submission/weights).Path
 $env:MODEL_BACKEND='local_qwen'
 $env:PROVIDER_MODE='live'
-backend/.venv/Scripts/python.exe -m uvicorn backend.app:app --host 127.0.0.1 --port 8000
+backend/.venv/Scripts/python.exe -m uvicorn backend.app:app --host 127.0.0.1 --port 8000 --timeout-graceful-shutdown 5
 ```
 
 이 명령은 앞 단계의 `TRIP_ENV_FILE`과 `AGENT_MODE=local_ai`를 유지한다. 실제 공급자는 AI 안내의 공급자 설정·키가 필요하다. 서버를 한 프로세스·worker 하나로 실행하고 GPU 실행은 한 세션만 맡는다. 모델·공급자 오류를 fixture 성공으로 자동 대체하지 않는다.

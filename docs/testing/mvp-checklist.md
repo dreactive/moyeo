@@ -60,7 +60,7 @@
 - [x] C37. trace에서 run_id·step·call_id로 후보/선택 점수·도구 인자·정규화 결과·반영 버전을 연결해 볼 수 있다.
 - [x] C38. 사용자 SSE·일반 API에는 개발자 trace가 없고 개발자 토큰을 가진 화면에서만 조회한다.
 - [x] C39. 합성 대화 재생 결과에 조건 추출·지지 대상·판단·호출 수·소요 시간을 남긴다. fixture 결과와 live 결과를 다른 실행으로 기록한다.
-- [ ] C40. 가상 4인 여수1박2일에서 귀가 시간 추가 → 충돌 `!` → 대안 선택 → 지도/경비 재계산 → 새 버전 전원 확인 → 초록 확정까지 시연했다.
+- [x] C40. 가상 4인 여수1박2일에서 귀가 시간 추가 → 충돌 `!` → 대안 선택 → 지도/경비 재계산 → 새 버전 전원 확인 → 초록 확정까지 시연했다.
 
 ## F. 인계와 완료 판정
 
@@ -72,7 +72,7 @@
 - [x] C46. 예산20만원/기지출8만원/미지출 예정7만원에서 앞으로 쓸 금액12만원, 계획 후 여유5만원을 구분한다. per_person·owner_id=null은 전원에게 각각 적용한다.
 - [x] C47. 실제 도구 결과는 AgentResult.observations를 통해 장소 상세·근거·다음 실행에 전달된다. trace를 읽어 제품 데이터를 복원하지 않는다.
 
-단계별 완료는 해당 계획의 체크와 관련 C번호의 관측 근거가 함께 있을 때만 표시한다. 독립 구현과 fake/fixture 연동은 검증했으며, 실제 Qwen/live G4와 최종 전달은 통합 기록의 별도 상태를 따른다.
+단계별 완료는 해당 계획의 체크와 관련 C번호의 관측 근거가 함께 있을 때만 표시한다. 독립 구현과 fake/fixture 연동은 검증했으며, 실제 Qwen/live G4도 통과했으며, 원격 전달은 통합 기록/최종 인계의 별도 상태를 따른다.
 
 ## 실행 기록 양식
 
@@ -105,32 +105,34 @@ API 키 없는 개발용 fixture 검증, 허용된 실제 응답을 이용한 re
 | C16 | PASS fixture | AI ambiguous/proxy 검증, BE support_target 원저자만 답변, oppose/withdraw 도메인 갱신. 공식 표 없음. |
 | C17 | PASS G2 fake/fixture | 노랑에서 confirmations=[]; 대화 지지가 공식 확인을 만들지 않음. |
 | C18 | PASS G2/G3 | 3명 동일 target 미확정, 4번째 확정; G3 IAB 동일 hash4/4 및 포함 항목 초록. |
-| C19 | PASS fake/fixture | G2 귀가시간 blocking conflict, AI 시간/예산/휴일 검증, FE 기록 시나리오의 별도 !·설명·선택지. live G4 별도. |
-| C20 | PASS G2 fake/fixture | 저장된 drop 선택→일정/경비 재계산·새 target·confirmations=[]; AI route 재계산 단위 테스트. |
+| C19 | PASS G4 actual UI + fixture | 실제 귀가시간 blocking conflict/time:item-b와 별도 노랑3지지/!·설명·방문제외 선택지·확인 disabled를 IAB 관측. 예산/휴일은 AI113 회귀 범위. |
+| C20 | PASS G4 actual FE | 실제 방문제외 버튼→새 live route→경비/일정 재계산 ready241600, 공식 표0 유지. 최종4인은 별도 확인 동작. |
 | C21 | PASS fixture | BE test_blocking_or_unchecked_requirements_prevent_green, ready_to_confirm·본인 hard 조건 검증. |
 | C22 | PASS fixture | BE frozen review/new draft/conflict 분리; FE controlled renderer/응답 경합 회귀. 활성화 시 표 새로 수집. |
-| C23 | PASS fixture | BE 참가·조건·실질 근거 변경/불변 confirmed-history; FE615 세 basis 초록 제거 및 확인 비활성 회귀. 새 대안만의 근거는 옛 review 표 유지. |
+| C23 | PASS fixture + G4 | 귀가 조건 변경 후 현재표0/버튼disabled/과거301600확정 보존. 새241600 동일target4명확정·SQLite history2 원본불변. FE615 basis 회귀 포함. |
 | C24 | PASS fixture | BE item_changes_clear_previous_version_support; FE 다른 item_version으로 초록 비전이. |
-| C25 | PASS real model/live component | S3 a9154f1에서 실제 날짜별 Kakao 미래 경로3개·거리/초/geometry 보존. 경유 출발은 직전 실제 소요시간 반영. G4 전체 제품 흐름은 별도. |
+| C25 | PASS G4 actual routes | fresh Kakao5요청 HTTP200, 최종3구간 원본 geometry/distance/seconds 정확일치. 16m 짧은구간은 API2vertices 그대로이며 임의직선대체 아님. |
 | C26 | PASS fixture/G3 | FE personal map adapter 분리·개인 선택; BE place GET 전후 계획/표 불변. 다중 사용자의 열람 상태는 공유 snapshot에 쓰지 않음. |
 | C27 | PASS fixture/G3 SDK | 부모 IAB 전체/개인 두 실제 Kakao 지도, FE review 우선 target·같은 place_ref·서버 polyline 검사. |
 | C28 | PASS recorded-live join | 이름·좌표·정규화 시군구/도로/건물번호로 덕수·모이핀·서울해장국 세 곳 실제 Kakao/Apify 응답 결합, 다른 상호 거부. 원문 주소·동일 매장 메뉴 근거 보존. |
 | C29 | PASS fixture normalization | AI unknown_price_is_not_zero, explicit 무료 근거만 0; FE 시가·공란 null 표시. |
 | C30 | PASS fake/fixture | AI cost_inputs/itinerary_costs: 단위·수량·전원 per_person·공유·기지출·차량 유류/주차/통행료; G2 명시 입력130000. |
 | C31 | PASS fake/fixture | AI Decimal KRW 계산·미확인 total null·기지출 독립 보존; FE known subtotal/전체액 구분. |
-| C32 | PASS fixture | AI replace/drop 선택 후 route/cost 재계산, BE 원자 plan 적용/새 hash·item_snapshots, FE 동일 snapshot 사용. 실제 변경 live G4 별도. |
+| C32 | PASS G4 selected exclusion | 실제 FE선택 후 포함장소·날짜별 자동차구간·경비가 revision4로 원자 반영;301600→241600, 새target 확인. |
 | C33 | PASS fixture/G3 | FE source URL/조회·공급자 시각·mode 표시, BE observations provenance 보존. 공급자 기준일 없으면 null. |
-| C34 | PASS local_qwen/live component | S3 실제5판단 모두 complete finite score array의 argmax 확인. tool_name/arguments=실제 tool_call; 단계4에서 독립 후보 중 calculate_costs를 먼저 선택. 고정 순서 아님. |
-| C35 | PASS local_qwen/live component | 실제 route observation 추가에 따라 다음 날짜/출발시각의 get_car_route 후보·선택이 변경되고 계산 후보로 전환. 최종3 route IDs·geometry 보존. |
+| C34 | PASS G4 actual model | 실제Qwen/LoRA11decision 모두 finite argmax·선택tool_name/arguments=실행call. 후보수2/3 및 cost-before-itinerary 실제선택; 부모독립검증. |
+| C35 | PASS G4 feedback | 첫4경로관측·조건확인·실제대안선택에 따라 재계산 도구/새귀가구간 선택이 변경. 마지막새live route 포함 총5요청. |
 | C36 | PASS fixture + real ready | AI113 회귀에서 충분/부족/unsupported 분리. 실제 S3 local_qwen/live ready134000·unknown0. unsupported는 fixture 테스트 범위, 일반 언어 품질 확대 주장 없음. |
-| C37 | PASS fixture/G2/G3 | 실제 runtime decision→tool_call/result→BE state_applied 연결. FE dev trace call_id/점수/상태 링크 테스트. |
-| C38 | PASS HTTP fixture | G3 room cookie+X-Dev-Token 통과, 토큰 없음403; BE 일반 API/SSE trace 비노출·키 제거. |
+| C37 | PASS G4 dev API | 실제4runtime traces에서 run/step/call_id·후보/점수·11tool결과·state_applied 연결. 부모 독립 조회/대조. |
+| C38 | PASS G4 token boundary | 실제u1cookie에서 devtoken 없음403/있음200, 실제.env키·DEV_TOKEN값 trace매치0. 일반 API/SSE 비노출 단위회귀 포함. |
 | C39 | PASS separated evaluations | S2 fake/fixture 재생18/18, 최종 AI113; S3 local_qwen/live a9154f1 5tool·5assertion PASS·590.215초/정상 종료. 실제 start SHA/후속 산술 수정98117d4 구분. |
-| C40 | PENDING local_qwen/live | G2 fake/fixture HTTP 전체 흐름은 PASS. S3 최종 인계·GPU 종료 후 별도 G4 예정; 실제 UI 전체 동시 시연은 아직 없음. |
+| C40 | PASS G4 mixed live/replay | 실제모델+freshKakao/recorded-liveApify+명시적 합성기존일정:16시추가→owner확인→충돌!→실제FE방문제외→재계산→새target4of4→실제UI초록/지도/241600.1719.172초. 빈방자유검색품질 주장 아님. |
 | C41 | PASS independent | FE40 tests + standalone fixture, BE111 tests no ai/torch import, AI113 core fake/fixture JSON + 재생18/18; G2/G3와 별도. |
-| C42 | PASS startup docs; limits stated | root·FE·BE·AI README 실행/선택 의존성/동일 origin/절대 env·로컬 모델 경로 안내. 최종 AI README 링크 해소, 부모 MD22/내부링크121 broken0. S2 실제 uvicorn local_qwen/live 기동·4로그인 확인; 최종 G4는 진행 중. |
-| C43 | PASS provenance | 각 보고서가 fixture/replay/live와 rule-assisted 추출·미측정 모델 품질·미선택 공급자를 구별. 남은 G4 숨기지 않음. |
+| C42 | PASS startup/lifecycle | 세 README·내부링크검사 및 실제uvicorn/4로그인/G4 성공. 실행명령에 timeout-graceful-shutdown5 명시; 별도 실제Qwen/openSSE probe close1·GPU0 확인. |
+| C43 | PASS limits recorded | 실제G4통과와 rule-assisted/지역명만계획불가/장기지연/공급자누락/C07수동범위를 구분. 첫process-exit와 별도awaitaclose검증도 분리. |
 | C44 | PASS preservation review | 부모 전체 submission9파일·원본 PDF SHA 보존, baseline 대비 submission/data/PDF diff 없음. 서비스와 대회 패키지 구분. |
 | C45 | PASS fixture/G2 | BE question field/target/owner·menu 소속 검증, FE typed 제출; G2 실제 menu answer 후 자동 재계획 ready130000. |
 | C46 | PASS fixture arithmetic | AI budget_paid_and_projected_balances, shared_remainder_and_per_person_without_owner; FE 앞으로 쓸 금액/계획 후 여유 분리. |
-| C47 | PASS G2 fixture/runtime | observations→DB 제품 메모리→다음 task/직접 장소 상세. trace disabled 상태도 정상; trace 복원 사용 안 함. |
+| C47 | PASS G4 + trace-off unit | 실제상세/API근거/다음run은 observations로 전달. 부모IAB 실제메뉴/시간/출처 유지; trace 꺼도 제품 데이터 정상은 BE단위회귀. |
+
+최종 로컬 게이트: G1/G2/G3/G4 통과. C07의 세 브라우저 동시 수동 시연은 부분 검증으로 남겼다. 원격 push/PR 성공과 실모델 성능·자유 추출 품질은 이 체크 결과로 추정하지 않는다.

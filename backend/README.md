@@ -6,7 +6,7 @@ FastAPI + SQLite, JSON-only AgentPort. Run commands from the repository root.
 python -m venv backend/.venv
 backend/.venv/Scripts/python.exe -m pip install -r backend/requirements.txt
 backend/.venv/Scripts/python.exe -m pytest -c backend/pytest.ini backend/tests -q
-backend/.venv/Scripts/python.exe -m uvicorn backend.app:app --host 127.0.0.1 --port 8000
+backend/.venv/Scripts/python.exe -m uvicorn backend.app:app --host 127.0.0.1 --port 8000 --timeout-graceful-shutdown 5
 ```
 
 Use an actual installed Python executable if the Windows Store alias cannot start. This session used C:/Users/user/anaconda3/python.exe to create the isolated environment. In the managed sandbox, asyncio/TestClient and DNS needed the approved execution environment; this is an environment limitation, not a product assertion.
@@ -28,3 +28,5 @@ backend/.venv/Scripts/python.exe -m pytest -c backend/pytest.ini backend/tests -
 ```
 
 See docs/verification/backend.md and docs/verification/integration.md for actual executed modes and limits. Fixture/fake results do not establish Qwen quality or live provider coverage.
+
+Open SSE responses can keep uvicorn waiting indefinitely at shutdown without a grace limit. The documented commands set --timeout-graceful-shutdown 5 so remaining HTTP streams are cancelled and application lifespan cleanup can run. The separate actual-Qwen/open-SSE probe closed the runtime once with a two-second limit. An active GPU operation may still need to finish before the serialized model close acquires its lock; this is not a five-second inference cancellation guarantee.

@@ -49,3 +49,12 @@ Fresh review fixes after initial report: alternative-only evidence preserves old
 2026-11-18, work/be 1c9aba7: Backend independent suite **111 passed, 3 integration cases deselected**, one Starlette httpx deprecation warning, 4.19 seconds. FE at 615172b: **40 passed**. The separate real S3 runtime fake/fixture integration suite is **3 passed**, including an empty four-account room and owner deadline/conflict/reconfirmation flow. These are distinct from local_qwen/live G4.
 
 The G2 question identity regression normalizes generated question IDs together with temporary target refs. Both the focused unit and complete menu-answer path pass. Final integration status and remote delivery supersede earlier progress statements in this report; see integration.md.
+
+
+## Final B5 local integration close
+
+Final FE615172b/AI8c55e36 integrated, Backend111/FE40/AI113/replay18/G2three pass. Actual local_qwen/live+recorded-live-details G4 at clean a8287bb passed actual UI alternative, new unanimous target, immutable history301600→241600,11 real argmax/call matches and5 fresh Kakao requests. Parent final IAB green/maps/costs and developer boundary independently pass. See final integration.md for full provenance/1719.172s latency/limits.
+
+The first G4 harness process-exit cleanup was not awaited aclose because an open SSE kept default uvicorn waiting. Separate actual model/open-SSE probe with a two-second grace limit stopped the server, closed runtime once and returned allocated GPU to0 (11.237s total, no planning/provider call). README commands now bound HTTP shutdown with five seconds; active GPU work is not guaranteed cancellable in five seconds.
+
+B1–B5 local implementation/integration is complete. Remote develop/master PR delivery is separate and reported by exact outcome in final handoff; no remote success is inferred from tests.
