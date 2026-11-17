@@ -1,9 +1,9 @@
 from copy import deepcopy
 
 
-def make_task(room, run_id, goal, observations, selection):
+def make_task(room, run_id, goal, observations, selection, processed_id=None):
     task = {key:room[key] for key in ('room_id','members','config','constraints','items','questions','current_plan')}
-    task.update(run_id=run_id, base_versions=room['versions'], goal=goal, recent_messages=room['messages'][-20:], observations=observations, user_selection=selection)
+    task.update(run_id=run_id, base_versions=room['versions'], goal=goal, recent_messages=unprocessed_messages(room['messages'], processed_id), observations=observations, user_selection=selection)
     return deepcopy(task)
 
 import asyncio
@@ -23,8 +23,8 @@ class AgentJobs:
 
     async def enqueue(self, room_id, reason, selection=None):
         room = self.db.get('room:' + room_id)
-        task = make_task(room, uuid4().hex, reason, get_observations(self.db, room_id), selection)
-        self.db.put('run:' + task['run_id'], {key:task[key] for key in ('room_id','base_versions')})
+        task = make_task(room, uuid4().hex, reason, get_observations(self.db, room_id), selection, self.db.get('processed-message:' + room_id))
+        self.register_task(task)
         await self.queue.put(task)
         self.pending[room_id] += 1
         return {key:task[key] for key in ('run_id','base_versions')}
@@ -33,9 +33,14 @@ class AgentJobs:
         room = self.db.get('room:' + task['room_id'])
         if task['user_selection'] and task['base_versions'] != room['versions']:
             raise ValueError('Conflict selection expired')
-        fresh = make_task(room, task['run_id'], task['goal'], get_observations(self.db, task['room_id']), task['user_selection'])
-        self.db.put('run:' + task['run_id'], {key:fresh[key] for key in ('room_id','base_versions')})
+        fresh = make_task(room, task['run_id'], task['goal'], get_observations(self.db, task['room_id']), task['user_selection'], self.db.get('processed-message:' + task['room_id']))
+        self.register_task(fresh)
         return fresh
+
+    def register_task(self, task):
+        record = {key:task[key] for key in ('room_id','base_versions')}
+        record['message_ids'] = [message['id'] for message in task['recent_messages']]
+        self.db.put('run:' + task['run_id'], record)
 
     async def work(self):
         while True:

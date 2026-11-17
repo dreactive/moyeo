@@ -165,3 +165,15 @@ def test_unprocessed_message_batches_preserve_backlog_order():
     assert [m['id'] for m in unprocessed_messages(messages, None)] == [str(i) for i in range(20)]
     assert [m['id'] for m in unprocessed_messages(messages, '19')] == ['20','21','22','23','24']
     assert unprocessed_messages(messages, '24') == []
+
+
+def test_new_run_excludes_already_processed_messages(room):
+    import asyncio
+    from backend.services.agent_jobs import AgentJobs
+    from backend.db import Database
+    db = Database(':memory:')
+    db.put('room:room-fixture', room)
+    db.put('processed-message:room-fixture','m3')
+    jobs = AgentJobs(db, None)
+    asyncio.run(jobs.enqueue('room-fixture','message_created'))
+    assert [message['id'] for message in jobs.queue.get_nowait()['recent_messages']] == ['m4']

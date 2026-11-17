@@ -8,6 +8,8 @@ class FixtureAgentPort:
         result.update({key: task[key] for key in ('run_id', 'room_id', 'base_versions')})
         if 'items' in task and not set(result['plan_draft']['selected_item_ids']) <= {item['id'] for item in task['items']}:
             result.update(plan_draft=None, questions=[], completion='needs_input', last_processed_message_id=None)
+        messages = task.get('recent_messages', [])
+        result['last_processed_message_id'] = messages[-1]['id'] if messages else None
         return result
 
     async def aclose(self):
