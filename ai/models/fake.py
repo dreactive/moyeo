@@ -7,6 +7,9 @@ class FakeModelBackend:
 
     def generate_json(self, request):
         context = request["context"]
+        if request["phase"] == "actions":
+            from ai.models.fake_actions import propose_actions
+            return {"candidates": propose_actions(context)}
         output = dict(constraint_proposals=[], item_proposals=[], support_observations=[])
         for message in context["recent_messages"]:
             budget = re.search(r"(\d+)만원", message["text"])

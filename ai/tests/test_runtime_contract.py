@@ -24,3 +24,17 @@ async def test_fake_fixture_runtime_without_torch_or_backend():
     details = await runtime.execute_tool("get_place_details", {"place_ref": "fixture:place-a"}, task)
     assert details["place"]["name"] == "가상 A식당"
     await runtime.aclose()
+
+
+async def test_runtime_reuses_model_and_chat_never_calls_tools():
+    from ai.runtime import create_runtime
+    runtime = create_runtime({"model_backend": "fake", "provider_mode": "fixture"})
+    task = json.loads(Path("ai/fixtures/agent-task.json").read_text(encoding="utf-8"))
+    task["goal"] = "chat"
+    model = runtime.model
+    result = await runtime.run(task, None)
+    assert result["constraint_proposals"][0]["owner_id"] == "u1"
+    assert result["observations"] == [] and runtime.model is model
+    await runtime.aclose()
+    await runtime.aclose()
+    assert model.closed

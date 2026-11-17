@@ -4,6 +4,7 @@ from threading import RLock
 class ModelWorker:
     def __init__(self, backend):
         self.backend, self.lock, self.closed = backend, RLock(), False
+        self.mode = getattr(backend, "mode", "unknown")
 
     def call(self, method, *args):
         with self.lock:
