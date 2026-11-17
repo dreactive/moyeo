@@ -15,6 +15,8 @@ def serialized(function):
 
 class Database:
     def __init__(self, path):
+        self.observations = {}
+        self.traces = {}
         self.lock = RLock()
         if str(path) != ':memory:':
             Path(path).parent.mkdir(parents=True, exist_ok=True)
