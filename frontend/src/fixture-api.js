@@ -11,3 +11,13 @@ export async function requestFixture(path, {method = 'GET',body} = {}) {
   if (parts.length === 4 && method === 'GET') return structuredClone(fixtureRoom);
   throw new Error('fixture 미지원 요청: ' + method + ' ' + path);
 }
+const subscriptions = new Map();
+export function subscribeFixture(roomId, handlers) {
+  subscriptions.set(handlers,roomId);
+  return () => subscriptions.delete(handlers);
+}
+export function emitFixture(name, data) {
+  subscriptions.forEach((roomId,handlers) => {
+    if (roomId === data.room_id) handlers[name]?.(structuredClone(data));
+  });
+}
