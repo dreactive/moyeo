@@ -7,6 +7,7 @@ from ai.tools.context import build_tool_context
 from ai.tools.validation import validate_arguments
 from ai.context import build_context
 from ai.questions import question
+from ai.outcome import assemble_result
 
 
 async def run_steps(task, model, tools, emit_trace, result):
@@ -19,6 +20,8 @@ async def run_steps(task, model, tools, emit_trace, result):
             break
         observation = await execute_selected(task, action, tools, emit_trace, step)
         result["observations"].append(observation)
+        if assemble_result(task, result):
+            break
     else:
         result["questions"].append(question("constraint_value", None, "20회 행동 상한에 도달했습니다."))
 

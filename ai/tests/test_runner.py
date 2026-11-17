@@ -49,3 +49,16 @@ async def test_twenty_action_limit_does_not_fake_completion():
     await run_steps(value, Model(), tools, None, result)
     assert tools.calls == 20 and len(result["observations"]) == 20
     assert result["completion"] == "needs_input" and result["questions"]
+
+
+def test_plan_result_uses_only_executed_calculations_and_retains_null():
+    from ai.outcome import assemble_result
+    from ai.result import empty_result
+    value = task()
+    result = empty_result(value)
+    result["observations"] = [
+        dict(tool_name="build_itinerary", result={"days": value["current_plan"]["days"], "conflicts": [], "questions": []}),
+        dict(tool_name="calculate_costs", result={"total_krw": None, "planned_balance_krw": {"u1": None}})]
+    assert assemble_result(value, result)
+    assert result["completion"] == "needs_input"
+    assert set(result["plan_draft"]) == {"selected_item_ids", "days", "cost", "validation", "blocking_conflict_ids"}
