@@ -114,3 +114,19 @@ def test_agent_questions_cannot_forge_answers(room, agent_result):
     saved.update(status='answered', answer={'stay_minutes':40}, answered_by='u2')
     apply_questions(room, agent_result['questions'])
     assert room['questions'][0]['answer'] == {'stay_minutes':40}
+
+
+def test_evidence_change_invalidates_review_but_poll_time_does_not(room, agent_result):
+    from backend.services.agent_apply import apply_plan
+    from backend.services.planning import freeze_review
+    from copy import deepcopy
+    old = deepcopy(agent_result['observations'])
+    new = deepcopy(old)
+    freeze_review(room, room['current_plan']['confirmation_target'])
+    new[0]['result']['evidence'][0]['retrieved_at'] = 'later'
+    apply_plan(room, agent_result['plan_draft'], old, new)
+    assert room['review_plan'] is not None
+    new[0]['result']['menus'][0]['price_krw'] = 12000
+    apply_plan(room, agent_result['plan_draft'], old, new)
+    assert room['review_plan'] is None
+    assert room['versions']['evidence_version'] == 2

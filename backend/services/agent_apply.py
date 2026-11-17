@@ -37,3 +37,16 @@ def apply_questions(room, proposals):
         question.update(status='open', answer=None, answered_by=None)
         answered.append(question)
     room['questions'] = answered
+
+from backend.services.observations import relevant_evidence
+from backend.services.planning import build_plan
+
+
+def apply_plan(room, draft, old_observations, observations):
+    if draft is None:
+        return
+    evidence = relevant_evidence(draft, observations)
+    if evidence != relevant_evidence(draft, old_observations):
+        room['versions']['evidence_version'] += 1
+        room.update(review_plan=None, active_target=None, confirmations=[])
+    room['current_plan'] = build_plan(room, draft, evidence)
