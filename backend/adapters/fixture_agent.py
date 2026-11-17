@@ -10,3 +10,9 @@ class FixtureAgentPort:
 
     async def aclose(self):
         pass
+
+    async def execute_tool(self, name, arguments, context):
+        for observation in reversed(context['observations']):
+            if observation['tool_name'] == name and observation['arguments'] == arguments:
+                return observation['result']
+        raise ValueError('No matching fixture observation')

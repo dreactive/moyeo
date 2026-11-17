@@ -10,3 +10,16 @@ def test_fixture_port_matches_json_examples():
     assert result['room_id'] == 'room'
     assert result['base_versions'] == task['base_versions']
     assert json.loads(json.dumps(result))['completion'] == 'needs_input'
+
+
+def test_fixture_context_is_room_scoped():
+    import asyncio
+    from backend.adapters.fixture_agent import FixtureAgentPort
+    async def check():
+        port = FixtureAgentPort()
+        for room in ('one', 'two'):
+            context = {'room_id': room, 'config': {}, 'observations': [
+                {'tool_name': 'get_place_details', 'arguments': {'place_ref': 'p'}, 'result': {'room': room}}
+            ]}
+            assert await port.execute_tool('get_place_details', {'place_ref': 'p'}, context) == {'room': room}
+    asyncio.run(check())
