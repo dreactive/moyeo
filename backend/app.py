@@ -11,7 +11,7 @@ from backend.adapters.local_ai import LocalAIBridge
 from backend.config import read_settings
 
 
-def create_app(agent_port: AgentPort | None = None, *, database_path=None, settings=None) -> FastAPI:
+def create_app(agent_port: AgentPort | None = None, *, database_path=None, settings=None, frontend_path=None) -> FastAPI:
     settings = settings if settings is not None else read_settings()
     @asynccontextmanager
     async def lifespan(app):
@@ -46,6 +46,9 @@ def create_app(agent_port: AgentPort | None = None, *, database_path=None, setti
     app.include_router(dev_router)
     from backend.routes.places import router as places_router
     app.include_router(places_router)
+    from pathlib import Path
+    from backend.routes.static import mount_frontend
+    mount_frontend(app, frontend_path or Path(__file__).resolve().parents[1] / 'frontend', settings['public_map_key'])
     return app
 
 
