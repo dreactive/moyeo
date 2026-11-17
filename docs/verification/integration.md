@@ -40,3 +40,9 @@ Parent/S3 reported successful Kakao Local/Mobility/SDK connectivity and Apify pl
 ## Delivery
 
 Original develop and remote refs were unchanged during independent work. Only S2 will integrate verified final SHAs, run final checks, safely update original develop, push without force, and open master <- develop PR without merging. Remote refs were still empty on the latest read. PR creation and final push remain pending the integrated gates.
+
+## G3 final UI recheck (2026-11-18)
+
+Parent IAB rechecked the fresh room-g3-2ab86e3d after restarting with a new isolated SQLite file and unique room/invite IDs. Observed: actual cookie login/join; current draft separate from pinned review revision2; review==confirmed same actual content hash and 4/4 votes; both same-version fixture items green; place details/source text; two actual Kakao SDK tile/marker/polyline map components. Screenshot: C:/Users/user/.codex/visualizations/2026/11/17/01a1e9f0-734d-7000-8d80-dc48c5f02a61/g3-integration.jpg. This is fixture places/prices plus actual SDK/HTTP integration, not live planning. G3 UI is PASS.
+
+An earlier test bootstrap reseeded room state while retaining old events in the same test DB. That invalid fixture could move the browser cursor ahead of the reseeded snapshot. The bootstrap now creates a fresh DB and unique room ID for every run; the FE stale-response guards were preserved. HTTP/SSE and UI were rerun successfully on the consistent fresh fixture. Real user/source data was not reset.
