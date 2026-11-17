@@ -9,3 +9,9 @@ export function appendCost(line = {id:crypto.randomUUID(),category:'lodging',sco
   <label>수량<input name="cost_quantity" type="number" min="0.01" step="any" value="${e(line.quantity)}" required></label>
   <label>지출<select name="cost_paid"><option value="false">예정</option><option value="true" ${line.paid ? 'selected' : ''}>기지출</option></select></label><button type="button" data-remove-cost>삭제</button></div>`);
 }
+export function readFixedCosts() {
+  return [...document.querySelectorAll('[data-cost-id]')].map(row => {
+    const value = name => row.querySelector('[name=cost_' + name + ']').value;
+    return {id:row.dataset.costId,category:value('category'),scope:value('scope'),owner_id:value('owner') || null,description:value('description'),unit_price_krw:value('price') === '' ? null : Number(value('price')),quantity:Number(value('quantity')),paid:value('paid') === 'true',subtotal_krw:null,evidence_id:null,assumption:null};
+  });
+}

@@ -11,7 +11,7 @@ import {requestJson,getDataMode} from './api.js';
 import {applySnapshot,subscribeState,setUser} from './state.js';
 import {showError} from './ui.js';
 export async function startRoomApp() {
-  bindAccount(); bindSessionActions(); bindFixtureControls(); bindPlanActions(); bindDecisionActions();
+  bindAccount(); bindSessionActions(); bindFixtureControls(); bindPlanActions(); bindDecisionActions(); bindTripInput();
   html('mode', getDataMode() === 'fixture' ? '개발용 fixture · 실제 API 조회 아님' : 'LIVE · Backend 연결');
   subscribeState(snapshot => snapshot && renderRoom(snapshot));
   const user = await requestJson('/api/auth/me');
@@ -110,6 +110,19 @@ function bindDecisionActions() {
     const button = event.target.closest('[data-conflict],[data-constraint-confirm]');
     if (!button) return;
     run(() => button.dataset.conflict ? roomAction('conflicts/' + encodeURIComponent(button.dataset.conflict) + '/select',{option_id:button.dataset.option}) : roomAction('constraints/' + encodeURIComponent(button.dataset.constraintConfirm) + '/confirm'));
+  });
+}
+
+import {readAnchor} from './trip-input.js';
+import {appendCost,readFixedCosts} from './fixed-costs.js';
+function bindTripInput() {
+  document.getElementById('add-cost').onclick = () => appendCost();
+  document.addEventListener('click',event => event.target.closest('[data-remove-cost]')?.closest('[data-cost-id]').remove());
+  bindForm('trip',async (data,action) => {
+    const body = {title:data.title,region:data.region,start_date:data.start_date,end_date:data.end_date,transport:'car',day_start_time:data.day_start_time,day_end_time:data.day_end_time,per_person_budget_krw:Number(data.per_person_budget_krw),fixed_costs:readFixedCosts()};
+    ['origin','destination','lodging'].forEach(key => body[key] = readAnchor(data,key));
+    if (action === 'create') enterRoom(await requestJson('/api/rooms',{method:'POST',body}));
+    else { delete body.title; await roomAction('trip',body,'PATCH'); }
   });
 }
 
