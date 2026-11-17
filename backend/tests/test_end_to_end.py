@@ -112,3 +112,17 @@ def test_existing_late_visit_plan_can_be_recalculated(room):
         assert condition['status'] == 'needs_owner_confirmation'
         assert clients[0].post(path+'/constraints/'+condition['id']+'/confirm').status_code == 403
         assert snapshot['confirmed_plan'] == historical
+        assert clients[3].post(path+'/constraints/'+condition['id']+'/confirm').status_code == 200
+        clients[0].portal.call(clients[0].app.state.jobs.queue.join)
+        conflicted = clients[0].get(path).json()
+        conflict = next(c for c in conflicted['conflicts'] if c['type'] == 'time' and c['blocking'])
+        assert conflicted['current_plan']['validation'] == 'conflict'
+        assert conflicted['confirmed_plan'] == historical
+        selected = clients[0].post(path+'/conflicts/'+conflict['id']+'/select', json={'option_id':conflict['options'][0]['id']})
+        assert selected.status_code == 202
+        clients[0].portal.call(clients[0].app.state.jobs.queue.join)
+        revised = clients[0].get(path).json()
+        assert revised['current_plan']['validation'] == 'ready'
+        assert revised['current_plan']['cost']['total_krw'] == 90000
+        assert revised['confirmations'] == []
+        assert revised['confirmed_plan'] == historical
