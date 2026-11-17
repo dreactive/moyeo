@@ -166,3 +166,15 @@ def test_conflict_choice_http_returns_run_without_confirmation(api):
     assert response.status_code == 202
     assert set(response.json()) == {'run_id','base_versions'}
     assert api.get('/api/rooms/room-fixture').json()['confirmations'] == []
+
+
+def test_confirmed_snapshot_is_appended_to_immutable_history(api):
+    db = api.app.state.db
+    room = db.get('room:room-fixture')
+    room['current_plan']['validation'] = 'ready'
+    room['constraints'] = []
+    db.put('room:room-fixture', room)
+    for actor in ('u1','u2','u3','u4'):
+        api.cookies.set('session','s'+actor)
+        response = api.post('/api/rooms/room-fixture/plan/confirm', json={'target':room['current_plan']['confirmation_target']})
+    assert db.get('confirmed-history:room-fixture') == [response.json()['confirmed_plan']]

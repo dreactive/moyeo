@@ -15,7 +15,11 @@ async def confirm(room_id: str, body: Confirm, request: Request, user=Depends(cu
         room = require_room(db, room_id, user['id'])
         record_confirmation(room, user['id'], body.target.model_dump(), 'confirm')
         finalized = finalize_plan(room)
-        db.put('room:' + room_id, room)
+        records = {'room:' + room_id:room}
+        if finalized:
+            history = db.get('confirmed-history:' + room_id) or []
+            records['confirmed-history:' + room_id] = history + [room['confirmed_plan']]
+        db.put_many(records)
         publish_event(db, room_id, 'room.updated', {'changed':['review_plan','active_target','confirmations']})
         if finalized:
             publish_event(db, room_id, 'plan.confirmed', {'target':room['active_target']})
