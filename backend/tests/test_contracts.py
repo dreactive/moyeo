@@ -23,3 +23,11 @@ def test_fixture_context_is_room_scoped():
             ]}
             assert await port.execute_tool('get_place_details', {'place_ref': 'p'}, context) == {'room': room}
     asyncio.run(check())
+
+
+def test_trip_config_matches_frozen_input():
+    import json
+    from pathlib import Path
+    from backend.schemas import TripConfig
+    source = json.loads(Path('docs/contracts/examples/agent-input.example.json').read_text(encoding='utf-8'))
+    assert TripConfig.model_validate(source['config']).model_dump() == source['config']
