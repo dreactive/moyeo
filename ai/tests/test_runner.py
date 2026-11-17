@@ -28,3 +28,24 @@ async def test_observation_changes_next_selected_action():
     second = await choose_action(value, Model(), None, 2)
     assert first["arguments"]["place_ref"] == "new-a"
     assert second["arguments"]["place_ref"] == "new-b"
+
+
+async def test_twenty_action_limit_does_not_fake_completion():
+    from ai.runner import run_steps
+    from ai.result import empty_result
+    from ai.models.fake_actions import tool
+    class Model:
+        def generate_json(self, request):
+            return {"candidates": [tool("search_places", {"query": "A", "region": "여수", "category": None})]}
+        def score_candidates(self, context, candidates):
+            return [1.]
+    class Tools:
+        calls = 0
+        async def execute(self, name, arguments):
+            self.calls += 1
+            return {"places": []}
+    value, tools = task(), Tools()
+    result = empty_result(value)
+    await run_steps(value, Model(), tools, None, result)
+    assert tools.calls == 20 and len(result["observations"]) == 20
+    assert result["completion"] == "needs_input" and result["questions"]
