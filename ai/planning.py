@@ -28,11 +28,13 @@ from ai.tools.itinerary import schedule_visit
 
 
 
-def next_route(context):
+def next_route(context, only_day=None):
     config, visits = context["config"], planned_visits(context)
     first, last = (date.fromisoformat(config[k]) for k in ("start_date", "end_date"))
     for offset in range((last - first).days + 1):
         day = (first + timedelta(days=offset)).isoformat()
+        if only_day is not None and day != only_day:
+            continue
         cursor = datetime.fromisoformat(day + "T" + config.get("day_start_time", "09:00") + ":00+09:00")
         previous = "anchor:origin" if offset == 0 else "anchor:lodging"
         day_visits = [v for v in visits if v["date"] == day]
@@ -47,3 +49,9 @@ def next_route(context):
                 cursor = datetime.fromisoformat(schedule_visit(visit, cursor, observed["duration_seconds"])["end_at"])
             previous = visit["place_ref"]
     return None
+
+
+def pending_routes(context):
+    first, last = (date.fromisoformat(context["config"][k]) for k in ("start_date", "end_date"))
+    routes = [next_route(context, (first + timedelta(days=n)).isoformat()) for n in range((last - first).days + 1)]
+    return [r for r in routes if r is not None]

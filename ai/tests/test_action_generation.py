@@ -26,3 +26,14 @@ def test_next_route_uses_prior_duration_and_visit_departure_time():
     assert following["from_ref"] == "fixture:place-a"
     assert following["to_ref"] == "fixture:place-b"
     assert following["departure_at"] == "2026-11-21T12:30:00+09:00"
+
+
+def test_independent_day_routes_are_real_alternatives():
+    from ai.planning import pending_routes
+    value = task()
+    routes = pending_routes(value)
+    assert [(r["from_ref"], r["to_ref"]) for r in routes] == [
+        ("anchor:origin", "fixture:place-a"), ("anchor:lodging", "anchor:destination")]
+    value["observations"].append(dict(tool_name="get_car_route", arguments=routes[0],
+                                     result=dict(duration_seconds=180)))
+    assert pending_routes(value)[0]["from_ref"] == "fixture:place-a"
