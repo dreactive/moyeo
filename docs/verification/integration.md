@@ -1,25 +1,42 @@
-# S2 최종 통합 기록
+# Integration verification — S2
 
-소유자: S2 통합 담당자만 수정. 현재 모든 게이트 미실행. 기준: [3세션 계획](../superpowers/plans/2026-11-18-three-session-plan.md).
+Date: 2026-11-18, Asia/Seoul. This report separates independent, fixture/fake integration, and live/model evidence.
 
-## 게이트
+## Workspaces and versions
 
-- [ ] G1 S1/S2/S3 독립 검증·commit 범위 인수
-- [ ] G2 BE↔AI fake/fixture runtime·JSON·trace·수명·방별 문맥 검증
-- [ ] G3 FE↔BE fixture Agent의 같은 origin 로그인·HTTP·SSE·4인 확인 검증
-- [ ] G4 실제 Qwen·여수 API·지도·재계획·전원 확인 검증
+- Common base: 20db9c11b2f8a6bdbfa1824720ca9aa502fe71a3.
+- S2 integration: C:/Users/user/Desktop/Competition/2026_AI_Agent_Hackaton2/.worktrees/trip-s2-be, branch work/be.
+- S1 verified handoff: work/fe c01f8c1 (including fee36dd and eight G3 follow-up commits), merged into S2. Frontend source remains owned by S1.
+- S3 handoff: pending. No uncommitted AI source has been integrated.
+- Source checkout, submission package/PDFs, ignored weights, personal AGENTS/skill and existing user keys remain preserved.
 
-G2와 G3는 독립 진행 가능하다. G4 전 S3가 모델 CLI를 종료하고 S2가 실제 실행을 맡는다.
+## Gates
 
-## 실행 기록
+| Gate | Actual mode and command | Observed result | Status |
+|---|---|---|---|
+| G1 FE | node --test frontend/tests/*.test.js | 33 passed, no failures; includes request/target race, first SSE recovery, edited-field PATCH, official snapshot colors. | PASS independent fixture |
+| G1 BE | backend/.venv/Scripts/python.exe -m pytest -c backend/pytest.ini backend/tests -q | 109 passed, one Starlette httpx deprecation warning. Fresh subprocess AI/torch import blocking and cold app import passed. | PASS independent fixture |
+| G1 AI | S3 independent evidence | Awaiting final SHA, README and tests. | PENDING |
+| G2 BE/AI | LocalAIBridge fake/fixture | Stub factory/lifespan/delegation/failure tests pass. Real S3 runtime connection not yet counted. | PENDING real runtime |
+| G3 FE/BE | http://127.0.0.1:8000, actual FastAPI + SQLite + FixtureAgentPort | Four cookie logins, 3/4 pending and 4/4 same-target confirmation, one POST delivered over real SSE to the three other clients, dev token gate, public JS key only in HTML. | PASS HTTP fixture |
+| G3 UI | Parent IAB observation | Login, invitation, pinned review/confirmed target and four votes, place/menu/evidence details, two actual Kakao SDK map components observed. S1 follow-up display/form/SSE fixes integrated and final UI recheck pending. | PARTIAL UI fixture |
+| G4 | local_qwen/live providers/four-person planning | Integration environment prepared only. No completed S2 Qwen/live four-person run yet. | NOT PASSED |
 
-| 게이트 / C번호 | 반영 commit | 계약 버전 | 모드 | 명령·조작 | 관측·증거 | 판정 |
-|---|---|---|---|---|---|---|
+Local reproducible transport scripts/output: backend/.artifacts/g3_server.py, g3_http.py, independent-tests.txt, frontend-tests.txt. Artifacts are intentionally ignored. Synthetic demo accounts and credentials are local test setup; they are not user accounts on an external service. The ready seed is explicitly a fixture plan hashed by Backend build_plan; subsequent port output is the fixed needs_input example. HTTP success is not a claim of natural-language planning.
 
-## 공통 체크리스트 마감
+## Review and environment decisions
 
-세 세션의 기록을 취합해 C01-C47의 실제 완료 근거를 확인한 뒤 [공통 체크리스트](../testing/mvp-checklist.md)를 갱신한다. 독립 fixture 통과만으로 live 항목을 체크하지 않는다.
+- Parent performed independent fresh Backend/FE review. Reproduced findings have RED→GREEN regressions: concurrent messages/status; join events/recent-50; immutable review vs new draft conflict/evidence; condition kind changes; no-draft price changes; queued and in-flight stale jobs; registered-but-wrong response identity; menu target validation; trace step ordering; cold import cycle; bounded processed-message batches.
+- New alternative-only evidence does not invalidate a frozen review. Actual evidence changes used by that review invalidate it even if plan_draft is null.
+- AI task recent_messages is a bounded chronological batch of unprocessed messages, with the existing structured room state. Backend stores the accepted last_processed_message_id atomically, drains backlog, and avoids extracting the same source again. No new JSON contract field was added.
+- Windows Store Python aliases could not start. Backend independent venv uses Python 3.13.9 from Anaconda. Managed sandbox async/DNS behavior required approved execution; failures were not reported as tests passing.
+- G4 uses a separate Python 3.12.14 environment at backend/.data/integration-venv. It reads the previous project's ML site-packages through a local .pth, without modifying that environment. Available packages: torch 2.14.1+cu126, transformers 4.57.6, peft 0.21.3, accelerate 1.16.0, safetensors 0.8.0. Backend + AI non-model dependencies were installed only in this integration venv.
+- Runtime env_file is the absolute original project .env. DEV_TOKEN was generated only when absent; values were never printed or committed. Only KAKAO_JAVASCRIPT_KEY reaches browser HTML. Provider, Mobility, REST and developer secrets do not.
 
-## 원격 전달
+## Live evidence pending consolidation
 
-develop 반영 범위 / 검증 결과 / push 결과 / master 대상 실제 PR / 미완료를 기록한다. 개인 파일·비밀 값은 커밋하지 않는다. 현재 원격 작업은 실행하지 않았다.
+Parent/S3 reported successful Kakao Local/Mobility/SDK connectivity and Apify place coverage. These are external evidence handoffs, not a substitute for S2's complete live planning run. S3's pure base-model extraction initially failed validation; code-assisted extraction must be reported separately from actual LoRA action selection. No pricing, cost, itinerary or extraction algorithm is duplicated in Backend.
+
+## Delivery
+
+Original develop and remote refs were unchanged during independent work. Only S2 will integrate verified final SHAs, run final checks, safely update original develop, push without force, and open master <- develop PR without merging. Remote refs were still empty on the latest read. PR creation and final push remain pending the integrated gates.

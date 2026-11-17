@@ -34,3 +34,11 @@ Installation used an isolated backend/.venv, FastAPI, SQLite, httpx, pytest, uvi
 Backend fixture tests do not verify extraction, model decisions, itinerary arithmetic, cost arithmetic, live place coverage, or Qwen quality. Those remain S3/integration evidence. G3 fixture seed has a ready four-member plan calculated by Backend hashing, then fixed needs_input drafts; it is not a complete live four-person planning scenario.
 
 S1 FE HEAD fee36dd8df43d93ad6d2b8af51ef4523c9af7402 was inspected and merged for G3; node --test frontend/tests/*.test.js => 27 passed. Further S1 follow-up commits must be collected before final integration. S3 is still running. Push/PR/develop integration is pending final gates and is owned only by S2.
+
+## Final independent follow-up (2026-11-18)
+
+Latest Backend-only suite after reference/cursor/fresh-review fixes: **109 passed**, one Starlette deprecation warning, 4.35 seconds. Fresh `from backend.app import create_app` and observation-first import both pass in new Python processes. Parent independently ran the same 109 tests successfully. Final author cleanup consolidated imports and removed a duplicate request declaration without changing behavior.
+
+Accepted message cursors are stored atomically with applied room/run state. New runs receive unprocessed source messages in chronological batches of at most 20 and drain remaining backlog; this avoids replaying already applied proposals and losing bursts longer than 20. Structured room state remains in every task. Backend never infers the text itself.
+
+Fresh review fixes after initial report: alternative-only evidence preserves old review/votes; old used evidence still invalidates without a draft; active request run/room identity is checked before result application; menu IDs must belong to the target place's observations; status writes share the room mutation lock; state_applied follows the actual maximum agent step. Tests capture the original failures.
