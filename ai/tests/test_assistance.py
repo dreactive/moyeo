@@ -30,3 +30,12 @@ def test_support_assistance_never_creates_proxy_or_ambiguous_votes():
     assert any(c["author_id"] == "u3" and c["source_message_id"] == "m3" for c in claims)
     assert not any(c["source_message_id"] in ("proxy", "unclear") for c in claims)
     assert questions[0]["id"] == "question:support_target:support:unclear"
+
+
+def test_empty_model_extraction_is_assisted_without_claiming_model_quality():
+    from ai.assistance import assist_extraction
+    output = assist_extraction({}, task())
+    assert output["constraint_proposals"][0]["value"] == 200000
+    assert output["constraint_proposals"][0]["key"] == "budget_krw"
+    assert any(s["author_id"] == "u3" for s in output["support_observations"])
+    assert output["questions"] == []

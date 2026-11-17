@@ -1,6 +1,25 @@
 """Narrow, source-preserving assistance; never a claim of model extraction quality."""
 import re
 from ai.questions import question
+from ai.extraction import validate_extraction
+
+
+def assist_extraction(raw, task):
+    output = validate_extraction(raw, task)
+    for proposal in explicit_constraints(task):
+        family = ("budget", "budget_krw") if proposal["key"] in ("budget", "budget_krw") else (proposal["key"],)
+        output["constraint_proposals"] = [c for c in output["constraint_proposals"]
+            if not (c["owner_id"] == proposal["owner_id"] and c["key"] in family
+                    and c["source_message_ids"] == proposal["source_message_ids"])]
+        output["constraint_proposals"].append(proposal)
+    items = task["items"] + [dict(i, id=i["client_ref"], item_version=1) for i in output["item_proposals"]]
+    claims, questions = explicit_support(task, items)
+    grounded = validate_extraction(dict(item_proposals=output["item_proposals"], support_observations=claims), task)
+    for key in ("support_observations", "questions"):
+        for value in grounded[key] + (questions if key == "questions" else []):
+            if value not in output[key]:
+                output[key].append(value)
+    return output
 
 
 def explicit_support(task, items):
