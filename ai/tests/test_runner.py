@@ -139,3 +139,18 @@ async def test_judge_can_select_later_day_instead_of_first_pipeline_step():
             return [10. if c["arguments"].get("from_ref") == "anchor:lodging" else 0. for c in candidates]
     action = await choose_action(task(), Model(), None, 1)
     assert action["tool_name"] == "get_car_route" and action["arguments"]["from_ref"] == "anchor:lodging"
+
+
+def test_budget_overrun_is_blocking_even_when_calculation_is_complete():
+    from ai.outcome import assemble_result
+    from ai.result import empty_result
+    from ai.tools.costs import calculate_costs
+    value = task()
+    result = empty_result(value)
+    cost = calculate_costs([dict(scope="per_person", unit_price_krw=20000, quantity=1, paid=False)], ["u1"], {"u1": 10000})
+    result["observations"] = [
+        dict(tool_name="build_itinerary", result=dict(days=value["current_plan"]["days"], questions=[], conflicts=[])),
+        dict(tool_name="calculate_costs", result=cost)]
+    assemble_result(value, result)
+    assert result["completion"] == "needs_input" and result["plan_draft"]["validation"] == "conflict"
+    assert any(c["type"] == "budget" and c["blocking"] and c["options"] for c in result["conflicts"])

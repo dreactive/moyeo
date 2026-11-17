@@ -2,6 +2,24 @@ from ai.questions import question
 from copy import deepcopy
 from ai.cost_inputs import build_cost_inputs
 from ai.context import build_context
+from ai.conflicts import conflict
+from ai.tools.costs import allocate
+
+
+def budget_conflicts(task, cost, item_ids):
+    arguments = build_cost_inputs(task)[0]
+    budgets, users = arguments["budget_by_user"], arguments["member_ids"]
+    shares = [allocate(line, users) for line in cost.get("lines", [])]
+    conflicts = []
+    for user in users:
+        delta = cost.get("planned_balance_krw", {}).get(user)
+        if delta is None and budgets[user] is not None:
+            delta = budgets[user] - sum(s[user] or 0 for s in shares)
+        if delta is not None and delta < 0:
+            found = conflict("budget", f"{user}의 예산을 최소 {-delta:,}원 초과합니다.", item_ids, task["base_versions"])
+            found["id"] = "conflict:budget:" + user
+            conflicts.append(found)
+    return conflicts
 
 
 def reuse_current_plan(task, result):
@@ -26,6 +44,8 @@ def assemble_result(task, result):
     result["conflicts"].extend(itinerary["conflicts"])
     result["questions"].extend(itinerary["questions"])
     result["questions"].extend(build_cost_inputs(build_context(task, result["observations"]))[1])
+    item_ids = list(dict.fromkeys(v["item_id"] for d in itinerary["days"] for v in d["visits"]))
+    result["conflicts"].extend(budget_conflicts(task, cost, item_ids))
     if cost["total_krw"] is None:
         result["questions"].append(question("constraint_value", None, "가격/차량 비용 중 미확인 금액이 있습니다."))
     validation = "conflict" if result["conflicts"] else "needs_input" if result["questions"] else "ready"
