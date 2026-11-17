@@ -124,3 +124,10 @@ def test_same_pair_on_two_days_consumes_the_correct_ordered_leg():
     result = build_itinerary(visits, {}, [], legs, {"start_date": "2026-11-21", "end_date": "2026-11-22"})
     assert result["days"][1]["visits"][1]["start_at"] == "2026-11-22T11:10:00+09:00"
     assert result["days"][1]["route_legs"][1]["evidence_id"] == "ab2"
+def test_fractional_quantity_keeps_exact_krw_and_rejects_subwon_truncation():
+    import pytest
+    from ai.tools.costs import allocate
+    line = dict(scope="shared", unit_price_krw=10000, quantity=.5)
+    assert allocate(line, ["u1"]) == {"u1": 5000}
+    with pytest.raises(ValueError):
+        allocate(dict(line, unit_price_krw=10001), ["u1"])
