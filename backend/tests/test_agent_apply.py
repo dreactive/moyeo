@@ -198,3 +198,13 @@ def test_plan_cannot_reference_unobserved_place(room, agent_result):
     with pytest.raises(ValueError):
         prepare_result(room, agent_result, [])
     assert room == before
+
+
+def test_applied_result_records_processed_cursor_atomically(room, agent_result):
+    from backend.services.agent_apply import apply_agent_result
+    from backend.db import Database
+    db = Database(':memory:')
+    db.put('room:room-fixture', room)
+    db.put('run:run-fixture', {'room_id':'room-fixture','base_versions':dict(room['versions']),'message_ids':['m4']})
+    assert apply_agent_result(db, agent_result)
+    assert db.get('processed-message:room-fixture') == 'm4'

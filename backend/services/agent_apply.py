@@ -83,7 +83,12 @@ def apply_agent_result(db, result):
     room, observations = prepare_result(db.get('room:' + room_id), result, get_observations(db, room_id))
     run = db.get('run:' + result['run_id'])
     run['applied'] = True
-    db.put_many({'room:' + room_id:room, 'run:' + result['run_id']:run})
+    records = {'room:' + room_id:room, 'run:' + result['run_id']:run}
+    processed = result.get('last_processed_message_id')
+    valid_ids = run.get('message_ids', [message['id'] for message in room['messages']])
+    if processed is not None and processed in valid_ids:
+        records['processed-message:' + room_id] = processed
+    db.put_many(records)
     db.observations[room_id] = observations
     publish_event(db, room_id, 'room.updated', {'changed':['items','constraints','questions','conflicts','current_plan','versions']})
     return True
