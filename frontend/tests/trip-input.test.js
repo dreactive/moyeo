@@ -6,3 +6,11 @@ test('blank anchors remain null and partial anchors cannot become zero coordinat
   assert.throws(() => readAnchor({origin_label:'역'},'origin'));
   assert.deepEqual(readAnchor({origin_label:'역',origin_latitude:'34.7',origin_longitude:'127.6'},'origin'),{label:'역',latitude:34.7,longitude:127.6});
 });
+import {readTripConfig} from '../src/trip-input.js';
+test('trip serialization keeps budget numeric, anchors null and cost IDs stable', () => {
+  const costs=[{id:'stable-cost'}];
+  const result=readTripConfig({region:'여수',per_person_budget_krw:'200000'},costs);
+  assert.equal(result.per_person_budget_krw,200000);
+  assert.equal(result.origin,null);
+  assert.equal(result.fixed_costs,costs);
+});

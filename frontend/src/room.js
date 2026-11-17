@@ -9,7 +9,7 @@ import {renderItems,renderConstraints,renderQuestions,renderConflicts} from './i
 import {renderPlan,displayPlan} from './plan.js';
 import {renderCost} from './cost.js';
 import {scenarios,replayScenario,setFixtureUser,emitFixture} from './fixture-api.js';
-import {readAnchor} from './trip-input.js';
+import {readTripConfig} from './trip-input.js';
 import {appendCost,readFixedCosts} from './fixed-costs.js';
 import {initMaps,renderRouteMap,renderPlaceMap} from './map.js';
 import {selectPlace,renderPlace} from './place.js';
