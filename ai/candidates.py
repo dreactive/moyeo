@@ -14,6 +14,8 @@ def valid_options(context, candidates):
     context = build_tool_context(context)
     accepted = []
     for candidate in candidates:
+        if candidate["action"] in ("direct", "wait", "finish"):
+            continue
         if candidate["action"] == "tool":
             try:
                 validate_arguments(candidate["tool_name"], candidate["arguments"], context)

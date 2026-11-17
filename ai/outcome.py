@@ -23,6 +23,8 @@ def budget_conflicts(task, cost, item_ids):
 
 
 def reuse_current_plan(task, result):
+    if task["goal"] == "manual_replan":
+        return False
     plan = task.get("current_plan") or {}
     changed = any(result[k] for k in ("constraint_proposals", "item_proposals", "support_observations", "questions"))
     valid = (plan.get("validation") == "ready" and plan.get("cost", {}).get("total_krw") is not None

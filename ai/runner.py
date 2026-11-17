@@ -53,7 +53,8 @@ async def run_agent(task, model, tools, emit_trace):
                              if not i.get("existing_item_id"))
         if hasattr(tools, "restore"):
             tools.restore(task)
-        if task["goal"] in ("chat", "messages", "extract"):
+        message_only = task["goal"] in ("new_message", "message_created", "remaining_messages") and not result["item_proposals"]
+        if task["goal"] in ("chat", "messages", "extract") or message_only:
             result["completion"] = "needs_input" if result["questions"] else "done"
         else:
             await run_steps(task, model, tools, emit_trace, result)

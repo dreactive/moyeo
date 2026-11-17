@@ -62,3 +62,14 @@ def test_local_qwen_runtime_needs_local_weights_without_downloading():
     with pytest.raises(ValueError, match="local"):
         create_runtime({"model_backend": "local_qwen", "provider_mode": "fixture",
                         "base_model_path": "missing", "adapter_path": "missing"})
+
+
+async def test_new_message_chitchat_waits_without_lookup():
+    from ai.runtime import create_runtime
+    task = json.loads(Path("ai/fixtures/agent-task.json").read_text(encoding="utf-8"))
+    task.update(goal="new_message", current_plan=None, items=[], observations=[], questions=[])
+    task["recent_messages"] = [dict(task["recent_messages"][0], text="좋은 아침")]
+    runtime = create_runtime({"model_backend": "fake", "provider_mode": "fixture"})
+    result = await runtime.run(task, None)
+    await runtime.aclose()
+    assert result["completion"] == "done" and result["observations"] == [] and result["plan_draft"] is None

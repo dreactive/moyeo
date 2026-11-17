@@ -154,3 +154,14 @@ def test_budget_overrun_is_blocking_even_when_calculation_is_complete():
     assemble_result(value, result)
     assert result["completion"] == "needs_input" and result["plan_draft"]["validation"] == "conflict"
     assert any(c["type"] == "budget" and c["blocking"] and c["options"] for c in result["conflicts"])
+
+
+async def test_manual_replan_does_not_reuse_old_ready_plan():
+    from ai.runtime import create_runtime
+    value = task()
+    value.update(goal="manual_replan", questions=[], recent_messages=[])
+    value["current_plan"].update(value["base_versions"], validation="ready")
+    runtime = create_runtime({"model_backend": "fake", "provider_mode": "fixture"})
+    result = await runtime.run(value, None)
+    await runtime.aclose()
+    assert {"calculate_costs", "build_itinerary"} <= {o["tool_name"] for o in result["observations"]}
