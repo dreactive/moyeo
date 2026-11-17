@@ -31,6 +31,14 @@ def valid_options(context, candidates):
 def grounded_options(context):
     context = build_tool_context(context)
     options, visits = [], planned_visits(context)
+    target = {i["id"] for i in context["items"] if i.get("kind") == "place"} if context.get("current_plan") is None else set(context.get("_new_item_refs", []))
+    unresolved = [i for i in context["items"] if i["id"] in target - {v["item_id"] for v in visits}]
+    if unresolved:
+        options.extend(tool_option("search_places", dict(query=i["title"], region=context["config"]["region"], category=None),
+                                   "실제 장소를 검색해 최초 방문 후보의 참조를 확보") for i in unresolved)
+        options.append(dict(action="ask", reason="장소 지점 또는 이름을 더 구체적으로 알려주세요.",
+                            tool_name=None, arguments={}, source_message_ids=[], source_refs=[]))
+        return options
     for visit in visits:
         if visit["place_ref"] not in context["details"]:
             options.append(tool_option("get_place_details", {"place_ref": visit["place_ref"]}, "방문 후보의 실제 가격·시간 조회"))

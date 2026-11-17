@@ -48,6 +48,11 @@ async def run_agent(task, model, tools, emit_trace):
     try:
         result.update(await extract_proposals(task, model, emit_trace))
         result["questions"].extend(q for q in task["questions"] if q["status"] == "open")
+        task["_new_item_refs"] = [i["client_ref"] for i in result["item_proposals"] if not i.get("existing_item_id")]
+        task["items"].extend(dict(i, id=i["client_ref"], item_version=1) for i in result["item_proposals"]
+                             if not i.get("existing_item_id"))
+        if hasattr(tools, "restore"):
+            tools.restore(task)
         if task["goal"] in ("chat", "messages", "extract"):
             result["completion"] = "needs_input" if result["questions"] else "done"
         else:

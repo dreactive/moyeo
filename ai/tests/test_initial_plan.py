@@ -26,3 +26,19 @@ async def test_initial_fixture_search_and_details_need_no_prior_room_observation
     tools.remember(dict(tool_name="search_places", arguments={}, result=places, observed_at="now", source_refs=[]))
     detail = await tools.execute("get_place_details", {"place_ref": "fixture:place-a"})
     assert detail["menus"][0]["price_krw"] == 10000
+
+
+async def test_empty_room_first_mention_creates_initial_plan():
+    from ai.runtime import create_runtime
+    value = task()
+    value.update(items=[], current_plan=None, observations=[], questions=[])
+    value["recent_messages"] = [dict(value["recent_messages"][0], id="new", text="가상 A식당 가자")]
+    value["goal"] = "message_created"
+    value["config"]["day_start_time"] = "10:00"
+    runtime = create_runtime({"model_backend": "fake", "provider_mode": "fixture"})
+    result = await runtime.run(value, None)
+    await runtime.aclose()
+    assert result["plan_draft"]["selected_item_ids"] == ["client:new"]
+    assert {"search_places", "get_place_details", "get_car_route", "build_itinerary", "calculate_costs"} <= {
+        o["tool_name"] for o in result["observations"]}
+    assert result["item_proposals"][0]["client_ref"] == "client:new"
