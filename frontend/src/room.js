@@ -9,7 +9,7 @@ import {renderItems,renderConstraints,renderQuestions,renderConflicts} from './i
 import {renderPlan,displayPlan} from './plan.js';
 import {renderCost} from './cost.js';
 import {scenarios,replayScenario,setFixtureUser,emitFixture} from './fixture-api.js';
-import {readTripConfig,changedTripFields} from './trip-input.js';
+import {readTripConfig,tripPatch} from './trip-input.js';
 import {appendCost,readFixedCosts} from './fixed-costs.js';
 import {initMaps,renderRouteMap,renderPlaceMap} from './map.js';
 import {selectPlace,renderPlace} from './place.js';
@@ -131,7 +131,7 @@ function bindTripInput() {
     else {
       delete body.title;
       const baseline = tripBaseline;
-      const patch = changedTripFields(body,baseline);
+      const patch = tripPatch(body,baseline,getSnapshot().config);
       if (!Object.keys(patch).length) return;
       await roomAction('trip',patch,'PATCH');
       if (tripBaseline === baseline) tripBaseline = structuredClone(body);

@@ -24,3 +24,9 @@ test('saving an edited end time leaves a remotely updated budget untouched', () 
   assert.equal({...latest,...patch}.per_person_budget_krw,300000);
   assert.equal(edited.day_end_time,'19:00');
 });
+test('editing an anchor label preserves a newer coordinate from another participant', () => {
+  const baseline={origin:{label:'역',latitude:34.7,longitude:127.6}};
+  const edited={origin:{...baseline.origin,label:'출발역'}};
+  const latest={origin:{...baseline.origin,latitude:34.8}};
+  assert.deepEqual(tripInput.tripPatch(edited,baseline,latest),{origin:{label:'출발역',latitude:34.8,longitude:127.6}});
+});

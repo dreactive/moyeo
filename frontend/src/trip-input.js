@@ -12,3 +12,10 @@ export function readTripConfig(data,fixed_costs) {
 export function changedTripFields(edited,baseline) {
   return Object.fromEntries(Object.entries(edited).filter(([key,value]) => JSON.stringify(value) !== JSON.stringify(baseline[key])));
 }
+export function tripPatch(edited,baseline,latest) {
+  const patch = changedTripFields(edited,baseline);
+  for (const key of ['origin','destination','lodging']) {
+    if (patch[key] && baseline[key] && latest[key]) patch[key] = {...latest[key],...changedTripFields(patch[key],baseline[key])};
+  }
+  return patch;
+}
