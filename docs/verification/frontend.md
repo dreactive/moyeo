@@ -173,3 +173,6 @@ Node 회귀: frontend/tests/events.test.js, trip-input.test.js, items.test.js.
 부모가 S2 fixture Backend(8000)에서 로그인·입장·두 Kakao 지도 컴포넌트·장소 상세 연결을 관측했다고 전달했다. 이는 부모의 G3 UI 관측이며, 위 새 폼 병합/첫 SSE/색상 수정 전체를 실제 네트워크에서 다시 관측한 결과는 아니다. 위 회귀의 직접 근거는 Node 제어 테스트다.
 
 S2 추가 인계: 이전 fee36dd 다음부터 work/fe 최신 HEAD까지 순서대로 통합한다. 마지막 HEAD는 최종 응답과 git rev-parse work/fe로 확인한다. S1 push/PR/merge 없음.
+
+추가 실제 모듈 메모리 smoke: Node에서 실제 frontend/src/room.js를 import하고 최소 form DOM/Fetch/EventSource 대역으로 실행했다. 초기 예산200000 폼 → 서버 예산300000/seq증가 → 첫 onopen 시 GET가 총2회로 증가함 → 종료시각19:00 저장 PATCH가 {day_end_time:"19:00"}만 포함함을 확인했다. PATCH 대기 중 입력을20:00으로 편집한 뒤 응답을 완료해도20:00이 유지되며, 다음 저장은 {day_end_time:"20:00"}만 전송했다. error 출력도 비어 있었다. 이는 실제 모듈의 폼 baseline/콜백 연결 검사이며 실제 브라우저/네트워크 관측은 아니다.
+e5e8001 docs(fe): record concurrent form SSE and confirmed color fixes
