@@ -74,3 +74,10 @@ def test_stay_and_menu_answers_are_restored_into_planning_inputs():
     visits = planned_visits(value)
     assert visits[1]["stay_minutes"] == 40
     assert visits[0]["selected_menu_ids"] == ["fixture:menu-a"]
+def test_model_view_keeps_route_facts_without_duplicate_map_geometry():
+    from ai.context import model_context
+    route = dict(duration_seconds=454, toll_krw=0, evidence_id="live:route", polyline=[dict(latitude=34.7)])
+    source = dict(observations=[dict(result=route)])
+    view = model_context(source)
+    assert view["observations"][0]["result"] == {k: v for k, v in route.items() if k != "polyline"}
+    assert source["observations"][0]["result"]["polyline"]
