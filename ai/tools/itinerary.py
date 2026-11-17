@@ -1,6 +1,7 @@
 from datetime import date, datetime, timedelta
 from ai.questions import question
 from ai.conflicts import conflict
+from ai.tools.hours import validate_hours
 
 
 def finish_day(day, destination, route_legs, end_time, versions):
@@ -45,6 +46,15 @@ def build_itinerary(visits, anchors, constraints, route_legs, config):
         found, missing = finish_day(day, destination, route_legs, min(limits), config.get("_base_versions", {}))
         conflicts.extend(found)
         questions.extend(missing)
+    for key in ("origin", "destination") + (("lodging",) if first != last else ()):
+        if anchors.get(key) is None:
+            questions.append(question(key, "anchor:" + key, "거점 좌표를 입력해주세요."))
+    for day in days:
+        for visit in day["visits"]:
+            found, missing = validate_hours(visit, config.get("_details", {}).get(visit["place_ref"], {}),
+                                             config.get("_base_versions", {}))
+            conflicts.extend(found)
+            questions.extend(missing)
     return dict(days=days, questions=questions, conflicts=conflicts)
 
 

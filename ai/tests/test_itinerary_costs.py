@@ -93,3 +93,14 @@ def test_confirmed_personal_return_limit_is_enforced_by_builder():
     constraints = [{"key": "return_by", "value": "16:00", "kind": "hard", "status": "confirmed"}]
     result = build_itinerary([visit], {"origin": {}, "destination": {}}, constraints, legs, config)
     assert any(c["type"] == "time" for c in result["conflicts"])
+
+
+def test_builder_applies_observed_holiday_and_reports_missing_anchors():
+    from ai.tools.itinerary import build_itinerary
+    config = {"start_date": "2026-11-21", "end_date": "2026-11-21",
+              "_details": {"p": {"opening_hours": {"intervals": [], "holiday_text": "2026-11-21 휴무"}}}}
+    visit = {"item_id": "a", "place_ref": "p", "date": "2026-11-21", "stay_minutes": 60}
+    leg = {"from_ref": "anchor:origin", "to_ref": "p", "duration_seconds": 60}
+    result = build_itinerary([visit], {"origin": None, "destination": None}, [], [leg], config)
+    assert any(c["type"] == "opening_hours" for c in result["conflicts"])
+    assert any(q["field"] == "origin" for q in result["questions"])

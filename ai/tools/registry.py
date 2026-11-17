@@ -28,7 +28,9 @@ class RegisteredTools:
         if name == "calculate_costs":
             return calculate_costs(**arguments)
         if name == "build_itinerary":
-            return build_itinerary(**arguments, config=self.context["config"])
+            config = dict(self.context["config"], _details=self.context["details"],
+                          _base_versions=self.context.get("base_versions", {}))
+            return build_itinerary(**arguments, config=config)
         if name == "search_places":
             places = [p for p in self.context["places"].values() if "name" in p
                       and arguments["query"] in p["name"]]
