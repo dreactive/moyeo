@@ -17,6 +17,9 @@ class RegisteredTools:
         self.context["observations"].append(deepcopy(observation))
         self.context = build_tool_context(self.context)
 
+    def restore(self, context):
+        self.context = build_tool_context(context)
+
     async def execute(self, name, arguments):
         validate_arguments(name, arguments, self.context)
         if self.mode == "live" and name in ("search_places", "get_place_details", "get_car_route"):

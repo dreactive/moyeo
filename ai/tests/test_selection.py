@@ -24,3 +24,17 @@ def test_reorder_replace_and_change_constraint_keep_ownership():
     assert changed["current_plan"]["item_snapshots"][0]["place_ref"] == "fixture:place-b"
     changed, questions = selected({"kind": "change_constraint", "constraint_id": "c1", "owner_id": "u1", "new_value": "18:00"})
     assert questions[0]["owner_id"] == "u1" and changed["constraints"] == value["constraints"]
+
+
+async def test_selected_drop_recalculates_routes_and_costs_in_runtime():
+    from ai.runtime import create_runtime
+    value = task()
+    value["user_selection"] = {"base_versions": value["base_versions"],
+        "effect": {"kind": "drop_visit", "item_id": "item-a"}}
+    runtime = create_runtime({"model_backend": "fake", "provider_mode": "fixture"})
+    result = await runtime.run(value, None)
+    await runtime.aclose()
+    assert result["plan_draft"]["selected_item_ids"] == ["item-b"]
+    assert result["plan_draft"]["cost"]["known_total_krw"] == 80000
+    route = next(o for o in result["observations"] if o["tool_name"] == "get_car_route")
+    assert route["arguments"]["to_ref"] == "fixture:place-b"

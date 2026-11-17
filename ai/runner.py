@@ -12,6 +12,7 @@ from ai.outcome import assemble_result, reuse_current_plan
 from ai.result import empty_result
 from ai.extraction import validate_extraction
 from ai.assistance import assist_extraction
+from ai.selection import apply_selection
 
 
 async def extract_proposals(task, model, emit_trace):
@@ -31,7 +32,13 @@ async def extract_proposals(task, model, emit_trace):
 
 async def run_agent(task, model, tools, emit_trace):
     task = build_context(task, [])
+    task, selection_questions = apply_selection(task)
     result = empty_result(task)
+    if selection_questions:
+        result["questions"] = selection_questions
+        return result
+    if hasattr(tools, "restore"):
+        tools.restore(task)
     if task["config"].get("transport", "car") != "car":
         result["completion"] = "unsupported"
         return result
