@@ -38,3 +38,16 @@ def test_worker_records_state_applied_without_user_trace(api):
     assert traces[0]['events'][-1]['event'] == 'state_applied'
     assert traces[0]['events'][-1]['payload']['applied'] is True
     assert 'trace' not in api.get('/api/rooms/room-fixture').text
+
+
+def test_trace_can_be_disabled_without_losing_product_data(api, agent_result):
+    from backend.services.traces import store_trace
+    from backend.services.observations import project_observations, observed_place
+    db = api.app.state.db
+    db.trace_enabled = False
+    db.put('run:r', {'room_id':'room-fixture'})
+    event = dict(run_id='r',step=1,event='decision',call_id=None,created_at='2026-11-18T10:00:00+09:00',payload={})
+    assert not store_trace(db, event)
+    project_observations(db, 'room-fixture', agent_result['observations'])
+    assert observed_place(db, 'room-fixture', 'fixture:place-a') is not None
+    assert db.traces == {}

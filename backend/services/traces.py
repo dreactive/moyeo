@@ -17,6 +17,8 @@ from copy import deepcopy
 
 
 def store_trace(db, event):
+    if not getattr(db, 'trace_enabled', True):
+        return False
     run = db.get('run:' + event['run_id'])
     if not run or event['event'] not in ('decision','tool_call','tool_result','state_applied'):
         return False
