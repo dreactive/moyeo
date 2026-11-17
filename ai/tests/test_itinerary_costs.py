@@ -70,3 +70,14 @@ def test_return_deadline_includes_outbound_leg():
     assert conflicts[0]["blocking"] is True
     assert day["route_legs"] == [leg]
     assert not questions
+
+
+def test_holiday_and_unknown_hours_are_distinct():
+    from ai.tools.hours import validate_hours
+    visit = {"item_id": "a", "date": "2026-11-21", "start_at": "2026-11-21T11:00:00+09:00",
+             "end_at": "2026-11-21T12:00:00+09:00"}
+    closed = {"opening_hours": {"intervals": [], "holiday_text": "2026-11-21 휴무"}}
+    conflicts, questions = validate_hours(visit, closed, {})
+    assert conflicts[0]["type"] == "opening_hours" and not questions
+    conflicts, questions = validate_hours(visit, {"opening_hours": None}, {})
+    assert not conflicts and questions[0]["target_ref"] == "a"
