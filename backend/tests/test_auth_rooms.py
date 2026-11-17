@@ -64,3 +64,15 @@ def test_join_publishes_members_and_returns_recent_messages():
         assert len(joined['messages']) == 50
         assert joined['seq'] == 1
         assert app.state.db.get('events:' + room['room_id'])[0]['event'] == 'room.updated'
+
+
+def test_trip_patch_invalidates_review_and_preserves_history():
+    app = create_app(database_path=':memory:')
+    with TestClient(app) as client:
+        client.post('/api/auth/register', json={'name':'a','email':'a@b.test','password':'password123'})
+        room = client.post('/api/rooms', json={'title':'trip','start_date':'2026-11-21','end_date':'2026-11-22','per_person_budget_krw':200000}).json()
+        path = '/api/rooms/' + room['room_id']
+        revised = client.patch(path + '/trip', json={'per_person_budget_krw':150000})
+        assert revised.status_code == 200
+        assert revised.json()['config']['per_person_budget_krw'] == 150000
+        assert revised.json()['versions']['constraint_version'] == 1

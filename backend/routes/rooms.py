@@ -45,3 +45,24 @@ def join(body: JoinRoom, request: Request, user=Depends(current_user)):
         room = db.get('room:' + room_id)
     room['messages'] = room['messages'][-50:]
     return room
+from pydantic import ValidationError
+from backend.schemas import TripConfig
+
+
+@router.patch('/{room_id}/trip')
+async def trip(room_id: str, body: dict, request: Request, user=Depends(current_user)):
+    db = request.app.state.db
+    with db.lock:
+        room = require_room(db, room_id, user['id'])
+        try:
+            config = TripConfig.model_validate(dict(room['config'], **body)).model_dump()
+        except ValidationError:
+            raise HTTPException(422, 'Invalid trip configuration')
+        if config != room['config']:
+            room['config'] = config
+            room['versions']['constraint_version'] += 1
+            room.update(active_target=None, review_plan=None, confirmations=[])
+            db.put('room:' + room_id, room)
+            publish_event(db, room_id, 'room.updated', {'changed':['config','versions','confirmations']})
+    await request.app.state.jobs.enqueue(room_id, 'trip_changed')
+    return snapshot(room_id, request, user)
