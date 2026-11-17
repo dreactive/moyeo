@@ -5,6 +5,8 @@ from ai.context import build_context
 from ai.conflicts import conflict
 from ai.tools.costs import allocate
 
+SUPPORTED_HARD_KEYS = ("budget", "budget_krw", "return_by")
+
 
 def budget_conflicts(task, cost, item_ids):
     arguments = build_cost_inputs(task)[0]
@@ -29,7 +31,9 @@ def reuse_current_plan(task, result):
     changed = any(result[k] for k in ("constraint_proposals", "item_proposals", "support_observations", "questions"))
     valid = (plan.get("validation") == "ready" and plan.get("cost", {}).get("total_krw") is not None
              and all(plan.get(k) == v for k, v in task["base_versions"].items())
-             and not task.get("user_selection") and not any(q["status"] == "open" for q in task["questions"]))
+             and not task.get("user_selection") and not any(q["status"] == "open" for q in task["questions"])
+             and not any(c["kind"] == "hard" and c.get("status") != "superseded" and
+                         (c.get("status") != "confirmed" or c["key"] not in SUPPORTED_HARD_KEYS) for c in task["constraints"]))
     if changed or not valid:
         return False
     keys = ("selected_item_ids", "days", "cost", "validation", "blocking_conflict_ids")
@@ -48,6 +52,11 @@ def assemble_result(task, result):
     result["questions"].extend(build_cost_inputs(build_context(task, result["observations"]))[1])
     item_ids = list(dict.fromkeys(v["item_id"] for d in itinerary["days"] for v in d["visits"]))
     result["conflicts"].extend(budget_conflicts(task, cost, item_ids))
+    for condition in task["constraints"]:
+        if condition["kind"] == "hard" and condition.get("status") != "superseded" and (
+                condition.get("status") != "confirmed" or condition["key"] not in SUPPORTED_HARD_KEYS):
+            result["questions"].append(question("constraint_value", condition["id"],
+                "이 필수 조건의 확인 또는 충족 근거가 더 필요합니다.", condition["owner_id"]))
     if cost["total_krw"] is None:
         result["questions"].append(question("constraint_value", None, "가격/차량 비용 중 미확인 금액이 있습니다."))
     validation = "conflict" if result["conflicts"] else "needs_input" if result["questions"] else "ready"
