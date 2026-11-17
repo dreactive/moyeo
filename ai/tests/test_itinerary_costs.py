@@ -48,3 +48,13 @@ def test_itinerary_missing_route_requires_input():
     assert [d["date"] for d in result["days"]] == ["2026-11-21", "2026-11-22"]
     assert result["questions"]
     assert result["days"][0]["visits"] == []
+
+
+def test_itinerary_schedules_observed_inbound_leg():
+    from ai.tools.itinerary import build_itinerary
+    config = {"start_date": "2026-11-21", "end_date": "2026-11-21"}
+    visit = {"item_id": "a", "place_ref": "p", "date": "2026-11-21", "stay_minutes": 60}
+    leg = {"from_ref": "anchor:origin", "to_ref": "p", "duration_seconds": 180}
+    result = build_itinerary([visit], {"origin": {}, "destination": {}}, [], [leg], config)
+    assert result["days"][0]["visits"][0]["start_at"] == "2026-11-21T09:03:00+09:00"
+    assert result["days"][0]["route_legs"] == [leg]
