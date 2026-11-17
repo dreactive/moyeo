@@ -1,5 +1,7 @@
 from ai.questions import question
 from copy import deepcopy
+from ai.cost_inputs import build_cost_inputs
+from ai.context import build_context
 
 
 def reuse_current_plan(task, result):
@@ -23,6 +25,7 @@ def assemble_result(task, result):
     itinerary, cost = (calculations[k] for k in ("build_itinerary", "calculate_costs"))
     result["conflicts"].extend(itinerary["conflicts"])
     result["questions"].extend(itinerary["questions"])
+    result["questions"].extend(build_cost_inputs(build_context(task, result["observations"]))[1])
     if cost["total_krw"] is None:
         result["questions"].append(question("constraint_value", None, "가격/차량 비용 중 미확인 금액이 있습니다."))
     validation = "conflict" if result["conflicts"] else "needs_input" if result["questions"] else "ready"

@@ -27,3 +27,12 @@ def test_confirmed_personal_budget_overrides_default_only_for_owner():
                             dict(owner_id="u2", key="budget_krw", value=999, kind="hard", status="needs_owner_confirmation")]
     args, _ = build_cost_inputs(value)
     assert args["budget_by_user"]["u1"] == 150000 and args["budget_by_user"]["u2"] == 200000
+
+
+def test_unselected_visit_cost_is_unknown_instead_of_silently_free():
+    from ai.cost_inputs import build_cost_inputs
+    value = task()
+    value["current_plan"]["days"][0]["visits"][0]["selected_menu_ids"] = []
+    args, questions = build_cost_inputs(value)
+    assert any(q["field"] == "menu_selection" and q["target_ref"] == "item-a" for q in questions)
+    assert any(l["unit_price_krw"] is None and "item-a" in l["id"] for l in args["lines"])

@@ -30,9 +30,16 @@ def build_cost_inputs(context):
     questions = []
     for visit in planned_visits(context):
         detail = details.get(visit["place_ref"], {})
-        for menu in detail.get("menus", []):
-            if menu["id"] in visit["selected_menu_ids"]:
-                lines.append(menu_line(context, visit, menu, questions))
+        selected = [m for m in detail.get("menus", []) if m["id"] in visit["selected_menu_ids"]]
+        if not selected:
+            free = next((e for e in detail.get("evidence", []) if e["field"] == "admission_fee"
+                         and e["normalized_value"] == 0 and e["status"] == "api_observed"
+                         and e["match_status"] == "matched"), None)
+            lines.append(cost_line("visit:" + visit["item_id"], 0 if free else None,
+                                   free["id"] if free else None, "per_person", "입장료/메뉴 확인 필요", "admission"))
+            if not free:
+                questions.append(question("menu_selection", visit["item_id"], "메뉴·이용권 또는 무료 근거를 확인해주세요."))
+        lines.extend(menu_line(context, visit, menu, questions) for menu in selected)
     lines.append(cost_line("car:extras", None, assumption="유류/주차 비용 확인 필요"))
     users = [m["user_id"] for m in context["members"]]
     budgets = {u: context["config"].get("per_person_budget_krw") for u in users}
