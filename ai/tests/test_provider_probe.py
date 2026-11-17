@@ -31,3 +31,11 @@ def test_hours_breaks_are_not_open_intervals():
     assert expand_hours(hours, ["2026-11-21"]) == [
         {"day": "2026-11-21", "start": "10:00", "end": "15:00"},
         {"day": "2026-11-21", "start": "17:00", "end": "21:00"}]
+
+
+def test_menu_normalization_preserves_missing_and_same_record_evidence():
+    from ai.providers.apify import normalize_menu
+    menu, evidence = normalize_menu({"name": "한상", "price": "시가"}, "123", 0, "now")
+    assert menu["price_krw"] is None and menu["price_text"] == "시가"
+    assert evidence["provider_record_id"] == "123" and evidence["mode"] == "live"
+    assert evidence["status"] == "missing" and menu["serving_basis"] is None
