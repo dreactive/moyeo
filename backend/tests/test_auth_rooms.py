@@ -27,3 +27,25 @@ def test_create_room_is_member_scoped():
         room = client.post('/api/rooms', json={'title':'여수','start_date':'2026-11-21','end_date':'2026-11-22','per_person_budget_krw':200000})
         assert room.status_code == 201
         assert client.get('/api/rooms/' + room.json()['room_id']).status_code == 200
+
+
+def test_created_room_can_be_retrieved():
+    with TestClient(create_app(database_path=':memory:')) as client:
+        client.post('/api/auth/register', json={'name':'a','email':'a@b.test','password':'password123'})
+        room = client.post('/api/rooms', json={'title':'trip','start_date':'2026-11-21','end_date':'2026-11-22','per_person_budget_krw':200000}).json()
+        assert client.get('/api/rooms/' + room['room_id']).json() == room
+
+
+def test_four_members_join_and_nonmember_blocked():
+    app = create_app(database_path=':memory:')
+    with TestClient(app) as owner:
+        owner.post('/api/auth/register', json={'name':'one','email':'one@b.test','password':'password123'})
+        room = owner.post('/api/rooms', json={'title':'trip','start_date':'2026-11-21','end_date':'2026-11-22','per_person_budget_krw':200000}).json()
+        for i in range(2, 5):
+            guest = TestClient(app, cookies={})
+            guest.post('/api/auth/register', json={'name':str(i),'email':str(i)+'@b.test','password':'password123'})
+            assert guest.get('/api/rooms/' + room['room_id']).status_code == 403
+            joined = guest.post('/api/rooms/join', json={'invite_code':room['invite_code']})
+            assert joined.status_code == 200
+        assert len(owner.get('/api/rooms/' + room['room_id']).json()['members']) == 4
+
