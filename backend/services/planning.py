@@ -19,3 +19,19 @@ def substantive(value):
 def semantic_plan_hash(snapshot):
     content = substantive({key:snapshot.get(key) for key in HASH_FIELDS})
     return hashlib.sha256(json.dumps(content, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode()).hexdigest()
+
+from fastapi import HTTPException
+from copy import deepcopy
+
+
+def freeze_review(room, target):
+    plan = room['review_plan'] or room['current_plan']
+    if plan is None or target != plan['confirmation_target']:
+        raise HTTPException(409, 'Confirmation target changed')
+    for key in ('participant_version','constraint_version','evidence_version'):
+        if target[key] != room['versions'][key]:
+            raise HTTPException(409, 'Review inputs changed')
+    if room['review_plan'] is None:
+        room['review_plan'] = deepcopy(plan)
+        room['active_target'] = deepcopy(target)
+    return room['review_plan']
