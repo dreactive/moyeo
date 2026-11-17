@@ -20,3 +20,26 @@ def apply_support(room, observation, actor_id):
     item['support_threshold'] = support_threshold(len(room['members']))
     item['state'] = 'supported' if len(item['supporter_ids']) >= item['support_threshold'] else 'mentioned'
     return True
+
+from fastapi import HTTPException
+from copy import deepcopy
+from uuid import uuid4
+
+
+def owned_constraint(room, constraint_id, actor_id):
+    for constraint in room['constraints']:
+        if constraint['id'] == constraint_id:
+            if constraint['owner_id'] != actor_id:
+                raise HTTPException(403, 'Only the condition owner may edit')
+            return constraint
+    raise HTTPException(404, 'Condition not found')
+
+
+def edit_constraint(room, constraint_id, actor_id, value):
+    constraint = owned_constraint(room, constraint_id, actor_id)
+    if constraint['status'] == 'confirmed':
+        constraint = deepcopy(constraint)
+        constraint['id'] = uuid4().hex
+        room['constraints'].append(constraint)
+    constraint.update(value=value, status='needs_owner_confirmation')
+    return constraint

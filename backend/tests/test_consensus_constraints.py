@@ -22,3 +22,17 @@ def test_support_is_unique_current_version_majority(room):
     apply_support(room, observation, 'u4')
     assert item['supporter_ids'] == []
     assert item['opponent_ids'] == ['u4']
+
+
+def test_constraint_relaxation_requires_owner(room):
+    import pytest
+    from fastapi import HTTPException
+    from backend.services.consensus import edit_constraint
+    original = room['constraints'][0]
+    original['status'] = 'confirmed'
+    previous = original['value']
+    with pytest.raises(HTTPException):
+        edit_constraint(room, original['id'], 'u4', 150000)
+    pending = edit_constraint(room, original['id'], original['owner_id'], 150000)
+    assert original['value'] == previous
+    assert pending['status'] == 'needs_owner_confirmation'
