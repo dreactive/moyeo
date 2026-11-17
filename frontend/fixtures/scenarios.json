@@ -7298,7 +7298,16 @@
             "fixture": "place-a"
           }
         },
-        "menus": [],
+        "menus": [
+          {
+            "id": "fixture:menu-a",
+            "name": "예시 메뉴",
+            "price_krw": null,
+            "price_text": "시가",
+            "serving_basis": "함께 먹는 메뉴 · 수량 선택 필요",
+            "evidence_id": "fixture:price-a"
+          }
+        ],
         "opening_hours": {
           "raw_text": "예시 매일 10:00-20:00",
           "intervals": [
