@@ -11,7 +11,7 @@ import {requestJson,getDataMode} from './api.js';
 import {applySnapshot,subscribeState,setUser} from './state.js';
 import {showError} from './ui.js';
 export async function startRoomApp() {
-  bindAccount(); bindSessionActions();
+  bindAccount(); bindSessionActions(); bindFixtureControls();
   html('mode', getDataMode() === 'fixture' ? '개발용 fixture · 실제 API 조회 아님' : 'LIVE · Backend 연결');
   subscribeState(snapshot => snapshot && renderRoom(snapshot));
   const user = await requestJson('/api/auth/me');
@@ -71,5 +71,15 @@ function bindSessionActions() {
     appendMessage(await requestJson('/api/rooms/' + encodeURIComponent(roomId) + '/messages',{method:'POST',body}));
     form.reset();
   });
+}
+
+import {scenarios,replayScenario,setFixtureUser,emitFixture} from './fixture-api.js';
+function bindFixtureControls() {
+  if (getDataMode() !== 'fixture') return;
+  document.getElementById('fixture-controls').hidden = false;
+  html('scenario',Object.entries(scenarios).map(([key,value]) => `<option value="${e(key)}">${e(value.label)}</option>`).join(''));
+  document.getElementById('replay').onclick = () => enterRoom(replayScenario(document.getElementById('scenario').value));
+  document.getElementById('fixture-user').onchange = event => { showUser(setFixtureUser(event.target.value)); renderRoom(getSnapshot()); };
+  document.getElementById('reconnect').onclick = () => run(() => refreshRoom());
 }
 

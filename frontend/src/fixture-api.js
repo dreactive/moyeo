@@ -21,3 +21,13 @@ export function emitFixture(name, data) {
     if (roomId === data.room_id) handlers[name]?.(structuredClone(data));
   });
 }
+import scenarios from '../fixtures/scenarios.json' with {type:'json'};
+export {scenarios};
+export function replayScenario(key) {
+  const next = scenarios[key];
+  const seq = fixtureRoom.seq + 1;
+  Object.assign(fixtureRoom,structuredClone(next.snapshot),{seq});
+  next.places?.forEach(details => fixturePlaces.set(details.place.id,structuredClone(details)));
+  emitFixture('onRoomUpdated',{room_id:fixtureRoom.room_id,seq,changed:['fixture_scenario']});
+  return structuredClone(fixtureRoom);
+}
