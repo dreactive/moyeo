@@ -24,3 +24,11 @@ def test_item_changes_clear_previous_version_support(room):
     assert item['item_version'] == 2
     assert item['supporter_ids'] == []
     assert item['state'] == 'mentioned'
+
+
+def test_client_ref_resolves_to_backend_item(room):
+    from backend.domain import apply_item_proposals, resolve_refs
+    proposal = dict(client_ref='new', existing_item_id=None, kind='place', title='New cafe', source_message_ids=['m4'])
+    refs = apply_item_proposals(room, [proposal])
+    assert refs['new'] == room['items'][-1]['id']
+    assert resolve_refs({'target_ref':'new','related_item_ids':['new']}, refs) == {'target_ref':refs['new'],'related_item_ids':[refs['new']]}

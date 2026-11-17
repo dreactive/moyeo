@@ -29,3 +29,24 @@ def update_item_proposal(room, proposal):
         item.update(title=proposal['title'], kind=proposal['kind'], item_version=item['item_version']+1, supporter_ids=[], opponent_ids=[], state='mentioned')
     item['source_message_ids'] = sorted(set(item['source_message_ids'] + proposal['source_message_ids']))
     return item
+
+
+def apply_item_proposals(room, proposals):
+    refs = {}
+    for proposal in proposals:
+        if not valid_sources(room, proposal['source_message_ids']):
+            raise ValueError('Invalid proposal source')
+        update = update_item_proposal if proposal.get('existing_item_id') else add_item_proposal
+        refs[proposal['client_ref']] = update(room, proposal)['id']
+    return refs
+
+
+REF_FIELDS = {'item_id','target_ref','selected_item_ids','related_item_ids','affected_item_ids','ordered_item_ids'}
+
+
+def resolve_refs(value, refs, field=None):
+    if isinstance(value, dict):
+        return {key:resolve_refs(item, refs, key) for key,item in value.items()}
+    if isinstance(value, list):
+        return [resolve_refs(item, refs, field) for item in value]
+    return refs.get(value, value) if isinstance(value, str) and field in REF_FIELDS else value
