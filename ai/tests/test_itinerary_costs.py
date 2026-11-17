@@ -112,3 +112,15 @@ def test_empty_last_day_keeps_lodging_to_destination_route():
     result = build_itinerary([], {"origin": {}, "lodging": {}, "destination": {}}, [], [leg],
                              {"start_date": "2026-11-21", "end_date": "2026-11-22"})
     assert result["days"][1]["route_legs"] == [leg]
+
+
+def test_same_pair_on_two_days_consumes_the_correct_ordered_leg():
+    from ai.tools.itinerary import build_itinerary
+    visits = [dict(item_id=p + day, place_ref=p, date=day, stay_minutes=60) for day in ("2026-11-21", "2026-11-22") for p in ("a", "b")]
+    def leg(a, b, seconds, evidence):
+        return dict(from_ref=a, to_ref=b, duration_seconds=seconds, evidence_id=evidence)
+    legs = [leg("anchor:origin", "a", 600, "in1"), leg("a", "b", 600, "ab1"), leg("b", "anchor:lodging", 600, "out1"),
+            leg("anchor:lodging", "a", 600, "in2"), leg("a", "b", 3600, "ab2"), leg("b", "anchor:destination", 600, "out2")]
+    result = build_itinerary(visits, {}, [], legs, {"start_date": "2026-11-21", "end_date": "2026-11-22"})
+    assert result["days"][1]["visits"][1]["start_at"] == "2026-11-22T11:10:00+09:00"
+    assert result["days"][1]["route_legs"][1]["evidence_id"] == "ab2"

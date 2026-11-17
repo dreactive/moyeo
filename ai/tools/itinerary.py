@@ -4,12 +4,19 @@ from ai.conflicts import conflict
 from ai.tools.hours import validate_hours
 
 
-def finish_day(day, destination, route_legs, end_time, versions, origin=None, start_time="09:00"):
+def matching_leg(legs, from_ref, to_ref, consume=False):
+    for index, leg in enumerate(legs):
+        if leg["from_ref"] == from_ref and leg["to_ref"] == to_ref:
+            return legs.pop(index) if consume else leg
+    return None
+
+
+def finish_day(day, destination, route_legs, end_time, versions, origin=None, start_time="09:00", consume=False):
     if not day["visits"] and origin is None:
         return [], []
     visit = day["visits"][-1] if day["visits"] else dict(place_ref=origin,
              end_at=day["date"] + "T" + start_time + ":00+09:00")
-    leg = next((r for r in route_legs if r["from_ref"] == visit["place_ref"] and r["to_ref"] == destination), None)
+    leg = matching_leg(route_legs, visit["place_ref"], destination, consume)
     if leg is None:
         return [], [question("constraint_value", destination, "숙소/귀가 구간 조회가 필요합니다.")]
     day["route_legs"].append(leg)
@@ -22,6 +29,7 @@ def finish_day(day, destination, route_legs, end_time, versions, origin=None, st
 
 def build_itinerary(visits, anchors, constraints, route_legs, config):
     first, last = (date.fromisoformat(config[k]) for k in ("start_date", "end_date"))
+    available = list(route_legs)
     days = [dict(date=(first + timedelta(days=n)).isoformat(), visits=[], route_legs=[])
             for n in range((last - first).days + 1)]
     questions = []
@@ -29,7 +37,7 @@ def build_itinerary(visits, anchors, constraints, route_legs, config):
         previous = "anchor:origin" if day["date"] == config["start_date"] else "anchor:lodging"
         cursor = datetime.fromisoformat(day["date"] + "T" + config.get("day_start_time", "09:00") + ":00+09:00")
         for visit in [v for v in visits if v["date"] == day["date"]]:
-            leg = next((r for r in route_legs if r["from_ref"] == previous and r["to_ref"] == visit["place_ref"]), None)
+            leg = matching_leg(available, previous, visit["place_ref"], True)
             if leg is None:
                 questions.append(question("constraint_value", visit["item_id"], "자동차 이동 구간을 조회해주세요."))
                 break
@@ -45,8 +53,8 @@ def build_itinerary(visits, anchors, constraints, route_legs, config):
             limits += [c["value"] for c in constraints if c["key"] == "return_by"
                        and c["kind"] == "hard" and c["status"] == "confirmed"]
         origin = "anchor:origin" if day["date"] == config["start_date"] else "anchor:lodging"
-        found, missing = finish_day(day, destination, route_legs, min(limits), config.get("_base_versions", {}),
-                                    origin, config.get("day_start_time", "09:00"))
+        found, missing = finish_day(day, destination, available, min(limits), config.get("_base_versions", {}),
+                                    origin, config.get("day_start_time", "09:00"), True)
         conflicts.extend(found)
         questions.extend(missing)
     for key in ("origin", "destination") + (("lodging",) if first != last else ()):
