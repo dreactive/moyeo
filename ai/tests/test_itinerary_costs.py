@@ -104,3 +104,11 @@ def test_builder_applies_observed_holiday_and_reports_missing_anchors():
     result = build_itinerary([visit], {"origin": None, "destination": None}, [], [leg], config)
     assert any(c["type"] == "opening_hours" for c in result["conflicts"])
     assert any(q["field"] == "origin" for q in result["questions"])
+
+
+def test_empty_last_day_keeps_lodging_to_destination_route():
+    from ai.tools.itinerary import build_itinerary
+    leg = {"from_ref": "anchor:lodging", "to_ref": "anchor:destination", "duration_seconds": 600}
+    result = build_itinerary([], {"origin": {}, "lodging": {}, "destination": {}}, [], [leg],
+                             {"start_date": "2026-11-21", "end_date": "2026-11-22"})
+    assert result["days"][1]["route_legs"] == [leg]

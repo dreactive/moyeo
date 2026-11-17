@@ -4,10 +4,11 @@ from ai.conflicts import conflict
 from ai.tools.hours import validate_hours
 
 
-def finish_day(day, destination, route_legs, end_time, versions):
-    if not day["visits"]:
+def finish_day(day, destination, route_legs, end_time, versions, origin=None, start_time="09:00"):
+    if not day["visits"] and origin is None:
         return [], []
-    visit = day["visits"][-1]
+    visit = day["visits"][-1] if day["visits"] else dict(place_ref=origin,
+             end_at=day["date"] + "T" + start_time + ":00+09:00")
     leg = next((r for r in route_legs if r["from_ref"] == visit["place_ref"] and r["to_ref"] == destination), None)
     if leg is None:
         return [], [question("constraint_value", destination, "숙소/귀가 구간 조회가 필요합니다.")]
@@ -15,7 +16,7 @@ def finish_day(day, destination, route_legs, end_time, versions):
     arrival = datetime.fromisoformat(visit["end_at"]) + timedelta(seconds=leg["duration_seconds"])
     deadline = datetime.fromisoformat(day["date"] + "T" + end_time + ":00+09:00")
     conflicts = [conflict("time", "도착 시간이 활동/귀가 제한을 넘습니다.",
-                         [visit["item_id"]], versions)] if arrival > deadline else []
+                         [visit["item_id"]] if "item_id" in visit else [], versions)] if arrival > deadline else []
     return conflicts, []
 
 
@@ -43,7 +44,9 @@ def build_itinerary(visits, anchors, constraints, route_legs, config):
         if day["date"] == config["end_date"]:
             limits += [c["value"] for c in constraints if c["key"] == "return_by"
                        and c["kind"] == "hard" and c["status"] == "confirmed"]
-        found, missing = finish_day(day, destination, route_legs, min(limits), config.get("_base_versions", {}))
+        origin = "anchor:origin" if day["date"] == config["start_date"] else "anchor:lodging"
+        found, missing = finish_day(day, destination, route_legs, min(limits), config.get("_base_versions", {}),
+                                    origin, config.get("day_start_time", "09:00"))
         conflicts.extend(found)
         questions.extend(missing)
     for key in ("origin", "destination") + (("lodging",) if first != last else ()):
