@@ -19,3 +19,14 @@ def test_frozen_target_survives_new_draft(room):
     freeze_review(room, target)
     assert room['review_plan']['days']
     assert room['active_target'] == target
+
+
+def test_official_vote_is_unique_and_owned(room):
+    from backend.services.planning import record_confirmation
+    target = room['current_plan']['confirmation_target']
+    record_confirmation(room, 'u1', target, 'confirm')
+    record_confirmation(room, 'u1', target, 'confirm')
+    assert len(room['confirmations']) == 1
+    record_confirmation(room, 'u1', target, 'withdraw')
+    assert room['confirmations'][0]['stance'] == 'withdraw'
+    assert room['confirmed_plan'] is None

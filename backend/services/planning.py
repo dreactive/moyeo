@@ -35,3 +35,13 @@ def freeze_review(room, target):
         room['review_plan'] = deepcopy(plan)
         room['active_target'] = deepcopy(target)
     return room['review_plan']
+
+from datetime import datetime, timezone
+
+
+def record_confirmation(room, actor_id, target, stance):
+    if actor_id not in [member['user_id'] for member in room['members']]:
+        raise HTTPException(403, 'Room membership required')
+    freeze_review(room, target)
+    room['confirmations'] = [vote for vote in room['confirmations'] if vote['user_id'] != actor_id]
+    room['confirmations'].append(dict(user_id=actor_id, target=deepcopy(target), stance=stance, created_at=datetime.now(timezone.utc).isoformat()))
