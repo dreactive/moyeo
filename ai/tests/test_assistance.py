@@ -39,3 +39,14 @@ def test_empty_model_extraction_is_assisted_without_claiming_model_quality():
     assert output["constraint_proposals"][0]["key"] == "budget_krw"
     assert any(s["author_id"] == "u3" for s in output["support_observations"])
     assert output["questions"] == []
+
+
+def test_first_named_place_mention_has_consistent_client_ref_and_support():
+    from ai.assistance import assist_extraction
+    value = task()
+    value["items"] = []
+    value["current_plan"] = None
+    value["recent_messages"] = [dict(id="new", author_id="u1", text="오동도 가자")]
+    output = assist_extraction({}, value)
+    assert output["item_proposals"][0]["title"] == "오동도"
+    assert output["item_proposals"][0]["client_ref"] == output["support_observations"][0]["item_id"] == "client:new"

@@ -4,8 +4,29 @@ from ai.questions import question
 from ai.extraction import validate_extraction
 
 
+def explicit_items(task):
+    proposals = []
+    existing = [i["title"].split()[-1] for i in task["items"]]
+    for message in task["recent_messages"][-20:]:
+        text = message["text"].strip().rstrip(".!?")
+        match = re.fullmatch(r"(.+?)\s*(?:가자|어때|좋아|찬성)", text)
+        if not match or any(w in text for w in ("다들", "모두", "말고", "대신")):
+            continue
+        title = re.sub(r"^(나는|난|우리|저는)\s+", "", match[1]).strip()
+        if any(t in title for t in existing) or not any(w in title for w in (
+            "식당", "공원", "카페", "박물관", "오동도", "케이블카", "아쿠아플라넷", "루지", "게장", "해장국", "전망대", "해수욕장")):
+            continue
+        proposals.append(dict(client_ref="client:" + message["id"], existing_item_id=None, kind="place",
+                              title=title, source_message_ids=[message["id"]]))
+        existing.append(title)
+    return proposals
+
+
 def assist_extraction(raw, task):
     output = validate_extraction(raw, task)
+    for proposal in explicit_items(task):
+        if not any(i["title"] == proposal["title"] for i in output["item_proposals"]):
+            output["item_proposals"].append(proposal)
     for proposal in explicit_constraints(task):
         family = ("budget", "budget_krw") if proposal["key"] in ("budget", "budget_krw") else (proposal["key"],)
         output["constraint_proposals"] = [c for c in output["constraint_proposals"]
