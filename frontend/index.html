@@ -7,7 +7,7 @@
 </head>
 <body>
 <header><div><small>TRIP / TOGETHER</small><h1>함께 만드는 여행</h1></div><span id="session">로그인 전</span></header>
-<div id="mode" role="status"></div><div id="error" role="alert"></div>
+<div id="mode" role="status"></div><div id="error" role="alert"></div><button id="retry">연결 재시도</button>
 <section id="account" class="panel">
 <form id="auth"><h2>계정</h2><label>이름<input name="name" autocomplete="name"></label><label>이메일<input name="email" type="email" required autocomplete="email"></label><label>비밀번호<input name="password" type="password" required autocomplete="current-password" minlength="8"></label><button name="action" value="login">로그인</button><button name="action" value="register">가입</button></form>
 <button id="logout" type="button">로그아웃</button>
@@ -42,4 +42,5 @@
 </article>
 </main>
 <script type="module" src="/src/room.js"></script></body></html>
+
 

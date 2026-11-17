@@ -168,3 +168,8 @@ document.addEventListener('click',event => {
   if (button) run(() => selectPlace(roomId,button.dataset.place));
 });
 
+document.getElementById('retry').onclick = () => run(async () => {
+  showError(null);
+  if (roomId) await refreshRoom();
+  else showUser(await requestJson('/api/auth/me'));
+});
