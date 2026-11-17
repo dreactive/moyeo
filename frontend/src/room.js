@@ -11,7 +11,7 @@ import {requestJson,getDataMode} from './api.js';
 import {applySnapshot,subscribeState,setUser} from './state.js';
 import {showError} from './ui.js';
 export async function startRoomApp() {
-  bindAccount(); bindSessionActions(); bindFixtureControls();
+  bindAccount(); bindSessionActions(); bindFixtureControls(); bindPlanActions();
   html('mode', getDataMode() === 'fixture' ? '개발용 fixture · 실제 API 조회 아님' : 'LIVE · Backend 연결');
   subscribeState(snapshot => snapshot && renderRoom(snapshot));
   const user = await requestJson('/api/auth/me');
@@ -81,5 +81,21 @@ function bindFixtureControls() {
   document.getElementById('replay').onclick = () => enterRoom(replayScenario(document.getElementById('scenario').value));
   document.getElementById('fixture-user').onchange = event => { showUser(setFixtureUser(event.target.value)); renderRoom(getSnapshot()); };
   document.getElementById('reconnect').onclick = () => run(() => refreshRoom());
+}
+
+async function roomAction(path,body,method = 'POST') {
+  if (!roomId) throw new Error('먼저 방에 입장하세요.');
+  const result = await requestJson('/api/rooms/' + encodeURIComponent(roomId) + '/' + path,{method,body});
+  if (result.room_id) applySnapshot(result); else await refreshRoom();
+}
+function bindPlanActions() {
+  document.addEventListener('click',event => {
+    const button = event.target.closest('[data-plan]');
+    if (!button) return;
+    const snapshot = getSnapshot();
+    const action = button.dataset.plan;
+    run(() => roomAction('plan/' + action,action === 'activate' ? {plan_revision:snapshot.current_plan.plan_revision} : {target:displayPlan(snapshot).confirmation_target}));
+  });
+  document.getElementById('replan').onclick = () => run(() => roomAction('agent-runs',{reason:'manual_replan'}));
 }
 
