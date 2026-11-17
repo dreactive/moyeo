@@ -6,6 +6,36 @@
     {
       "run_id": "run-fixture",
       "step": 1,
+      "event": "decision",
+      "call_id": "call-fixture",
+      "created_at": "2026-11-18T10:05:00+09:00",
+      "payload": {
+        "goal": "fixture 상세 조사",
+        "candidates": [
+          {
+            "tool_name": "get_place_details"
+          },
+          {
+            "tool_name": "request_input"
+          }
+        ],
+        "selected_index": 0,
+        "scores": [
+          -0.2,
+          -1.1
+        ],
+        "model_mode": "fake",
+        "base_versions": {
+          "participant_version": 1,
+          "constraint_version": 1,
+          "evidence_version": 1,
+          "plan_revision": 1
+        }
+      }
+    },
+    {
+      "run_id": "run-fixture",
+      "step": 1,
       "event": "tool_call",
       "call_id": "call-fixture",
       "created_at": "2026-11-18T10:05:00+09:00",
@@ -99,6 +129,23 @@
           "fixture:price-a",
           "fixture:hours-a"
         ]
+      }
+    },
+    {
+      "run_id": "run-fixture",
+      "step": 1,
+      "event": "state_applied",
+      "call_id": "call-fixture",
+      "created_at": "2026-11-18T10:05:02+09:00",
+      "payload": {
+        "applied": true,
+        "summary": "fixture 상세 표시용 예제. 실제 모델 판단 아님",
+        "versions": {
+          "participant_version": 1,
+          "constraint_version": 1,
+          "evidence_version": 1,
+          "plan_revision": 1
+        }
       }
     }
   ]
