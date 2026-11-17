@@ -9,3 +9,18 @@ def test_agent_input_uses_recent_human_state():
     assert task['base_versions'] == room['versions']
     task['base_versions']['plan_revision'] = 99
     assert room['versions']['plan_revision'] == 0
+
+
+def test_enqueue_returns_versioned_receipt():
+    import asyncio
+    from backend.services.agent_jobs import AgentJobs
+    from backend.services.rooms import new_room
+    from backend.db import Database
+    db = Database(':memory:')
+    room = new_room({'id':'u','name':'U'}, {'title':'trip'})
+    room['room_id'] = 'r'
+    db.put('room:r', room)
+    jobs = AgentJobs(db, None)
+    receipt = asyncio.run(jobs.enqueue('r', 'manual_replan'))
+    assert receipt['base_versions'] == room['versions']
+    assert jobs.queue.qsize() == 1
