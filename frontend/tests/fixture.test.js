@@ -23,7 +23,7 @@ test('fixture input echoes keep history immutable and owner questions cannot cre
   const result=await requestFixture('/api/rooms/room-fixture/trip',{method:'PATCH',body:{per_person_budget_krw:250000}});
   assert.equal(result.config.per_person_budget_krw,250000);
   assert.deepEqual(result.confirmed_plan,history);
-  replayScenario('questions');setFixtureUser('u1');
+  replayScenario('questions');setFixtureUser('u2');
   await assert.rejects(requestFixture('/api/rooms/room-fixture/questions/q5/answer',{method:'POST',body:{value:{value:0}}}),/소유자/);
   const answered=await requestFixture('/api/rooms/room-fixture/questions/q6/answer',{method:'POST',body:{value:{item_id:'item-a'}}});
   assert.deepEqual(answered.items[0].supporter_ids,['u1']);
@@ -48,3 +48,4 @@ test('recorded end-to-end scenario keeps three approvals unconfirmed then confir
   assert.equal(room.confirmed_plan.plan_revision,1);
   assert.ok(room.items.every(item => item.state==='confirmed'));
 });
+
