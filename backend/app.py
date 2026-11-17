@@ -14,6 +14,7 @@ def create_app(agent_port: AgentPort | None = None, *, database_path=None) -> Fa
     async def lifespan(app):
         app.state.agent = agent_port if agent_port is not None else FixtureAgentPort()
         app.state.db = Database(database_path or os.environ.get('BACKEND_DB', 'backend/.data/travel.sqlite3'))
+        app.state.dev_token = os.environ.get('DEV_TOKEN', '')
         app.state.jobs = AgentJobs(app.state.db, app.state.agent)
         worker = asyncio.create_task(app.state.jobs.work())
         try:
@@ -33,10 +34,13 @@ def create_app(agent_port: AgentPort | None = None, *, database_path=None) -> Fa
     app.include_router(messages_router)
     from backend.routes.plans import router as plans_router
     app.include_router(plans_router)
+    from backend.routes.dev import router as dev_router
+    app.include_router(dev_router)
     return app
 
 
 app = create_app()
+
 
 
 
