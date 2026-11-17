@@ -1,7 +1,7 @@
+from backend.db import serialized
+from backend.services.events import publish_event
 from datetime import datetime, timezone
 from uuid import uuid4
-from backend.services.events import publish_event
-from backend.db import serialized
 
 
 @serialized

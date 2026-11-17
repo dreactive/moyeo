@@ -1,5 +1,6 @@
-import json
 from backend.db import serialized
+import asyncio
+import json
 
 
 @serialized
@@ -16,7 +17,6 @@ def publish_event(db, room_id, event, payload):
 def event_frame(event):
     return f"id: {event['data']['seq']}\nevent: {event['event']}\ndata: {json.dumps(event['data'])}\n\n"
 
-import asyncio
 
 
 async def room_event_stream(db, room_id, after_seq):

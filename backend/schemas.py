@@ -1,5 +1,5 @@
-from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
+from typing import Any, Literal
 
 
 class Request(BaseModel):
@@ -82,10 +82,6 @@ class AgentRun(Request):
     reason: Literal['manual_replan']
 
 
-class Register(Request):
-    name: str
-    email: str
-    password: str
 
 class AnchorAnswer(Request):
     label: str

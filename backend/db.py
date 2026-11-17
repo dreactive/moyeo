@@ -1,8 +1,8 @@
-import json
-import sqlite3
+from functools import wraps
 from pathlib import Path
 from threading import RLock
-from functools import wraps
+import json
+import sqlite3
 
 
 def serialized(function):

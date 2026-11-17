@@ -1,4 +1,8 @@
+from backend.services.planning import substantive
 from copy import deepcopy
+from datetime import datetime, timezone
+from fastapi import HTTPException
+import json
 
 
 def get_observations(db, room_id):
@@ -23,8 +27,6 @@ def observed_place(db, room_id, place_ref):
             return observation['result']
     return None
 
-import json
-from backend.services.planning import substantive
 
 
 def relevant_evidence(plan, observations):
@@ -39,8 +41,6 @@ def relevant_evidence(plan, observations):
             results.append(substantive(result))
     return sorted(results, key=lambda value:json.dumps(value, sort_keys=True))
 
-from datetime import datetime, timezone
-from fastapi import HTTPException
 
 
 async def fetch_place(db, port, room, place_ref):

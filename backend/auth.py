@@ -1,6 +1,6 @@
 import hashlib
-import secrets
 import hmac
+import secrets
 
 
 def hash_password(password, salt=None):

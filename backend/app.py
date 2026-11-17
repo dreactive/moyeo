@@ -1,14 +1,14 @@
-import os
-import asyncio
-from contextlib import suppress
-from contextlib import asynccontextmanager
-from fastapi import FastAPI
-from backend.ports import AgentPort
 from backend.adapters.fixture_agent import FixtureAgentPort
-from backend.db import Database
-from backend.services.agent_jobs import AgentJobs
 from backend.adapters.local_ai import LocalAIBridge
 from backend.config import read_settings
+from backend.db import Database
+from backend.ports import AgentPort
+from backend.services.agent_jobs import AgentJobs
+from contextlib import asynccontextmanager
+from contextlib import suppress
+from fastapi import FastAPI
+import asyncio
+import os
 
 
 def create_app(agent_port: AgentPort | None = None, *, database_path=None, settings=None, frontend_path=None) -> FastAPI:
@@ -53,8 +53,3 @@ def create_app(agent_port: AgentPort | None = None, *, database_path=None, setti
 
 
 app = create_app()
-
-
-
-
-

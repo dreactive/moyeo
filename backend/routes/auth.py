@@ -1,5 +1,9 @@
-from fastapi import APIRouter, Request, Depends
+from backend.auth import register_user, issue_session
 from backend.auth import require_user
+from fastapi import APIRouter, Request, Depends
+from fastapi import Response, HTTPException
+from pydantic import BaseModel, Field
+
 
 router = APIRouter(prefix='/api/auth')
 
@@ -12,9 +16,6 @@ def current_user(request: Request):
 def me(user=Depends(current_user)):
     return user
 
-from fastapi import Response, HTTPException
-from pydantic import BaseModel, Field
-from backend.auth import register_user, issue_session
 
 
 class Registration(BaseModel):

@@ -1,7 +1,7 @@
-from pathlib import Path
-from html import escape
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
+from html import escape
+from pathlib import Path
 
 
 def mount_frontend(app, directory, public_key):

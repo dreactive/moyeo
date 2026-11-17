@@ -1,8 +1,20 @@
-from fastapi import APIRouter, Request, Depends
 from backend.routes.auth import current_user
 from backend.schemas import CreateRoom
+from backend.schemas import JoinRoom
+from backend.schemas import SelectOption
+from backend.schemas import TripConfig
+from backend.schemas import ValueAnswer
+from backend.services.consensus import edit_constraint, confirm_constraint
+from backend.services.events import publish_event
+from backend.services.observations import get_observations
+from backend.services.planning import select_conflict_option, apply_selected_condition, validate_effect
+from backend.services.questions import answer_question
 from backend.services.rooms import new_room, require_room, get_room_snapshot
+from fastapi import APIRouter, Request, Depends
+from fastapi import HTTPException
+from pydantic import ValidationError
 import secrets
+
 
 router = APIRouter(prefix='/api/rooms')
 
@@ -22,9 +34,6 @@ def snapshot(room_id: str, request: Request, user=Depends(current_user)):
     room = require_room(request.app.state.db, room_id, user['id'])
     return get_room_snapshot(request.app.state.db, room_id, user['id'])
 
-from backend.schemas import JoinRoom
-from fastapi import HTTPException
-from backend.services.events import publish_event
 
 
 @router.post('/join')
@@ -43,8 +52,6 @@ def join(body: JoinRoom, request: Request, user=Depends(current_user)):
             publish_event(db, room_id, 'room.updated', {'changed':['members','versions','confirmations']})
         room = db.get('room:' + room_id)
     return get_room_snapshot(request.app.state.db, room_id, user['id'])
-from pydantic import ValidationError
-from backend.schemas import TripConfig
 
 
 @router.patch('/{room_id}/trip')
@@ -65,8 +72,6 @@ async def trip(room_id: str, body: dict, request: Request, user=Depends(current_
     await request.app.state.jobs.enqueue(room_id, 'trip_changed')
     return snapshot(room_id, request, user)
 
-from backend.schemas import ValueAnswer
-from backend.services.consensus import edit_constraint, confirm_constraint
 
 
 @router.patch('/{room_id}/constraints/{constraint_id}')
@@ -91,7 +96,6 @@ async def confirm_condition(room_id: str, constraint_id: str, request: Request, 
     await request.app.state.jobs.enqueue(room_id, 'constraint_confirmed')
     return snapshot(room_id, request, user)
 
-from backend.services.questions import answer_question
 
 
 @router.post('/{room_id}/questions/{question_id}/answer')
@@ -105,9 +109,6 @@ async def answer(room_id: str, question_id: str, body: ValueAnswer, request: Req
     await request.app.state.jobs.enqueue(room_id, 'question_answered')
     return snapshot(room_id, request, user)
 
-from backend.schemas import SelectOption
-from backend.services.planning import select_conflict_option, apply_selected_condition, validate_effect
-from backend.services.observations import get_observations
 
 
 @router.post('/{room_id}/conflicts/{conflict_id}/select', status_code=202)

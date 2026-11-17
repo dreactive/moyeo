@@ -1,6 +1,7 @@
-import secrets
+from backend.domain import project_items
 from copy import deepcopy
 from fastapi import HTTPException
+import secrets
 
 
 EMPTY_ROOM = {
@@ -26,7 +27,6 @@ def require_room(db, room_id, viewer_id):
         raise HTTPException(403, 'Room membership required')
     return room
 
-from backend.domain import project_items
 
 
 def get_room_snapshot(db, room_id, viewer_id):

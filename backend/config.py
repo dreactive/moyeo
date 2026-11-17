@@ -1,6 +1,6 @@
-import os
-from pathlib import Path
 from dotenv import dotenv_values
+from pathlib import Path
+import os
 
 
 def read_settings(env_file=None):

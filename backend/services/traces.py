@@ -1,4 +1,6 @@
+from copy import deepcopy
 import re
+
 
 PRIVATE = re.compile(r'key|token|password|secret|authorization|reasoning|thought|raw_response', re.I)
 URL_SECRET = re.compile(r'([?&](?:api_?key|token|servicekey)=)[^&\s]+', re.I)
@@ -13,7 +15,6 @@ def sanitize(value):
         return URL_SECRET.sub(r'\1[redacted]', value)
     return value
 
-from copy import deepcopy
 
 
 def store_trace(db, event):

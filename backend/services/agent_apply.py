@@ -1,3 +1,15 @@
+from backend.db import serialized
+from backend.domain import apply_item_proposals, resolve_refs, add_constraint_proposal
+from backend.services.consensus import apply_support
+from backend.services.events import publish_event
+from backend.services.observations import get_observations
+from backend.services.observations import known_place_ids
+from backend.services.observations import merge_observations
+from backend.services.observations import relevant_evidence
+from backend.services.planning import build_plan, validate_effect
+from copy import deepcopy
+
+
 def valid_result_base(db, result):
     run = db.get('run:' + result['run_id'])
     room = db.get('room:' + result['room_id'])
@@ -7,8 +19,6 @@ def valid_result_base(db, result):
         and run['base_versions'] == result['base_versions'] == room['versions']
     )
 
-from backend.domain import apply_item_proposals, resolve_refs, add_constraint_proposal
-from backend.services.consensus import apply_support
 
 
 def apply_proposals(room, result):
@@ -22,7 +32,6 @@ def apply_proposals(room, result):
         apply_support(room, observation, observation['author_id'])
     return mapped
 
-from copy import deepcopy
 
 
 def apply_questions(room, proposals):
@@ -38,8 +47,6 @@ def apply_questions(room, proposals):
         answered.append(question)
     room['questions'] = answered
 
-from backend.services.observations import relevant_evidence
-from backend.services.planning import build_plan, validate_effect
 
 
 def apply_plan(room, draft, old_observations, observations):
@@ -51,7 +58,6 @@ def apply_plan(room, draft, old_observations, observations):
         validate_plan_refs(room, draft, observations)
         room['current_plan'] = build_plan(room, draft, relevant_evidence(draft, observations))
 
-from backend.services.observations import merge_observations
 
 
 def prepare_result(room, result, old_observations):
@@ -70,9 +76,6 @@ def prepare_result(room, result, old_observations):
         conflict['base_versions'] = deepcopy(updated['versions'])
     return updated, observations
 
-from backend.db import serialized
-from backend.services.observations import get_observations
-from backend.services.events import publish_event
 
 
 @serialized
@@ -111,7 +114,6 @@ def validate_questions(room, questions):
         if question['owner_id'] not in members | {None} or question['target_ref'] not in targets or not set(question['related_item_ids']) <= items:
             raise ValueError('Invalid question target')
 
-from backend.services.observations import known_place_ids
 
 
 def validate_plan_refs(room, draft, observations):

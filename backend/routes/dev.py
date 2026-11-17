@@ -1,8 +1,9 @@
-import hmac
-from fastapi import APIRouter, Request, Header, Depends, HTTPException
 from backend.routes.auth import current_user
 from backend.services.rooms import require_room
 from backend.services.traces import get_run_traces
+from fastapi import APIRouter, Request, Header, Depends, HTTPException
+import hmac
+
 
 router = APIRouter(prefix='/api/dev/rooms')
 

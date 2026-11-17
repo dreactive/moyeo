@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Request, Depends
 from backend.routes.auth import current_user
-from backend.services.rooms import require_room
 from backend.services.observations import fetch_place
+from backend.services.rooms import require_room
+from fastapi import APIRouter, Request, Depends
+
 
 router = APIRouter(prefix='/api/rooms/{room_id}/places')
 

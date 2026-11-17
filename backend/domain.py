@@ -1,3 +1,6 @@
+from uuid import uuid4
+
+
 def valid_sources(room, source_ids, owner_id=None):
     messages = {message['id']:message for message in room['messages']}
     members = {member['user_id'] for member in room['members']}
@@ -9,7 +12,6 @@ def valid_sources(room, source_ids, owner_id=None):
         for source_id in source_ids
     )
 
-from uuid import uuid4
 
 
 def add_item_proposal(room, proposal):

@@ -1,8 +1,12 @@
-from fastapi import APIRouter, Request, Depends, HTTPException
 from backend.routes.auth import current_user
 from backend.schemas import TextMessage, AgentRun
-from backend.services.rooms import require_room
+from backend.services.events import room_event_stream
 from backend.services.messages import save_message
+from backend.services.rooms import require_room
+from fastapi import APIRouter, Request, Depends, HTTPException
+from fastapi import Header
+from fastapi.responses import StreamingResponse
+
 
 router = APIRouter(prefix='/api/rooms/{room_id}')
 
@@ -34,9 +38,6 @@ async def agent_run(room_id: str, body: AgentRun, request: Request, user=Depends
     require_room(request.app.state.db, room_id, user['id'])
     return await request.app.state.jobs.enqueue(room_id, body.reason)
 
-from fastapi import Header
-from fastapi.responses import StreamingResponse
-from backend.services.events import room_event_stream
 
 
 @router.get('/events')

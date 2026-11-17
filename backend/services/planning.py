@@ -1,7 +1,9 @@
+from backend.services.consensus import edit_constraint
+from copy import deepcopy
+from datetime import datetime, timezone
+from fastapi import HTTPException
 import hashlib
 import json
-from copy import deepcopy
-from fastapi import HTTPException
 
 
 HASH_FIELDS = ('selected_item_ids','item_snapshots','days','cost','evidence','validation','blocking_conflict_ids')
@@ -20,8 +22,6 @@ def semantic_plan_hash(snapshot):
     content = substantive({key:snapshot.get(key) for key in HASH_FIELDS})
     return hashlib.sha256(json.dumps(content, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode()).hexdigest()
 
-from fastapi import HTTPException
-from copy import deepcopy
 
 
 def freeze_review(room, target):
@@ -36,7 +36,6 @@ def freeze_review(room, target):
         room['active_target'] = deepcopy(target)
     return room['review_plan']
 
-from datetime import datetime, timezone
 
 
 def record_confirmation(room, actor_id, target, stance):
@@ -116,7 +115,6 @@ def build_plan(room, draft, evidence):
     return plan
 
 
-from backend.services.consensus import edit_constraint
 
 
 def apply_selected_condition(room, selection, actor_id):

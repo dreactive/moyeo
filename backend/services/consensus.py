@@ -1,3 +1,8 @@
+from copy import deepcopy
+from fastapi import HTTPException
+from uuid import uuid4
+
+
 def support_threshold(member_count):
     return member_count // 2 + 1
 
@@ -21,9 +26,6 @@ def apply_support(room, observation, actor_id):
     item['state'] = 'supported' if len(item['supporter_ids']) >= item['support_threshold'] else 'mentioned'
     return True
 
-from fastapi import HTTPException
-from copy import deepcopy
-from uuid import uuid4
 
 
 def owned_constraint(room, constraint_id, actor_id):

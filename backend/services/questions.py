@@ -1,6 +1,9 @@
+from backend.schemas import AnchorAnswer, MenuAnswer, StayAnswer, SupportAnswer, ValueAnswer
+from backend.services.consensus import apply_support
+from backend.services.consensus import edit_constraint
 from fastapi import HTTPException
 from pydantic import ValidationError
-from backend.schemas import AnchorAnswer, MenuAnswer, StayAnswer, SupportAnswer, ValueAnswer
+
 
 ANSWER_TYPES = {'origin':AnchorAnswer,'destination':AnchorAnswer,'lodging':AnchorAnswer,'menu_selection':MenuAnswer,'visit_duration':StayAnswer,'constraint_value':ValueAnswer,'support_target':SupportAnswer}
 
@@ -23,7 +26,6 @@ def validate_answer(room, question, actor_id, value):
     except (ValidationError, KeyError):
         raise HTTPException(422, 'Invalid question answer')
 
-from backend.services.consensus import edit_constraint
 
 
 def answer_question(room, question_id, actor_id, value, observations=None):
@@ -48,7 +50,6 @@ def answer_question(room, question_id, actor_id, value, observations=None):
     return question
 
 
-from backend.services.consensus import apply_support
 
 
 def resolve_support_answer(room, question, actor_id, item_id):

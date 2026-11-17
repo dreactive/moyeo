@@ -1,4 +1,13 @@
+from backend.db import serialized
+from backend.services.agent_apply import apply_agent_result
+from backend.services.events import publish_event
+from backend.services.observations import get_observations
+from backend.services.traces import store_trace
+from collections import Counter
 from copy import deepcopy
+from datetime import datetime, timezone
+from uuid import uuid4
+import asyncio
 
 
 def make_task(room, run_id, goal, observations, selection, processed_id=None):
@@ -6,13 +15,6 @@ def make_task(room, run_id, goal, observations, selection, processed_id=None):
     task.update(run_id=run_id, base_versions=room['versions'], goal=goal, recent_messages=unprocessed_messages(room['messages'], processed_id), observations=observations, user_selection=selection)
     return deepcopy(task)
 
-import asyncio
-from uuid import uuid4
-from backend.services.observations import get_observations
-from backend.services.agent_apply import apply_agent_result
-from backend.services.traces import store_trace
-from datetime import datetime, timezone
-from collections import Counter
 
 
 class AgentJobs:
@@ -74,10 +76,8 @@ class AgentJobs:
         if event.get('run_id') == self.active_run_id:
             store_trace(self.db, event)
 
-from backend.services.events import publish_event
 
 
-from backend.db import serialized
 
 
 @serialized

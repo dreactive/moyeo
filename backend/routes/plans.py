@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Request, Depends
 from backend.routes.auth import current_user
 from backend.schemas import Confirm, Activate
-from backend.services.rooms import require_room, get_room_snapshot
-from backend.services.planning import record_confirmation, finalize_plan, activate_plan
 from backend.services.events import publish_event
+from backend.services.planning import record_confirmation, finalize_plan, activate_plan
+from backend.services.rooms import require_room, get_room_snapshot
+from fastapi import APIRouter, Request, Depends
+
 
 router = APIRouter(prefix='/api/rooms/{room_id}/plan')
 
