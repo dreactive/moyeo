@@ -11,7 +11,7 @@ import {requestJson,getDataMode} from './api.js';
 import {applySnapshot,subscribeState,setUser} from './state.js';
 import {showError} from './ui.js';
 export async function startRoomApp() {
-  bindAccount(); bindSessionActions(); bindFixtureControls(); bindPlanActions();
+  bindAccount(); bindSessionActions(); bindFixtureControls(); bindPlanActions(); bindDecisionActions();
   html('mode', getDataMode() === 'fixture' ? '개발용 fixture · 실제 API 조회 아님' : 'LIVE · Backend 연결');
   subscribeState(snapshot => snapshot && renderRoom(snapshot));
   const user = await requestJson('/api/auth/me');
@@ -97,5 +97,19 @@ function bindPlanActions() {
     run(() => roomAction('plan/' + action,action === 'activate' ? {plan_revision:snapshot.current_plan.plan_revision} : {target:displayPlan(snapshot).confirmation_target}));
   });
   document.getElementById('replan').onclick = () => run(() => roomAction('agent-runs',{reason:'manual_replan'}));
+}
+
+function bindDecisionActions() {
+  document.addEventListener('submit',event => {
+    const form = event.target;
+    if (!form.dataset.question && !form.dataset.constraint) return;
+    event.preventDefault();
+    run(() => roomAction(form.dataset.question ? 'questions/' + encodeURIComponent(form.dataset.question) + '/answer' : 'constraints/' + encodeURIComponent(form.dataset.constraint),{value:JSON.parse(new FormData(form).get('value'))},form.dataset.question ? 'POST' : 'PATCH'));
+  });
+  document.addEventListener('click',event => {
+    const button = event.target.closest('[data-conflict],[data-constraint-confirm]');
+    if (!button) return;
+    run(() => button.dataset.conflict ? roomAction('conflicts/' + encodeURIComponent(button.dataset.conflict) + '/select',{option_id:button.dataset.option}) : roomAction('constraints/' + encodeURIComponent(button.dataset.constraintConfirm) + '/confirm'));
+  });
 }
 
