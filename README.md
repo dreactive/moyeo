@@ -73,6 +73,8 @@ backend/.venv/Scripts/python.exe -m uvicorn backend.app:app --host 127.0.0.1 --p
 
 이 명령은 앞 단계의 `TRIP_ENV_FILE`과 `AGENT_MODE=local_ai`를 유지한다. 실제 공급자는 AI 안내의 공급자 설정·키가 필요하다. 서버를 한 프로세스·worker 하나로 실행하고 GPU 실행은 한 세션만 맡는다. 모델·공급자 오류를 fixture 성공으로 자동 대체하지 않는다.
 
+현재 실모델 지연은 큰 제한이다. RTX4070 환경에서 실제 AI 단독 5도구 실행은 약 9분50초, 기존 일정에서 조건 추가·충돌 선택·재확정까지의 4인 통합은 약 28분39초였다. 모델 판단 후보의 전체 경로 인자는 유지되며 성능 최적화는 남아 있다. 자유 문장 추출에는 근거 메시지를 보존한 규칙 보조가 포함되고, 지역명만으로 전체 일정을 발견·완성하지는 않는다. 관측된 가격·시간과 사용자 입력·미확인 값은 구분한다.
+
 `.env`는 Git 제외 파일이다. `TRIP_ENV_FILE`로 다른 작업 공간에서도 같은 절대 경로를 지정할 수 있고 shell 환경 변수가 파일 값보다 우선한다. `KAKAO_JAVASCRIPT_KEY`만 공개 지도 키로 HTML에 주입한다. 실제 서비스 origin을 Kakao SDK 도메인에 등록한다. REST·Mobility·Apify 키와 `DEV_TOKEN`은 브라우저 코드에 넣지 않는다. 개발자 trace는 로그인한 방 멤버의 cookie와 `X-Dev-Token`이 모두 필요하며, 토큰은 로컬 `.env`에서 확인한다. `TRACE_ENABLED=0`이어도 장소·근거 데이터는 trace와 별도로 유지된다.
 
 ## 검증
