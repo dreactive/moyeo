@@ -19,6 +19,15 @@ export async function requestFixture(path, {method = 'GET',body} = {}) {
     if (parts[5]) return structuredClone(fixtureRoom.messages.find(message => message.id === parts[5]));
     return {messages:structuredClone(fixtureRoom.messages),last_seq:fixtureRoom.seq};
   }
+  if (parts[4] === 'plan') {
+    if (parts[5] === 'activate') return replayScenario('activated');
+    if (parts[5] === 'withdraw') return replayScenario('ready');
+    return replayScenario('confirm-' + fixtureUser.id);
+  }
+  if (parts[4] === 'conflicts' || parts[4] === 'agent-runs') {
+    replayScenario(parts[4] === 'conflicts' ? 'selected' : 'ready');
+    return {run_id:'run-fixture-selected',base_versions:structuredClone(fixtureRoom.versions)};
+  }
   throw new Error('fixture 미지원 요청: ' + method + ' ' + path);
 }
 const subscriptions = new Map();
@@ -41,4 +50,5 @@ export function replayScenario(key) {
   emitFixture('onRoomUpdated',{room_id:fixtureRoom.room_id,seq,changed:['fixture_scenario']});
   return structuredClone(fixtureRoom);
 }
+
 
