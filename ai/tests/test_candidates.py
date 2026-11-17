@@ -20,3 +20,13 @@ def test_tool_arguments_require_known_refs_and_positive_quantity():
     ]:
         with pytest.raises(ValueError):
             validate_arguments(name, arguments, context)
+
+
+def test_candidates_are_not_padded_and_unknown_sources_rejected():
+    from ai.candidates import build_candidates
+    context = {"recent_messages": [{"id": "m1"}], "observations": [],
+               "generated_candidates": [{"action": "ask", "reason": "missing", "tool_name": None,
+                    "arguments": {}, "source_message_ids": ["m1"], "source_refs": []}]}
+    assert len(build_candidates(context)) == 1
+    context["generated_candidates"][0]["source_message_ids"] = ["invented"]
+    assert build_candidates(context) == []
