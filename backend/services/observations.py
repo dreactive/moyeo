@@ -48,7 +48,7 @@ async def fetch_place(db, port, room, place_ref):
     if cached is not None:
         return cached
     observations = get_observations(db, room['room_id'])
-    allowed = {place['id'] for observation in observations if observation['tool_name'] == 'search_places' for place in observation['result']['places']}
+    allowed = known_place_ids(observations)
     if place_ref not in allowed:
         raise HTTPException(404, 'Place not observed in this room')
     context = deepcopy(dict(room_id=room['room_id'], config=room['config'], observations=observations))
@@ -57,3 +57,14 @@ async def fetch_place(db, port, room, place_ref):
         raise HTTPException(502, 'Tool returned a different place')
     project_observations(db, room['room_id'], [dict(tool_name='get_place_details', arguments={'place_ref':place_ref}, result=result, observed_at=datetime.now(timezone.utc).isoformat(), source_refs=[e['id'] for e in result['evidence']])])
     return result
+
+
+def known_place_ids(observations):
+    refs = set()
+    for observation in observations:
+        result = observation['result']
+        if observation['tool_name'] == 'search_places':
+            refs.update(place['id'] for place in result['places'])
+        elif observation['tool_name'] == 'get_place_details':
+            refs.add(result['place']['id'])
+    return refs

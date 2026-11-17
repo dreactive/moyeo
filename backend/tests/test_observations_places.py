@@ -63,3 +63,8 @@ def test_missing_details_call_tool_with_room_context(api, agent_result):
     assert response.status_code == 200
     assert port.context['room_id'] == 'room-fixture'
     assert len(port.context['observations']) == 1
+
+
+def test_known_place_refs_come_only_from_observation_results(agent_result):
+    from backend.services.observations import known_place_ids
+    assert known_place_ids(agent_result['observations']) == {'fixture:place-a','fixture:place-b'}
