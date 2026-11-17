@@ -64,6 +64,10 @@ class AgentJobs:
 from backend.services.events import publish_event
 
 
+from backend.db import serialized
+
+
+@serialized
 def set_status(db, room_id, run_id, state, label):
     room = db.get('room:' + room_id)
     room['agent_status'] = dict(run_id=run_id, state=state, label=label)

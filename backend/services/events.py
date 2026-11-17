@@ -9,8 +9,7 @@ def publish_event(db, room_id, event, payload):
     data = dict(payload, room_id=room_id, seq=room['seq'])
     events = db.get('events:' + room_id) or []
     events.append({'event':event, 'data':data})
-    db.put('room:' + room_id, room)
-    db.put('events:' + room_id, events)
+    db.put_many({'room:' + room_id:room, 'events:' + room_id:events})
     return room['seq']
 
 

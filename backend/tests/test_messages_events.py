@@ -52,3 +52,21 @@ def test_message_evidence_and_manual_receipt():
         receipt = client.post(path + '/agent-runs', json={'reason':'manual_replan'})
         assert receipt.status_code == 202
         assert set(receipt.json()) == {'run_id','base_versions'}
+
+
+def test_status_updates_do_not_lose_concurrent_messages():
+    from backend.db import Database
+    from backend.services.agent_jobs import set_status
+    from backend.services.messages import save_message
+    from concurrent.futures import ThreadPoolExecutor
+    db = Database(':memory:')
+    db.put('room:r', {'seq':0,'messages':[]})
+    def change(index):
+        if index % 2:
+            save_message(db, 'r', 'u', str(index))
+        else:
+            set_status(db, 'r', 'run', 'running', 'Working')
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        list(executor.map(change, range(80)))
+    assert len(db.get('room:r')['messages']) == 40
+    assert len({m['seq'] for m in db.get('room:r')['messages']}) == 40
