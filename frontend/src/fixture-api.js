@@ -4,8 +4,13 @@ export const fixtureRoom = structuredClone(initial);
 let fixtureUser = {id:'u1',name:'참가자1',email:'u1@fixture.test'};
 export const setFixtureUser = id => { fixtureUser = {id,name:'참가자' + id.slice(1),email:id + '@fixture.test'}; return fixtureUser; };
 export const getFixtureUser = () => fixtureUser;
-export async function requestFixture(path, {method = 'GET',body} = {}) {
+export async function requestFixture(path, {method = 'GET',body,headers} = {}) {
   const parts = new URL(path,'http://fixture').pathname.split('/').map(decodeURIComponent);
+  if (parts[2] === 'dev') {
+    if (headers?.['X-Dev-Token'] !== 'fixture-dev') throw new Error('fixture 접근 거부 (403)');
+    const runId = new URL(path,'http://fixture').searchParams.get('run_id');
+    return {runs:!runId || runId === trace.run_id ? [structuredClone(trace)] : []};
+  }
   if (parts[2] === 'auth') return parts[3] === 'logout' ? {ok:true} : structuredClone(fixtureUser);
   if (parts[4] === 'places') return structuredClone(fixturePlaces.get(parts[5]));
   if (parts.length === 4 && method === 'GET') return structuredClone(fixtureRoom);
@@ -87,4 +92,6 @@ function applyFixtureAnswer(question) {
   fixtureRoom.agent_status = {run_id:'run-fixture-answer',state:'needs_input',label:'fixture 응답 저장 · 실제 재계획은 live에서 검증'};
   if (['origin','destination','lodging'].includes(question.field)) fixtureRoom.config[question.field] = question.answer;
 }
+
+import trace from '../fixtures/run-trace.json' with {type:'json'};
 
