@@ -51,3 +51,16 @@ def test_trace_can_be_disabled_without_losing_product_data(api, agent_result):
     project_observations(db, 'room-fixture', agent_result['observations'])
     assert observed_place(db, 'room-fixture', 'fixture:place-a') is not None
     assert db.traces == {}
+
+
+def test_state_applied_step_follows_actual_agent_events(api):
+    from backend.adapters.fixture_agent import FixtureAgentPort
+    class Traced(FixtureAgentPort):
+        async def run(self, task, emit):
+            await emit(dict(run_id=task['run_id'],step=5,event='decision',call_id=None,created_at='2026-11-18T10:00:00+09:00',payload={'goal':'fixture','candidates':[],'selected_index':None,'scores':[],'model_mode':'fixture','base_versions':task['base_versions']}))
+            return await super().run(task, emit)
+    api.app.state.jobs.port = Traced()
+    receipt = api.post('/api/rooms/room-fixture/agent-runs', json={'reason':'manual_replan'}).json()
+    api.portal.call(api.app.state.jobs.queue.join)
+    events = api.app.state.db.traces[receipt['run_id']]['events']
+    assert [event['step'] for event in events] == [5,6]
