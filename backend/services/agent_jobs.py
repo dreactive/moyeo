@@ -74,3 +74,8 @@ def set_status(db, room_id, run_id, state, label):
     room['agent_status'] = dict(run_id=run_id, state=state, label=label)
     db.put('room:' + room_id, room)
     publish_event(db, room_id, 'agent.status', {'status':room['agent_status']})
+
+
+def unprocessed_messages(messages, processed_id):
+    start = next((index + 1 for index, message in enumerate(messages) if message['id'] == processed_id), 0)
+    return messages[start:start + 20]

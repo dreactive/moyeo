@@ -157,3 +157,11 @@ def test_invalid_identity_does_not_trigger_retry_loop(room, agent_result):
         worker.cancel()
         assert port.calls == 1
     asyncio.run(scenario())
+
+
+def test_unprocessed_message_batches_preserve_backlog_order():
+    from backend.services.agent_jobs import unprocessed_messages
+    messages = [{'id':str(i)} for i in range(25)]
+    assert [m['id'] for m in unprocessed_messages(messages, None)] == [str(i) for i in range(20)]
+    assert [m['id'] for m in unprocessed_messages(messages, '19')] == ['20','21','22','23','24']
+    assert unprocessed_messages(messages, '24') == []
