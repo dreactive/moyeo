@@ -14,3 +14,13 @@ def test_new_item_assigns_backend_id_and_maps_client_ref(room):
     assert item['item_version'] == 1
     assert item['supporter_ids'] == []
     assert item in room['items']
+
+
+def test_item_changes_clear_previous_version_support(room):
+    from backend.domain import update_item_proposal
+    item = room['items'][1]
+    proposal = {'existing_item_id':item['id'],'kind':'place','title':'Changed park','source_message_ids':['m4']}
+    update_item_proposal(room, proposal)
+    assert item['item_version'] == 2
+    assert item['supporter_ids'] == []
+    assert item['state'] == 'mentioned'
