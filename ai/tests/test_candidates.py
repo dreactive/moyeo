@@ -30,3 +30,17 @@ def test_candidates_are_not_padded_and_unknown_sources_rejected():
     assert len(build_candidates(context)) == 1
     context["generated_candidates"][0]["source_message_ids"] = ["invented"]
     assert build_candidates(context) == []
+
+
+def test_model_cannot_replace_observed_menu_price():
+    from copy import deepcopy
+    from ai.tests.test_place_route_tools import task
+    from ai.cost_inputs import build_cost_inputs
+    from ai.tools.context import build_tool_context
+    from ai.tools.validation import validate_arguments
+    value = task()
+    arguments, _ = build_cost_inputs(value)
+    forged = deepcopy(arguments)
+    next(l for l in forged["lines"] if l["category"] == "meal")["unit_price_krw"] = 1
+    with pytest.raises(ValueError):
+        validate_arguments("calculate_costs", forged, build_tool_context(value))

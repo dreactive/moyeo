@@ -51,5 +51,6 @@ async def test_registry_search_and_calculation_are_server_independent():
     tools = RegisteredTools(task())
     result = await tools.execute("search_places", {"query": "A식당", "region": "여수", "category": None})
     assert [p["id"] for p in result["places"]] == ["fixture:place-a"]
-    summary = await tools.execute("calculate_costs", {"lines": [], "member_ids": ["u1"], "budget_by_user": {"u1": 200000}})
-    assert summary["known_total_krw"] == 0
+    from ai.cost_inputs import build_cost_inputs
+    summary = await tools.execute("calculate_costs", build_cost_inputs(task())[0])
+    assert summary["known_total_krw"] == 120000

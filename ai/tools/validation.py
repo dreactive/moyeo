@@ -1,4 +1,5 @@
 import math
+from ai.cost_inputs import build_cost_inputs
 
 PARAMETERS = {
     "search_places": {"query": str, "region": str, "category": (str, type(None))},
@@ -22,3 +23,6 @@ def validate_arguments(name, arguments, context):
         quantity = line.get("quantity")
         if isinstance(quantity, bool) or not isinstance(quantity, (int, float)) or not math.isfinite(quantity) or quantity <= 0:
             raise ValueError("Quantity must be finite and positive")
+    if name == "calculate_costs":
+        if "members" not in context or arguments != build_cost_inputs(context)[0]:
+            raise ValueError("Cost arguments differ from observed prices and user inputs")
