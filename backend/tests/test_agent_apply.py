@@ -208,3 +208,23 @@ def test_applied_result_records_processed_cursor_atomically(room, agent_result):
     db.put('run:run-fixture', {'room_id':'room-fixture','base_versions':dict(room['versions']),'message_ids':['m4']})
     assert apply_agent_result(db, agent_result)
     assert db.get('processed-message:room-fixture') == 'm4'
+
+
+def test_new_alternative_evidence_preserves_existing_review(room, agent_result):
+    from backend.services.agent_apply import apply_plan
+    from backend.services.planning import record_confirmation
+    from copy import deepcopy
+    record_confirmation(room, 'u1', room['current_plan']['confirmation_target'], 'confirm')
+    old = deepcopy(agent_result['observations'])
+    alternative = deepcopy(old[0])
+    alternative['result']['place']['id'] = 'fixture:place-c'
+    alternative['arguments']['place_ref'] = 'fixture:place-c'
+    room['items'].append(dict(room['items'][0], id='item-c', title='Alternative cafe'))
+    draft = deepcopy(agent_result['plan_draft'])
+    draft['selected_item_ids'] = ['item-c']
+    draft['days'][0]['visits'] = [dict(draft['days'][0]['visits'][0],item_id='item-c',place_ref='fixture:place-c')]
+    before = deepcopy(room['review_plan'])
+    apply_plan(room, draft, old, old + [alternative])
+    assert room['review_plan'] == before
+    assert len(room['confirmations']) == 1
+    assert room['versions']['evidence_version'] == 1

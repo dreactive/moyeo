@@ -43,8 +43,8 @@ from backend.services.planning import build_plan, validate_effect
 
 
 def apply_plan(room, draft, old_observations, observations):
-    plans = [plan for plan in (draft, room['current_plan'], room['review_plan']) if plan is not None]
-    if any(relevant_evidence(plan, observations) != relevant_evidence(plan, old_observations) for plan in plans):
+    basis = room['review_plan'] or room['current_plan'] or draft
+    if basis and relevant_evidence(basis, observations) != relevant_evidence(basis, old_observations):
         room['versions']['evidence_version'] += 1
         room.update(review_plan=None, active_target=None, confirmations=[])
     if draft is not None:
