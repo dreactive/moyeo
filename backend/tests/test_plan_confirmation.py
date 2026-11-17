@@ -70,3 +70,16 @@ def test_explicit_activation_discards_previous_votes(room):
     activate_plan(room, 2)
     assert room['active_target']['plan_revision'] == 2
     assert room['confirmations'] == []
+
+
+def test_plan_confirmation_http(api):
+    room = api.app.state.db.get('room:room-fixture')
+    room['current_plan']['validation'] = 'ready'
+    room['constraints'] = []
+    api.app.state.db.put('room:room-fixture', room)
+    target = room['current_plan']['confirmation_target']
+    for i in range(1,5):
+        api.cookies.set('session','su'+str(i))
+        response = api.post('/api/rooms/room-fixture/plan/confirm', json={'target':target})
+        assert response.status_code == 200
+        assert (response.json()['confirmed_plan'] is not None) == (i == 4)

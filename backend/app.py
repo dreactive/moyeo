@@ -31,9 +31,12 @@ def create_app(agent_port: AgentPort | None = None, *, database_path=None) -> Fa
     app.include_router(rooms_router)
     from backend.routes.messages import router as messages_router
     app.include_router(messages_router)
+    from backend.routes.plans import router as plans_router
+    app.include_router(plans_router)
     return app
 
 
 app = create_app()
+
 
 
