@@ -64,3 +64,12 @@ def test_empty_four_person_room_creates_initial_plan(room):
         snapshot = clients[0].get(path).json()
         assert snapshot['current_plan']['validation'] == 'ready'
         assert snapshot['current_plan']['cost']['total_krw'] == 130000
+        target = snapshot['current_plan']['confirmation_target']
+        for index, client in enumerate(clients):
+            confirmed = client.post(path+'/plan/confirm', json={'target':target})
+            assert confirmed.status_code == 200
+            assert (confirmed.json()['confirmed_plan'] is not None) == (index == 3)
+        snapshot = confirmed.json()
+        assert snapshot['review_plan']['confirmation_target'] == target
+        assert snapshot['confirmed_plan']['confirmation_target'] == target
+        assert snapshot['items'][0]['state'] == 'confirmed'
