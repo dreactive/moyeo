@@ -2,12 +2,12 @@ import asyncio
 import time
 from httpx import HTTPError
 from datetime import datetime, timezone
-from ai.trace import emit
+from ai.trace import emit, terminate
 from ai.candidates import build_candidates, select_candidate, grounded_options, valid_options
 from ai.tools.context import build_tool_context
 from ai.tools.validation import validate_arguments
 from ai.context import build_context
-from ai.questions import question
+from ai.questions import question, valid_questions
 from ai.outcome import assemble_result, reuse_current_plan
 from ai.result import empty_result
 from ai.extraction import validate_extraction
@@ -37,7 +37,8 @@ async def run_agent(task, model, tools, emit_trace):
     task, selection_questions = apply_selection(task)
     result = empty_result(task)
     if selection_questions:
-        result["questions"] = selection_questions
+        result["questions"] = valid_questions(task, selection_questions)
+        await terminate(emit_trace, task, 0, model, "selection_needs_input")
         return result
     if hasattr(tools, "restore"):
         tools.restore(task)
@@ -46,13 +47,14 @@ async def run_agent(task, model, tools, emit_trace):
         return result
     try:
         result.update(await extract_proposals(task, model, emit_trace))
+        result["questions"].extend(q for q in task["questions"] if q["status"] == "open")
         if task["goal"] in ("chat", "messages", "extract"):
             result["completion"] = "needs_input" if result["questions"] else "done"
         else:
             await run_steps(task, model, tools, emit_trace, result)
     except (ValueError, KeyError, TypeError, RuntimeError, OSError, HTTPError) as error:
-        result["questions"].append(question("constraint_value", None,
-                                           f"모델/도구 검증 실패: {type(error).__name__}. 입력/설정을 확인해주세요."))
+        await terminate(emit_trace, task, 0, model, type(error).__name__)
+    result["questions"] = valid_questions(task, result["questions"], result["item_proposals"])
     return result
 
 
@@ -64,14 +66,14 @@ async def run_steps(task, model, tools, emit_trace, result):
         action = await choose_action(context, model, emit_trace, step)
         if action["action"] != "tool":
             result["completion"] = "unsupported" if action["action"] == "unsupported" else "needs_input"
-            result["questions"].append(question("constraint_value", None, action["reason"]))
+            result["questions"].extend(build_cost_inputs(context)[1])
             break
         observation = await execute_selected(task, action, tools, emit_trace, step)
         result["observations"].append(observation)
         if assemble_result(task, result):
             break
     else:
-        result["questions"].append(question("constraint_value", None, "20회 행동 상한에 도달했습니다."))
+        await terminate(emit_trace, task, 20, model, "action_limit")
 
 
 async def choose_action(context, model, emit_trace, step):

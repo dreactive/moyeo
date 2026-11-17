@@ -50,7 +50,7 @@ async def test_twenty_action_limit_does_not_fake_completion():
     result = empty_result(value)
     await run_steps(value, Model(), tools, None, result)
     assert tools.calls == 20 and len(result["observations"]) == 20
-    assert result["completion"] == "needs_input" and result["questions"]
+    assert result["completion"] == "needs_input" and not result["questions"]
 
 
 def test_plan_result_uses_only_executed_calculations_and_retains_null():
@@ -80,7 +80,8 @@ async def test_invalid_model_scores_return_needs_input_without_tool_call():
             raise AssertionError("Invalid decision executed")
     result = await run_agent(task(), Model(), Tools(), None)
     assert result["completion"] == "needs_input"
-    assert result["questions"] and not result["observations"]
+    assert all(q["field"] != "constraint_value" or q["target_ref"] for q in result["questions"])
+    assert not result["observations"]
 
 
 async def test_rule_assistance_is_labeled_and_does_not_skip_base_generation():

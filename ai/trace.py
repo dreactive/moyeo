@@ -16,3 +16,9 @@ async def emit(sink, task, step, event, call_id, payload):
     if sink:
         await sink(dict(run_id=task["run_id"], step=step, event=event, call_id=call_id,
                         created_at=datetime.now(timezone.utc).isoformat(), payload=redact(payload)))
+
+
+async def terminate(sink, task, step, model, reason):
+    await emit(sink, task, step, "decision", None, dict(goal=task["goal"], candidates=[],
+        selected_index=None, scores=[], model_mode=getattr(model, "mode", "unknown"),
+        base_versions=task["base_versions"], termination=reason))
