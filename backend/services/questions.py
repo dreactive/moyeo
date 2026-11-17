@@ -10,6 +10,8 @@ def validate_answer(room, question, actor_id, value):
         raise HTTPException(403, 'Only question owner may answer')
     field = question['field']
     targets = {item['id'] for item in room['items']}
+    if field == 'support_target':
+        targets.add(None)
     if field == 'constraint_value':
         targets = {item['id'] for item in room['constraints'] if item['owner_id'] == actor_id}
     if field in ('origin','destination','lodging'):
@@ -30,6 +32,8 @@ def answer_question(room, question_id, actor_id, value):
         raise HTTPException(404, 'Question not found')
     value = validate_answer(room, question, actor_id, value)
     field = question['field']
+    if field == 'support_target':
+        resolve_support_answer(room, question, actor_id, value['item_id'])
     if field in ('origin','destination','lodging'):
         room['config'][field] = value
     if field == 'constraint_value':
@@ -40,3 +44,19 @@ def answer_question(room, question_id, actor_id, value):
         room['versions']['constraint_version'] += 1
         room.update(active_target=None, review_plan=None, confirmations=[])
     return question
+
+
+from backend.services.consensus import apply_support
+
+
+def resolve_support_answer(room, question, actor_id, item_id):
+    parts = question['id'].split(':', 3)
+    item = next((item for item in room['items'] if item['id'] == item_id), None)
+    if question['owner_id'] != actor_id or len(parts) != 4 or parts[2] not in ('support','oppose','withdraw') or item is None:
+        raise HTTPException(409, 'Support source unavailable')
+    if question['related_item_ids'] and item_id not in question['related_item_ids']:
+        raise HTTPException(409, 'Answer is outside the offered targets')
+    observation = dict(item_id=item_id, item_version=item['item_version'], author_id=actor_id, stance=parts[2], source_message_id=parts[3])
+    if not apply_support(room, observation, actor_id):
+        raise HTTPException(409, 'Support source changed')
+    question['target_ref'] = item_id

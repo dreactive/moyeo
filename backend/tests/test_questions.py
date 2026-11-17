@@ -34,3 +34,14 @@ def test_question_http_replans_target(api):
     assert response.status_code == 200
     question = next(q for q in response.json()['questions'] if q['id'] == 'question-stay')
     assert question['answer'] == {'stay_minutes':40}
+
+
+def test_support_target_answer_only_updates_original_author(room):
+    from backend.services.questions import answer_question
+    question = dict(id='question:support_target:oppose:m4',owner_id='u4',field='support_target',target_ref=None,text='Which item?',related_item_ids=['item-a','item-b'],status='open',answer=None,answered_by=None)
+    room['questions'].append(question)
+    with pytest.raises(HTTPException):
+        answer_question(room, question['id'], 'u1', {'item_id':'item-a'})
+    answer_question(room, question['id'], 'u4', {'item_id':'item-a'})
+    assert 'u4' in room['items'][0]['opponent_ids']
+    assert room['confirmations'] == []
