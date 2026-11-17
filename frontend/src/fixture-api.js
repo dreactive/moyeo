@@ -50,7 +50,12 @@ export async function requestFixture(path, {method = 'GET',body,headers} = {}) {
   }
   if (parts[4] === 'plan') {
     if (parts[5] === 'activate') return replayScenario('activated');
-    if (parts[5] === 'withdraw') return replayScenario('ready');
+    if (parts[5] === 'withdraw') {
+      if (!sameTarget(body.target,fixtureRoom.active_target)) throw new Error('fixture: 오래된 대상입니다.');
+      fixtureRoom.confirmations = fixtureRoom.confirmations.filter(vote => vote.user_id !== fixtureUser.id);
+      fixtureRoom.seq++;
+      return structuredClone(fixtureRoom);
+    }
     const plan = fixtureRoom.review_plan ?? fixtureRoom.current_plan;
     if (plan?.validation !== 'ready' || !sameTarget(body.target,plan.confirmation_target)) throw new Error('fixture: 오래되거나 확인 불가능한 대상입니다.');
     return replayScenario((body.target.plan_revision === 2 ? 'confirm2-' : 'confirm-') + fixtureUser.id);
@@ -100,3 +105,4 @@ import trace from '../fixtures/run-trace.json' with {type:'json'};
 
 
 import {sameTarget} from './plan.js';
+

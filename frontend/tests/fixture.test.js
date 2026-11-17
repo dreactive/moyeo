@@ -48,3 +48,9 @@ test('recorded end-to-end scenario keeps three approvals unconfirmed then confir
   assert.equal(room.confirmed_plan.plan_revision,1);
   assert.ok(room.items.every(item => item.state==='confirmed'));
 });
+test('fixture withdrawal preserves other votes and the pinned review target', async () => {
+  const room=replayScenario('confirm-u3');setFixtureUser('u2');
+  const result=await requestFixture('/api/rooms/room-fixture/plan/withdraw',{method:'POST',body:{target:room.active_target}});
+  assert.deepEqual(result.confirmations.map(vote=>vote.user_id),['u1','u3']);
+  assert.deepEqual(result.active_target,room.active_target);
+});
