@@ -1,4 +1,5 @@
 import math
+from ai.tools.validation import PARAMETERS
 
 
 def select_candidate(candidates, scores):
@@ -18,6 +19,9 @@ def build_candidates(context):
     for c in context.get("generated_candidates", []):
         if not isinstance(c, dict) or set(c) != required:
             continue
+        c = dict(c)
+        if c["action"] in PARAMETERS and c["tool_name"] == c["action"]:
+            c["action"] = "tool"
         if c["action"] not in ("tool", "ask", "direct", "wait", "finish", "unsupported"):
             continue
         if set(c["source_message_ids"]) <= messages and set(c["source_refs"]) <= refs:

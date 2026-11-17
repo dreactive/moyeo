@@ -56,3 +56,13 @@ def test_model_cannot_invent_route_seconds_in_schedule():
     args["route_legs"] = [{"from_ref": "fixture:place-a", "to_ref": "fixture:place-b", "duration_seconds": 1}]
     with pytest.raises(ValueError):
         validate_arguments("build_itinerary", args, build_tool_context(value))
+
+
+def test_explicit_registered_tool_action_can_be_normalized_without_inventing_args():
+    from ai.candidates import build_candidates
+    value = {"recent_messages": [], "observations": [], "generated_candidates": [
+        dict(action="get_place_details", reason="lookup", tool_name="get_place_details",
+             arguments={"place_ref": "observed:p"}, source_message_ids=[], source_refs=[])]}
+    assert build_candidates(value)[0]["action"] == "tool"
+    value["generated_candidates"][0]["tool_name"] = "delete_everything"
+    assert build_candidates(value) == []
