@@ -14,4 +14,8 @@ Owner paths: ai/** and this document. Push/PR/integration belong to S2.
 
 ## Progress
 
+- Support target linking for S2: ambiguous support questions use id `question:support_target:<source_message_id>`, owner_id=that message's author, target_ref=null. No support is created until the original author identifies the target. S2 can recover the original message ID from this prefix without adding contract fields; AI emits no proxy support or official confirmations.
+- Small-commit boundary note: approximately 300 executable characters is the target. Complete JSON result schemas, one loop or one semantic validation plus its focused test sometimes exceed it slightly; these are retained as runnable natural behavior boundaries, never a completed large feature split retroactively.
+- Async environment ruling: minimal asyncio.sleep(0) hangs in default Windows sandbox and succeeds with require_escalated (0.5s). Async tests/CLI therefore run escalated; application code does not bypass asyncio.
+
 - A0: in progress. No live success claimed.

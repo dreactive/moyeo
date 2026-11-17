@@ -9,7 +9,9 @@ def validate_support(claim, message, item):
     if claim.get("item_version") != item["item_version"] or any(w in text for w in ("다들", "모두", "했대")):
         return None, None
     if item["title"].split()[-1] not in text:
-        return None, question("support_target", None, "어느 항목에 대한 의견인가요?", claim["author_id"])
+        missing = question("support_target", None, "어느 항목에 대한 의견인가요?", claim["author_id"])
+        missing["id"] = "question:support_target:" + message["id"]
+        return None, missing
     stance = "withdraw" if "철회" in text else "oppose" if "반대" in text else "support"
     explicit = any(w in text for w in ("가자", "좋아", "찬성", "철회", "반대"))
     return (claim, None) if explicit and claim.get("stance") == stance else (None, None)
