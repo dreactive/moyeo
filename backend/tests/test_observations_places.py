@@ -43,3 +43,23 @@ def test_place_read_preserves_plan_and_votes_and_blocks_other_room(api, agent_re
     assert response.json()['place']['id'] == 'fixture:place-a'
     assert api.get('/api/rooms/room-fixture').json() == before
     assert api.get('/api/rooms/room-fixture/places/https:evil').status_code == 404
+
+
+def test_missing_details_call_tool_with_room_context(api, agent_result):
+    from backend.services.observations import project_observations
+    detail = agent_result['observations'][0]['result']
+    project_observations(api.app.state.db, 'room-fixture', [{'tool_name':'search_places','arguments':{},'result':{'places':[detail['place']]},'observed_at':'2026-11-18T10:00:00+09:00','source_refs':[]}])
+    class Port:
+        context = None
+        async def execute_tool(self, name, arguments, context):
+            assert name == 'get_place_details'
+            self.context = context
+            return detail
+        async def aclose(self):
+            pass
+    port = Port()
+    api.app.state.agent = port
+    response = api.get('/api/rooms/room-fixture/places/fixture:place-a')
+    assert response.status_code == 200
+    assert port.context['room_id'] == 'room-fixture'
+    assert len(port.context['observations']) == 1
