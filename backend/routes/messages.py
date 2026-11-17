@@ -33,3 +33,13 @@ async def evidence(room_id: str, message_id: str, request: Request, user=Depends
 async def agent_run(room_id: str, body: AgentRun, request: Request, user=Depends(current_user)):
     require_room(request.app.state.db, room_id, user['id'])
     return await request.app.state.jobs.enqueue(room_id, body.reason)
+
+from fastapi import Header
+from fastapi.responses import StreamingResponse
+from backend.services.events import room_event_stream
+
+
+@router.get('/events')
+async def events(room_id: str, request: Request, last_event_id: int = Header(0), user=Depends(current_user)):
+    require_room(request.app.state.db, room_id, user['id'])
+    return StreamingResponse(room_event_stream(request.app.state.db, room_id, last_event_id), media_type='text/event-stream', headers={'Cache-Control':'no-cache'})

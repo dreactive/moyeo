@@ -20,3 +20,10 @@ def test_stream_replays_only_after_cursor():
         assert (await anext(stream)).startswith('id: 2\n')
         await stream.aclose()
     asyncio.run(scenario())
+
+
+def test_events_endpoint_is_authenticated():
+    from fastapi.testclient import TestClient
+    from backend.app import create_app
+    with TestClient(create_app(database_path=':memory:')) as client:
+        assert client.get('/api/rooms/r/events').status_code == 401
