@@ -11,3 +11,15 @@ def test_context_has_twenty_messages_and_structured_answers():
     assert [m["id"] for m in context["recent_messages"]] == [str(i) for i in range(10, 30)]
     assert context["config"]["origin"]["latitude"] == 1
     assert value["config"]["origin"]["latitude"] == 34.76
+
+
+def test_constraint_owner_and_correction_are_grounded():
+    from ai.extraction import validate_extraction
+    value = task()
+    value["constraints"] = [{"id": "c1", "owner_id": "u1", "key": "budget"}]
+    proposal = {"owner_id": "u1", "key": "budget", "value": 200000, "kind": "hard",
+                "source_message_ids": ["m0"], "replaces_constraint_id": "c1"}
+    output = validate_extraction({"constraint_proposals": [proposal]}, value)
+    assert output["constraint_proposals"] == [proposal]
+    proposal["owner_id"] = "u2"
+    assert not validate_extraction({"constraint_proposals": [proposal]}, value)["constraint_proposals"]
