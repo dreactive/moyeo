@@ -25,6 +25,7 @@ def snapshot(room_id: str, request: Request, user=Depends(current_user)):
 
 from backend.schemas import JoinRoom
 from fastapi import HTTPException
+from backend.services.events import publish_event
 
 
 @router.post('/join')
@@ -33,10 +34,14 @@ def join(body: JoinRoom, request: Request, user=Depends(current_user)):
     room_id = db.get('invite:' + body.invite_code)
     if room_id is None:
         raise HTTPException(404, 'Invite not found')
-    room = db.get('room:' + room_id)
-    if user['id'] not in [member['user_id'] for member in room['members']]:
-        room['members'].append({'user_id':user['id'], 'name':user['name']})
-        room['versions']['participant_version'] += 1
-        room.update(active_target=None, review_plan=None, confirmations=[])
-        db.put('room:' + room_id, room)
+    with db.lock:
+        room = db.get('room:' + room_id)
+        if user['id'] not in [member['user_id'] for member in room['members']]:
+            room['members'].append({'user_id':user['id'], 'name':user['name']})
+            room['versions']['participant_version'] += 1
+            room.update(active_target=None, review_plan=None, confirmations=[])
+            db.put('room:' + room_id, room)
+            publish_event(db, room_id, 'room.updated', {'changed':['members','versions','confirmations']})
+        room = db.get('room:' + room_id)
+    room['messages'] = room['messages'][-50:]
     return room

@@ -49,3 +49,18 @@ def test_four_members_join_and_nonmember_blocked():
             assert joined.status_code == 200
         assert len(owner.get('/api/rooms/' + room['room_id']).json()['members']) == 4
 
+
+
+def test_join_publishes_members_and_returns_recent_messages():
+    app = create_app(database_path=':memory:')
+    with TestClient(app) as owner:
+        owner.post('/api/auth/register', json={'name':'one','email':'one@b.test','password':'password123'})
+        room = owner.post('/api/rooms', json={'title':'trip','start_date':'2026-11-21','end_date':'2026-11-22','per_person_budget_krw':200000}).json()
+        room['messages'] = [{'id':str(i)} for i in range(51)]
+        app.state.db.put('room:' + room['room_id'], room)
+        guest = TestClient(app)
+        guest.post('/api/auth/register', json={'name':'two','email':'two@b.test','password':'password123'})
+        joined = guest.post('/api/rooms/join', json={'invite_code':room['invite_code']}).json()
+        assert len(joined['messages']) == 50
+        assert joined['seq'] == 1
+        assert app.state.db.get('events:' + room['room_id'])[0]['event'] == 'room.updated'
