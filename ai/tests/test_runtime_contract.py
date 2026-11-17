@@ -38,3 +38,19 @@ async def test_runtime_reuses_model_and_chat_never_calls_tools():
     await runtime.aclose()
     await runtime.aclose()
     assert model.closed
+
+
+async def test_fake_fixture_loop_produces_calculated_plan_and_mode_trace():
+    from ai.runtime import create_runtime
+    runtime = create_runtime({"model_backend": "fake", "provider_mode": "fixture"})
+    task = json.loads(Path("ai/fixtures/agent-task.json").read_text(encoding="utf-8"))
+    events = []
+    async def sink(event):
+        events.append(event)
+    result = await runtime.run(task, sink)
+    await runtime.aclose()
+    assert result["plan_draft"] is not None
+    assert result["plan_draft"]["cost"]["known_total_krw"] == 120000
+    assert result["plan_draft"]["cost"]["total_krw"] is None
+    assert result["completion"] == "needs_input"
+    assert {e["payload"]["model_mode"] for e in events if e["event"] == "decision"} == {"fake"}

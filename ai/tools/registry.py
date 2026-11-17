@@ -26,7 +26,13 @@ class RegisteredTools:
                       and arguments["query"] in p["name"]]
             return {"places": deepcopy(places)}
         if name == "get_car_route":
-            return observed_route(self.context, arguments)
+            try:
+                return observed_route(self.context, arguments)
+            except ValueError:
+                if self.mode != "fixture":
+                    raise
+                from ai.providers.fixture import fixture_route
+                return fixture_route(self.context, arguments)
         if name == "get_place_details":
             ref = arguments["place_ref"]
             if ref not in self.context["details"]:

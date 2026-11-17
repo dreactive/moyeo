@@ -41,7 +41,9 @@ async def test_route_cache_does_not_cross_departure_time():
         "result": {"from_ref": "anchor:origin", "to_ref": "anchor:destination",
                    "distance_m": 1000, "duration_seconds": 300, "polyline": []}}]
     with pytest.raises(ValueError):
-        await RegisteredTools(context).execute("get_car_route",
+        from ai.tools.routes import observed_route
+        from ai.tools.context import build_tool_context
+        observed_route(build_tool_context(context),
             {"from_ref": "anchor:origin", "to_ref": "anchor:destination",
              "departure_at": "2026-11-21T17:00:00+09:00"})
 

@@ -1,4 +1,5 @@
-from ai.planning import planned_visits
+from ai.planning import planned_visits, next_route, itinerary_arguments
+from ai.cost_inputs import build_cost_inputs
 
 
 def tool(name, arguments):
@@ -12,7 +13,12 @@ def propose_actions(context):
     for visit in visits:
         if visit["place_ref"] not in detailed:
             return [tool("get_place_details", {"place_ref": visit["place_ref"]})]
-    if visits:
-        return [tool("get_car_route", dict(from_ref="anchor:origin", to_ref=visits[0]["place_ref"],
-                     departure_at=context["config"]["start_date"] + "T09:00:00+09:00"))]
+    route = next_route(context)
+    if route:
+        return [tool("get_car_route", route)]
+    observed = {o["tool_name"] for o in context["observations"]}
+    if "build_itinerary" not in observed:
+        return [tool("build_itinerary", itinerary_arguments(context))]
+    if "calculate_costs" not in observed:
+        return [tool("calculate_costs", build_cost_inputs(context)[0])]
     return []
