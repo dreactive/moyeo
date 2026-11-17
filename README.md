@@ -60,7 +60,18 @@ $env:PROVIDER_MODE='fixture'
 backend/.venv/Scripts/python.exe -m uvicorn backend.app:app --host 127.0.0.1 --port 8000
 ```
 
-실제 Qwen은 AI의 로컬 모델 의존성과 `BASE_MODEL_PATH`, `ADAPTER_PATH`, `MODEL_BACKEND=local_qwen`을 사용한다. 실제 공급자는 `PROVIDER_MODE=live`와 AI 안내의 공급자 설정·키가 필요하다. 서버를 한 프로세스·worker 하나로 실행하고 GPU 실행은 한 세션만 맡는다. 모델·공급자 오류를 fixture 성공으로 자동 대체하지 않는다.
+실제 Qwen은 Python 3.12 통합 환경에 선택 의존성을 설치하고 로컬 모델 경로를 지정한다. 아래 베이스 경로는 실제 준비한 디렉터리로 바꾼다. 모델을 자동 다운로드하지 않는다.
+
+```powershell
+backend/.venv/Scripts/python.exe -m pip install -r ai/requirements-local-qwen.txt
+$env:BASE_MODEL_PATH='C:/path/to/Qwen2.5-1.5B-Instruct'
+$env:ADAPTER_PATH=(Resolve-Path submission/weights).Path
+$env:MODEL_BACKEND='local_qwen'
+$env:PROVIDER_MODE='live'
+backend/.venv/Scripts/python.exe -m uvicorn backend.app:app --host 127.0.0.1 --port 8000
+```
+
+이 명령은 앞 단계의 `TRIP_ENV_FILE`과 `AGENT_MODE=local_ai`를 유지한다. 실제 공급자는 AI 안내의 공급자 설정·키가 필요하다. 서버를 한 프로세스·worker 하나로 실행하고 GPU 실행은 한 세션만 맡는다. 모델·공급자 오류를 fixture 성공으로 자동 대체하지 않는다.
 
 `.env`는 Git 제외 파일이다. `TRIP_ENV_FILE`로 다른 작업 공간에서도 같은 절대 경로를 지정할 수 있고 shell 환경 변수가 파일 값보다 우선한다. `KAKAO_JAVASCRIPT_KEY`만 공개 지도 키로 HTML에 주입한다. 실제 서비스 origin을 Kakao SDK 도메인에 등록한다. REST·Mobility·Apify 키와 `DEV_TOKEN`은 브라우저 코드에 넣지 않는다. 개발자 trace는 로그인한 방 멤버의 cookie와 `X-Dev-Token`이 모두 필요하며, 토큰은 로컬 `.env`에서 확인한다. `TRACE_ENABLED=0`이어도 장소·근거 데이터는 trace와 별도로 유지된다.
 
