@@ -6,7 +6,7 @@
 
 **최신 구현 기준: [MVP 설계](./docs/superpowers/specs/2026-11-18-travel-agent-design.md) · [공통 API 계약](./docs/contracts/travel-api.md)**
 
-구현 세부가 기존 기획과 다르면 2026-11-18 설계를 따른다. 현재 산출물은 설계·개발 계획이며 서비스 구현 완료를 의미하지 않는다.
+구현 세부가 기존 기획과 다르면 2026-11-18 설계를 따른다. 구현과 실제 검증 범위는 [Backend 기록](./docs/verification/backend.md), [FE 기록](./docs/verification/frontend.md), [AI 기록](./docs/verification/ai.md), [통합 기록](./docs/verification/integration.md)에서 구분한다. fixture/fake 통과를 실제 API·Qwen 완료로 보지 않는다.
 
 - 계정과 참가 코드로 입장하는 자체 웹 단체 채팅방.
 - 왼쪽 채팅 약 30%, 오른쪽 여행 조건·전체 동선·선택 장소·예상 경비 약 70%.
@@ -33,6 +33,44 @@
 | [기능 검증 체크리스트](./docs/testing/mvp-checklist.md) | 기능별 완료 기준과 실행 증거 기록 |
 | [가격·영업시간 공급자 설계](./docs/providers/place-data.md) | Apify 검증과 무료 API 전환, 실제 데이터 확인 기준 |
 
-코드는 구현 때 frontend/, backend/, ai/로 나누고 docs/ 등은 공용으로 둔다. 기존 submission/과 원문 PDF는 보존한다.
+코드는 frontend/, backend/, ai/로 나누고 docs/ 등은 공용으로 둔다. 기존 submission/과 원문 PDF는 보존한다.
 
 `docs/`의 대회 안내 PDF와 `data/`의 기존 원본 자료는 보존한다. 원본 자료의 존재가 현재 서비스의 구현 범위를 정의하지는 않는다.
+
+## 실행
+
+저장소 루트에서 실행한다. Windows의 `python` 별칭이 실행되지 않으면 설치된 Python 실행 파일의 절대 경로를 사용한다. 로컬 Qwen 통합 환경은 Python 3.12를 사용했다.
+
+```powershell
+python -m venv backend/.venv
+backend/.venv/Scripts/python.exe -m pip install -r backend/requirements.txt
+backend/.venv/Scripts/python.exe -m uvicorn backend.app:app --host 127.0.0.1 --port 8000
+```
+
+[사용자 화면](http://127.0.0.1:8000/)과 [개발자 화면](http://127.0.0.1:8000/dev)은 같은 origin에서 API·cookie·방 SSE를 사용한다. frontend가 없어도 Backend API는 실행된다. 기본 `AGENT_MODE=fixture`는 고정 Backend 예제이며 임의 대화를 이해하는 모델이 아니다. FE만의 정해진 화면 시나리오는 [fixture 화면](http://127.0.0.1:8000/?mode=fixture)으로 연다. 이때 HTTP 인증·실제 모델·실제 장소 조회를 검증한 것으로 보지 않는다.
+
+AI 연결은 독립 테스트 이후 별도로 설정한다. [AI 실행 안내](./ai/README.md)의 의존성을 같은 통합 환경에 설치하고, 먼저 `MODEL_BACKEND=fake`, `PROVIDER_MODE=fixture`를 사용한다.
+
+```powershell
+backend/.venv/Scripts/python.exe -m pip install -r ai/requirements.txt
+$env:TRIP_ENV_FILE=(Resolve-Path .env).Path
+$env:AGENT_MODE='local_ai'
+$env:MODEL_BACKEND='fake'
+$env:PROVIDER_MODE='fixture'
+backend/.venv/Scripts/python.exe -m uvicorn backend.app:app --host 127.0.0.1 --port 8000
+```
+
+실제 Qwen은 AI의 로컬 모델 의존성과 `BASE_MODEL_PATH`, `ADAPTER_PATH`, `MODEL_BACKEND=local_qwen`을 사용한다. 실제 공급자는 `PROVIDER_MODE=live`와 AI 안내의 공급자 설정·키가 필요하다. 서버를 한 프로세스·worker 하나로 실행하고 GPU 실행은 한 세션만 맡는다. 모델·공급자 오류를 fixture 성공으로 자동 대체하지 않는다.
+
+`.env`는 Git 제외 파일이다. `TRIP_ENV_FILE`로 다른 작업 공간에서도 같은 절대 경로를 지정할 수 있고 shell 환경 변수가 파일 값보다 우선한다. `KAKAO_JAVASCRIPT_KEY`만 공개 지도 키로 HTML에 주입한다. 실제 서비스 origin을 Kakao SDK 도메인에 등록한다. REST·Mobility·Apify 키와 `DEV_TOKEN`은 브라우저 코드에 넣지 않는다. 개발자 trace는 로그인한 방 멤버의 cookie와 `X-Dev-Token`이 모두 필요하며, 토큰은 로컬 `.env`에서 확인한다. `TRACE_ENABLED=0`이어도 장소·근거 데이터는 trace와 별도로 유지된다.
+
+## 검증
+
+```powershell
+node --test frontend/tests/*.test.js
+backend/.venv/Scripts/python.exe -m pytest -c backend/pytest.ini backend/tests -q
+backend/.venv/Scripts/python.exe -m pytest -c ai/pytest.ini ai/tests -q
+backend/.venv/Scripts/python.exe -m pytest -c backend/pytest.ini backend/tests -q -m integration
+```
+
+Backend 기본 테스트는 integration marker를 제외하고 AI 패키지를 import하지 않는다. AI 실제 모델·공급자 probe와 4인 통합의 실행 상태·코드 버전·남은 제약은 통합 기록과 C01–C47 검증표를 따른다. 관측·진단 로그와 SQLite·가상환경은 Git에 넣지 않는다.
