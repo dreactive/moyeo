@@ -1,0 +1,4 @@
+# The shared runtime already supplies torch, transformers, peft, accelerate,
+# safetensors and numpy. Keep this file if no extra dependencies are required.
+# Extra dependencies use pinned PyPI versions: package-name==1.2.3
+# Linux/Python 3.11 wheels must be available. URLs, VCS and local paths are unsupported.

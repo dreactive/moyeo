@@ -1,0 +1,18 @@
+# Personal agent instructions and implementation workflow (keep local).
+/AGENTS.md
+/.local/skills/trip-agent-small-commits/
+
+# Local planning and generated files.
+/.planning/
+/tmp/
+/.worktrees/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+.env
+.artifacts/
+.data/
+
+# Keep the supplied local adapter in place without committing large weights.
+/submission/weights/*.safetensors

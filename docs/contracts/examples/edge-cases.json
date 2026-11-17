@@ -1,0 +1,132 @@
+{
+  "contract_version": "0.2",
+  "patch_rule": "각 *_patch는 기준 DTO의 최상위 키를 교체한다. 배열은 병합하지 않고 교체한다.",
+  "cases": [
+    {
+      "id": "unsupported",
+      "input_patch": {
+        "goal": "unsupported_booking"
+      },
+      "result_patch": {
+        "plan_draft": null,
+        "observations": [],
+        "questions": [],
+        "completion": "unsupported"
+      },
+      "expected": {
+        "no_confirmation": true,
+        "no_live_call": true
+      }
+    },
+    {
+      "id": "stale-result",
+      "input_patch": {
+        "base_versions": {
+          "participant_version": 1,
+          "constraint_version": 2,
+          "evidence_version": 1,
+          "plan_revision": 1
+        }
+      },
+      "result_patch": {
+        "base_versions": {
+          "participant_version": 1,
+          "constraint_version": 1,
+          "evidence_version": 1,
+          "plan_revision": 1
+        }
+      },
+      "expected": {
+        "apply": false
+      }
+    },
+    {
+      "id": "new-client-ref",
+      "input_patch": {
+        "goal": "extract_new_item"
+      },
+      "result_patch": {
+        "item_proposals": [
+          {
+            "client_ref": "new-cafe",
+            "existing_item_id": null,
+            "kind": "place",
+            "title": "가상 카페",
+            "source_message_ids": [
+              "m4"
+            ]
+          }
+        ],
+        "support_observations": [
+          {
+            "item_id": "new-cafe",
+            "item_version": 1,
+            "author_id": "u4",
+            "stance": "support",
+            "source_message_id": "m4"
+          }
+        ],
+        "plan_draft": null,
+        "questions": [
+          {
+            "id": "question-new-cafe",
+            "owner_id": null,
+            "field": "visit_duration",
+            "target_ref": "new-cafe",
+            "text": "가상 카페 체류시간",
+            "related_item_ids": [
+              "new-cafe"
+            ],
+            "status": "open",
+            "answer": null,
+            "answered_by": null
+          }
+        ]
+      },
+      "message_replacements": [
+        {
+          "id": "m4",
+          "room_id": "room-fixture",
+          "seq": 5,
+          "author_id": "u4",
+          "text": "가상 카페 가자.",
+          "created_at": "2026-11-18T10:04:00+09:00"
+        }
+      ],
+      "expected": {
+        "resolve_client_ref_in": [
+          "support_observations.item_id",
+          "questions.target_ref",
+          "questions.related_item_ids"
+        ],
+        "no_confirmation": true
+      }
+    },
+    {
+      "id": "selected-conflict",
+      "input_patch": {
+        "user_selection": {
+          "conflict_id": "conflict-fixture",
+          "option_id": "option-drop-b",
+          "effect": {
+            "kind": "drop_visit",
+            "item_id": "item-b"
+          },
+          "base_versions": {
+            "participant_version": 1,
+            "constraint_version": 1,
+            "evidence_version": 1,
+            "plan_revision": 1
+          }
+        }
+      },
+      "result_patch": {
+        "plan_draft": null
+      },
+      "expected": {
+        "selected_effect": "drop_visit",
+        "no_confirmation": true
+      }
+    }
+  ]
+}
