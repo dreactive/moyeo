@@ -1,5 +1,6 @@
 import asyncio
 import time
+from httpx import HTTPError
 from datetime import datetime, timezone
 from ai.trace import emit
 from ai.candidates import build_candidates, select_candidate
@@ -40,7 +41,7 @@ async def run_agent(task, model, tools, emit_trace):
             result["completion"] = "needs_input" if result["questions"] else "done"
         else:
             await run_steps(task, model, tools, emit_trace, result)
-    except (ValueError, KeyError, TypeError, RuntimeError, OSError) as error:
+    except (ValueError, KeyError, TypeError, RuntimeError, OSError, HTTPError) as error:
         result["questions"].append(question("constraint_value", None,
                                            f"모델/도구 검증 실패: {type(error).__name__}. 입력/설정을 확인해주세요."))
     return result

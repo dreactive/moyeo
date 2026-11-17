@@ -12,3 +12,12 @@ async def test_live_details_keep_original_ref_and_provider_record_identity():
     assert result["place"]["id"] == "kakao:1"
     assert result["place"]["provider_refs"] == {"kakao": "1", "apify": "99"}
     assert result["evidence"][0]["mode"] == "live"
+
+
+async def test_fixture_evidence_is_not_reused_as_live_details(monkeypatch):
+    import pytest
+    from ai.tools.registry import RegisteredTools
+    from ai.tests.test_place_route_tools import task
+    value = task()
+    with pytest.raises(ValueError):
+        await RegisteredTools(value, "live", {}).execute("get_place_details", {"place_ref": "fixture:place-a"})

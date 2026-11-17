@@ -4,12 +4,14 @@ from ai.tools.routes import observed_route
 from ai.tools.costs import calculate_costs
 from ai.tools.itinerary import build_itinerary
 from ai.tools.validation import validate_arguments
+from ai.settings import load_settings
 
 
 class RegisteredTools:
     def __init__(self, context, mode="fixture", settings=None):
         self.context = build_tool_context(context)
         self.mode, self.settings = mode, settings or {}
+        self.credentials = load_settings(self.settings) if mode == "live" else {}
 
     def remember(self, observation):
         self.context["observations"].append(deepcopy(observation))
@@ -17,6 +19,9 @@ class RegisteredTools:
 
     async def execute(self, name, arguments):
         validate_arguments(name, arguments, self.context)
+        if self.mode == "live" and name in ("search_places", "get_place_details", "get_car_route"):
+            from ai.providers.live import execute
+            return await execute(name, arguments, self.context, self.credentials)
         if name == "calculate_costs":
             return calculate_costs(**arguments)
         if name == "build_itinerary":
