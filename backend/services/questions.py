@@ -20,3 +20,23 @@ def validate_answer(room, question, actor_id, value):
         return ANSWER_TYPES[field].model_validate(value).model_dump(exclude_none=True)
     except (ValidationError, KeyError):
         raise HTTPException(422, 'Invalid question answer')
+
+from backend.services.consensus import edit_constraint
+
+
+def answer_question(room, question_id, actor_id, value):
+    question = next((q for q in room['questions'] if q['id'] == question_id), None)
+    if question is None:
+        raise HTTPException(404, 'Question not found')
+    value = validate_answer(room, question, actor_id, value)
+    field = question['field']
+    if field in ('origin','destination','lodging'):
+        room['config'][field] = value
+    if field == 'constraint_value':
+        condition = edit_constraint(room, question['target_ref'], actor_id, value['value'])
+        question['target_ref'] = condition['id']
+    question.update(answer=value, answered_by=actor_id, status='answered')
+    if field != 'support_target':
+        room['versions']['constraint_version'] += 1
+        room.update(active_target=None, review_plan=None, confirmations=[])
+    return question
