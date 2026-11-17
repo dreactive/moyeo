@@ -27,3 +27,34 @@ def test_bridge_is_lazy_and_preserves_json_and_closes_once(monkeypatch):
         await bridge.aclose()
     asyncio.run(scenario())
     assert len(calls) == 2
+
+
+def test_bridge_is_started_by_app_lifespan(monkeypatch):
+    from fastapi.testclient import TestClient
+    from backend.app import create_app
+    from backend.adapters.local_ai import LocalAIBridge
+    calls = []
+    module = types.ModuleType('ai.runtime')
+    class Runtime:
+        async def aclose(self):
+            calls.append('closed')
+    module.create_runtime = lambda config: calls.append(config) or Runtime()
+    monkeypatch.setitem(sys.modules,'ai.runtime',module)
+    with TestClient(create_app(LocalAIBridge({'model_backend':'fake'}), database_path=':memory:')):
+        assert len(calls) == 1
+    assert calls[-1] == 'closed'
+
+
+def test_failed_live_runtime_is_not_fixture_success(monkeypatch):
+    import pytest
+    from fastapi.testclient import TestClient
+    from backend.app import create_app
+    from backend.adapters.local_ai import LocalAIBridge
+    module = types.ModuleType('ai.runtime')
+    def fail(config):
+        raise RuntimeError('Live runtime unavailable')
+    module.create_runtime = fail
+    monkeypatch.setitem(sys.modules,'ai.runtime',module)
+    with pytest.raises(RuntimeError, match='Live runtime unavailable'):
+        with TestClient(create_app(LocalAIBridge({'provider_mode':'live'}), database_path=':memory:')):
+            pass

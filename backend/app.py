@@ -7,14 +7,22 @@ from backend.ports import AgentPort
 from backend.adapters.fixture_agent import FixtureAgentPort
 from backend.db import Database
 from backend.services.agent_jobs import AgentJobs
+from backend.adapters.local_ai import LocalAIBridge
+from backend.config import read_settings
 
 
-def create_app(agent_port: AgentPort | None = None, *, database_path=None) -> FastAPI:
+def create_app(agent_port: AgentPort | None = None, *, database_path=None, settings=None) -> FastAPI:
+    settings = settings if settings is not None else read_settings()
     @asynccontextmanager
     async def lifespan(app):
         app.state.agent = agent_port if agent_port is not None else FixtureAgentPort()
-        app.state.db = Database(database_path or os.environ.get('BACKEND_DB', 'backend/.data/travel.sqlite3'))
-        app.state.dev_token = os.environ.get('DEV_TOKEN', '')
+        if agent_port is None and settings['agent_mode'] == 'local_ai':
+            app.state.agent = LocalAIBridge(settings['runtime_config'])
+        if isinstance(app.state.agent, LocalAIBridge):
+            await app.state.agent.start()
+        app.state.db = Database(database_path or settings['database_path'])
+        app.state.db.trace_enabled = settings['trace_enabled']
+        app.state.dev_token = settings['dev_token']
         app.state.jobs = AgentJobs(app.state.db, app.state.agent)
         worker = asyncio.create_task(app.state.jobs.work())
         try:
