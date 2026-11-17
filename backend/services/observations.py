@@ -6,11 +6,15 @@ def get_observations(db, room_id):
 
 
 def project_observations(db, room_id, observations):
-    current = get_observations(db, room_id)
+    db.observations[room_id] = merge_observations(get_observations(db, room_id), observations)
+
+
+def merge_observations(current, observations):
+    current = deepcopy(current)
     for observation in observations:
         current = [old for old in current if (old['tool_name'],old['arguments']) != (observation['tool_name'],observation['arguments'])]
         current.append(deepcopy(observation))
-    db.observations[room_id] = current
+    return current
 
 
 def observed_place(db, room_id, place_ref):
