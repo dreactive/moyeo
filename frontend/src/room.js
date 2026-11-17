@@ -9,7 +9,7 @@ import {renderItems,renderConstraints,renderQuestions,renderConflicts} from './i
 import {renderPlan,displayPlan} from './plan.js';
 import {renderCost} from './cost.js';
 import {scenarios,replayScenario,setFixtureUser,emitFixture} from './fixture-api.js';
-import {readAnchor} from './trip-input.js';
+import {readTripConfig,tripPatch} from './trip-input.js';
 import {appendCost,readFixedCosts} from './fixed-costs.js';
 import {initMaps,renderRouteMap,renderPlaceMap} from './map.js';
 import {selectPlace,renderPlace} from './place.js';
@@ -36,6 +36,7 @@ export async function startRoomApp() {
 startRoomApp().catch(showError);
 let closeEvents = () => {};
 let roomId = null;
+let tripBaseline = {};
 export async function refreshRoom(id = roomId) {
   const snapshot = await requestJson('/api/rooms/' + encodeURIComponent(id));
   if (id === roomId) applyRoomResponse(snapshot,id);
@@ -125,10 +126,16 @@ function bindTripInput() {
   document.getElementById('add-cost').onclick = () => appendCost();
   document.addEventListener('click',event => event.target.closest('[data-remove-cost]')?.closest('[data-cost-id]').remove());
   bindForm('trip',async (data,action) => {
-    const body = {title:data.title,region:data.region,start_date:data.start_date,end_date:data.end_date,transport:'car',day_start_time:data.day_start_time,day_end_time:data.day_end_time,per_person_budget_krw:Number(data.per_person_budget_krw),fixed_costs:readFixedCosts()};
-    ['origin','destination','lodging'].forEach(key => body[key] = readAnchor(data,key));
+    const body = {title:data.title,...readTripConfig(data,readFixedCosts())};
     if (action === 'create') enterRoom(await requestJson('/api/rooms',{method:'POST',body}));
-    else { delete body.title; await roomAction('trip',body,'PATCH'); }
+    else {
+      delete body.title;
+      const baseline = tripBaseline;
+      const patch = tripPatch(body,baseline,getSnapshot().config);
+      if (!Object.keys(patch).length) return;
+      await roomAction('trip',patch,'PATCH');
+      if (tripBaseline === baseline) tripBaseline = structuredClone(body);
+    }
   });
 }
 
@@ -138,6 +145,7 @@ function restoreTrip(snapshot) {
   Object.entries(snapshot.config).forEach(([key,value]) => { if (form.elements[key]) form.elements[key].value = value; });
   ['origin','destination','lodging'].forEach(key => ['label','latitude','longitude'].forEach(field => form.elements[key + '_' + field].value = snapshot.config[key]?.[field] ?? ''));
   html('fixed-costs',''); snapshot.config.fixed_costs.forEach(appendCost);
+  tripBaseline = readTripConfig(Object.fromEntries(new FormData(form)),readFixedCosts());
 }
 function bindHistory() {
   document.getElementById('history').onclick = () => run(async () => {

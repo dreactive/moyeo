@@ -157,3 +157,22 @@ P2 재현: 같은 방/장소의 GET 두 개를 fake Promise로 제어했다. 새
 변경 범위: frontend/src/place.js, frontend/tests/place.test.js, 이 검증 기록만. HTTP/DTO 변경 없음. Node 제어 응답 테스트이며 실제 API/SDK 관측 증거로 바꾸지 않는다.
 최종 검증: node --test frontend/tests/*.test.js **27/27 pass**, node --check frontend/src/place.js 통과, staged diff/변경 경로 검토. 기존 23개 테스트도 모두 통과했다.
 통합 추가 범위: 기존 인계 6f11ccd 다음의 커밋만 순서대로 가져온다. work/fe는 보존, push/PR/merge는 S2 소유다.
+
+## 최종 FE 리뷰 후속 — 폼 병합·첫 SSE·확정 색상 (2026-11-18)
+
+- 3234017: 첫 EventSource onopen도 기존 onReconnect 복구 콜백을 실행한다. initial GET와 SSE 설립 사이의 갱신 간극을 snapshot 재조회로 복구한다. 이후 재연결도 동일하게 조회하고, 닫힌 연결은 콜백을 실행하지 않는다. 초기 복구 횟수 0≠1 실패를 관측한 뒤 통과했다.
+- ec5fdb1 / 2dbab2c: 입장 시 폼을 같은 직렬화 함수로 읽어 편집 기준을 보관한다. 저장은 기준과 다른 필드만 PATCH한다. 예산200000 입장 → 최신 snapshot 예산300000 → 종료시각19:00 편집의 PATCH는 day_end_time만 포함한다. 편집 중인 DOM 입력을 SSE/저장 응답으로 복원하지 않는다. 성공 후 제출값으로 기준만 갱신하며, 다른 방 입장으로 기준이 바뀐 경우 옛 응답이 기준을 교체하지 않는다. 변경 없는 저장은 mutation을 보내지 않는다.
+- fa5e7bd: 거점 하위 필드 변경은 최신 snapshot 좌표에 합친다. 명칭 편집이 다른 참가자의 위도 변경을 되돌리지 않음을 검증했다.
+- fe36c73: 고정비는 안정된 ID별로 편집한 필드만 최신 값에 합친다. 다른 참가자의 가격/서버 소계/새 비용 행을 보존하며, 로컬에서 삭제한 기존 행만 제거한다. 배열 입력 병합이라는 자연스러운 단위 때문에 약300자 목표를 소폭 초과했다.
+- 23d1574: 표시 review와 공식 confirmed_plan이 같은 5필드 target이고 양쪽에 포함된 동일 item_id/item_version이면 현재 items.state가 mentioned/supported여도 공식 확정 초록을 투영한다. 최신 초안의 included_in_plan도 과거 검토안의 확정을 지우지 않는다. item_version이 달라지면 초록이 옮겨지지 않는다. 표 수/과반/확정 알고리즘을 FE에서 계산하지 않는다. 변경 전 초록0개≠2개 실패를 관측한 뒤 통과했다.
+
+Node 회귀: frontend/tests/events.test.js, trip-input.test.js, items.test.js.
+최종 전체 suite: node --test frontend/tests/*.test.js **33/33 pass**. 전체 frontend/src/*.js node --check 통과. staged diff 및 파일 소유권 확인.
+계약 변경 없음. UI는 ‘현재 방 입력 저장’ 시 직접 편집한 항목만 반영한다는 안내를 추가했다.
+
+부모가 S2 fixture Backend(8000)에서 로그인·입장·두 Kakao 지도 컴포넌트·장소 상세 연결을 관측했다고 전달했다. 이는 부모의 G3 UI 관측이며, 위 새 폼 병합/첫 SSE/색상 수정 전체를 실제 네트워크에서 다시 관측한 결과는 아니다. 위 회귀의 직접 근거는 Node 제어 테스트다.
+
+S2 추가 인계: 이전 fee36dd 다음부터 work/fe 최신 HEAD까지 순서대로 통합한다. 마지막 HEAD는 최종 응답과 git rev-parse work/fe로 확인한다. S1 push/PR/merge 없음.
+
+추가 실제 모듈 메모리 smoke: Node에서 실제 frontend/src/room.js를 import하고 최소 form DOM/Fetch/EventSource 대역으로 실행했다. 초기 예산200000 폼 → 서버 예산300000/seq증가 → 첫 onopen 시 GET가 총2회로 증가함 → 종료시각19:00 저장 PATCH가 {day_end_time:"19:00"}만 포함함을 확인했다. PATCH 대기 중 입력을20:00으로 편집한 뒤 응답을 완료해도20:00이 유지되며, 다음 저장은 {day_end_time:"20:00"}만 전송했다. error 출력도 비어 있었다. 이는 실제 모듈의 폼 baseline/콜백 연결 검사이며 실제 브라우저/네트워크 관측은 아니다.
+e5e8001 docs(fe): record concurrent form SSE and confirmed color fixes

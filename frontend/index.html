@@ -26,6 +26,7 @@
 <fieldset><legend>귀가 지점</legend><input name="destination_label" aria-label="귀가 명칭" placeholder="명칭"><input name="destination_latitude" aria-label="귀가 위도" type="number" step="any" min="-90" max="90" placeholder="위도"><input name="destination_longitude" aria-label="귀가 경도" type="number" step="any" min="-180" max="180" placeholder="경도"></fieldset>
 <fieldset><legend>숙소</legend><input name="lodging_label" aria-label="숙소 명칭" placeholder="명칭"><input name="lodging_latitude" aria-label="숙소 위도" type="number" step="any" min="-90" max="90" placeholder="위도"><input name="lodging_longitude" aria-label="숙소 경도" type="number" step="any" min="-180" max="180" placeholder="경도"></fieldset>
 <div class="wide"><h3>고정비</h3><p>per_person + 대상 전체: 모든 참가자에게 각각 같은 금액. 소계는 서버 응답을 따릅니다.</p><div id="fixed-costs"></div><button id="add-cost" type="button">비용 추가</button></div>
+<p class="wide">현재 방 저장은 직접 수정한 항목만 반영합니다.</p>
 <button name="action" value="create">새 방 만들기</button><button name="action" value="update">현재 방 입력 저장</button>
 </form></details>
 <section id="fixture-controls" class="panel" hidden><strong>개발 시나리오</strong><label>사용자<select id="fixture-user"><option value="u1">참가자1</option><option value="u2">참가자2</option><option value="u3">참가자3</option><option value="u4">참가자4</option></select></label><select id="scenario" aria-label="fixture 시나리오"></select><button id="replay">재생</button><button id="reconnect">재연결 재생</button></section>

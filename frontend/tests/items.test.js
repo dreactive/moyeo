@@ -13,3 +13,20 @@ test('old confirmed state cannot invent current majority support', () => {
   assert.match(output,/새 안 · 미확정/);
   assert.doesNotMatch(output,/card confirmed/);
 });
+test('the official confirmed review projects green despite a newer draft support state', () => {
+  const room = structuredClone(fixture);
+  room.review_plan = structuredClone(room.current_plan);
+  room.confirmed_plan = structuredClone(room.review_plan);
+  room.current_plan.confirmation_target.content_hash = 'newer-draft';
+  room.items[0].state = 'supported';
+  room.items[0].included_in_plan = false;
+  room.items[1].state = 'mentioned';
+  let output = '';
+  globalThis.document = {getElementById:() => ({set innerHTML(value) { output = value; }})};
+  renderItems(room);
+  assert.equal((output.match(/class="card confirmed"/g) ?? []).length,2);
+  room.items[0].item_version++;
+  renderItems(room);
+  assert.doesNotMatch(output,/class="card confirmed"><strong>가상 A식당/);
+  assert.match(output,/가상 B공원 · 확정/);
+});
