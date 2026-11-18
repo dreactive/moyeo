@@ -40,3 +40,7 @@ def test_only_complete_personal_assertions_produce_hard_values(key,text):
 def test_complete_grouped_won_amount_is_not_parsed_as_zero():
     from ai.condition_grounding import condition_value
     assert condition_value('budget','내 예산은 200,000원') == 200000
+
+def test_two_complete_budget_assertions_do_not_choose_arbitrary_first_value():
+    from ai.condition_grounding import condition_value
+    assert condition_value('budget','예산은 20만원. 내 예산은 15만원') is None

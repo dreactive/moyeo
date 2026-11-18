@@ -3,7 +3,7 @@ import re
 from decimal import Decimal
 
 START = r'(?:^|[.!;\n]\s*)'
-END = r'\s*(?:[.!;\n]|$)'
+END = r'\s*(?=[.!;\n]|$)'
 PERSONAL = r'(?:(?:아니|나는|난|저는|내|제|나의|저의|내가)\s*)*'
 AMOUNT = r'(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)'
 BUDGET = START + PERSONAL + r'(?:개인|1인당)?\s*예산(?:은|는|이|을)?\s*' + AMOUNT + r'\s*(만\s*원|원)(?:이야|야|이에요|예요|입니다|으로\s*(?:할게|정정할게|정정합니다))?' + END
