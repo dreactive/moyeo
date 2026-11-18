@@ -87,3 +87,9 @@ test('a traveler who already voted is offered withdrawal for the active target',
   assert.match(output,/data-plan="withdraw">내 동의 철회/);
   assert.doesNotMatch(output,/data-plan="confirm"/);
 });
+
+test('the archived route can be read without selecting an old place', () => {
+  const archived = plan.planContent(fixture.current_plan);
+  assert.match(archived,/<li>가상 A식당.*11:30/);
+  assert.doesNotMatch(archived,/data-place=/);
+});

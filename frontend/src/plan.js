@@ -5,11 +5,12 @@ import {html,escapeHtml as e} from './ui.js';
 import {getUser} from './state.js';
 export function planContent(plan) {
   if (!plan) return '<p>여행안이 아직 없습니다.</p>';
+  const titles = new Map(plan.item_snapshots.map(item => [item.id,item.title]));
   return `<p>revision ${e(plan.plan_revision)} · 검증 ${e(plan.validation)}</p>
   <p>차단 충돌: ${e(plan.blocking_conflict_ids.join(', ') || '없음')}</p>
   <p class="muted">확인 대상 ${e(JSON.stringify(plan.confirmation_target))}</p>
   <ul>${plan.item_snapshots.map(item => `<li>${e(item.title)} · v${e(item.item_version)}</li>`).join('')}</ul>
-  ${plan.days.map(day => `<h3>${e(day.date)}</h3><ol>${day.visits.map(visit => `<li><button data-place="${e(visit.place_ref)}">${e(visit.place_ref)}</button> ${e(visit.start_at)} ~ ${e(visit.end_at)} · ${visit.stay_minutes}분 · ${e(visit.assumptions.join(' / '))}</li>`).join('')}</ol>`).join('')}`;
+  ${plan.days.map(day => `<h3>${e(day.date)}</h3><ol>${day.visits.map(visit => `<li>${e(titles.get(visit.item_id) ?? visit.place_ref)} ${e(visit.start_at)} ~ ${e(visit.end_at)} · ${visit.stay_minutes}분 · ${e(visit.assumptions.join(' / '))}</li>`).join('')}</ol>`).join('')}`;
 }
 function confirmationNote(plan,currentBasis,pendingHard) {
   if (!plan) return '대화에서 방문하고 싶은 곳을 알려주세요.';
