@@ -41,3 +41,12 @@ export async function signOut() {
   clearRoomId();
   navigate('/login.html');
 }
+
+export function preparePage() {
+  document.getElementById('mode').textContent = getDataMode() === 'fixture'
+    ? '개발용 fixture · 실제 계정/여행 데이터 아님'
+    : 'LIVE · Backend 연결';
+  for (const link of document.querySelectorAll('[data-app-link]')) {
+    link.href = pageUrl(link.dataset.appLink);
+  }
+}

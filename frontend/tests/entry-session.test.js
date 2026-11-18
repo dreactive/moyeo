@@ -35,3 +35,13 @@ test('sign-out clears room selection after the server accepts it', async () => {
   await session.signOut();
   assert.deepEqual(actions, [['/api/auth/logout','POST'],'trip-room','/login.html']);
 });
+
+test('fixture pages label test data and decorate app links', () => {
+  const banner = {};
+  const link = {dataset:{appLink:'/signup.html'}};
+  globalThis.location = {search:'?mode=fixture'};
+  globalThis.document = {getElementById: () => banner,querySelectorAll: () => [link]};
+  session.preparePage();
+  assert.match(banner.textContent, /fixture/);
+  assert.equal(link.href,'/signup.html?mode=fixture');
+});
