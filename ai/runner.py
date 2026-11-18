@@ -3,14 +3,11 @@ import time
 from httpx import HTTPError
 from datetime import datetime, timezone
 from ai.trace import emit, terminate
-from ai.candidates import build_candidates, select_candidate, grounded_options, valid_options
+from ai.candidates import build_candidates, grounded_options, valid_options
 from ai.tools.context import build_tool_context
-from ai.tools.validation import validate_arguments
 from ai.context import build_context
-from ai.questions import question, valid_questions
-from ai.outcome import assemble_result, reuse_current_plan
+from ai.questions import valid_questions
 from ai.result import empty_result
-from ai.extraction import validate_extraction
 from ai.assistance import assist_extraction
 from ai.selection import apply_selection
 from ai.planning import itinerary_arguments, next_route
@@ -82,25 +79,6 @@ async def generate_candidates(context, model, emit_trace, step):
                dict(goal=context["goal"], candidates=candidates, selected_index=None, scores=[],
                     model_mode=getattr(model, "mode", "unknown"), base_versions=context["base_versions"]))
     return candidates
-
-
-async def choose_action(context, model, emit_trace, step):
-    context = build_tool_context(context)
-    context["needed_route"] = next_route(context)
-    context["available_calculations"] = dict(build_itinerary=itinerary_arguments(context),
-                                             calculate_costs=build_cost_inputs(context)[0])
-    generated = await asyncio.to_thread(model.generate_json, {"phase": "actions", "context": context})
-    context["generated_candidates"] = generated.get("candidates", [])
-    candidates = valid_options(context, build_candidates(context) + grounded_options(context))
-    scores = await asyncio.to_thread(model.score_candidates, context, candidates)
-    index = select_candidate(candidates, scores)
-    action = candidates[index]
-    await emit(emit_trace, context, step, "decision", None,
-               dict(goal=context["goal"], candidates=candidates, selected_index=index, scores=scores,
-                    model_mode=getattr(model, "mode", "unknown"), base_versions=context["base_versions"]))
-    if action["action"] == "tool":
-        validate_arguments(action["tool_name"], action["arguments"], context)
-    return action
 
 
 async def execute_selected(task, action, tools, emit_trace, step):

@@ -12,23 +12,21 @@ async def test_observations_survive_disabled_trace():
     assert "fixture:price-a" in observation["source_refs"]
 
 
-async def test_observation_changes_next_selected_action():
-    from ai.runner import choose_action
+async def test_observation_changes_generated_candidates():
+    from ai.runner import generate_candidates
     from ai.models.fake_actions import tool
     class Model:
         def generate_json(self, request):
             ref = request["context"]["observations"][0]["result"]["places"][0]["id"]
             return {"candidates": [tool("get_place_details", {"place_ref": ref})]}
-        def score_candidates(self, context, candidates):
-            return [1.] + [0.] * (len(candidates) - 1)
     value = task()
     value["observations"] = [{"tool_name": "search_places", "arguments": {}, "observed_at": "2026-11-18T00:00:00+09:00",
                               "result": {"places": [{"id": "new-a", "name": "A"}]}, "source_refs": []}]
-    first = await choose_action(value, Model(), None, 1)
+    first = await generate_candidates(value, Model(), None, 1)
     value["observations"][0]["result"]["places"][0]["id"] = "new-b"
-    second = await choose_action(value, Model(), None, 2)
-    assert first["arguments"]["place_ref"] == "new-a"
-    assert second["arguments"]["place_ref"] == "new-b"
+    second = await generate_candidates(value, Model(), None, 2)
+    assert first[0]["arguments"]["place_ref"] == "new-a"
+    assert second[0]["arguments"]["place_ref"] == "new-b"
 
 
 async def test_candidate_generation_does_not_execute_or_fake_completion():
@@ -39,8 +37,6 @@ async def test_candidate_generation_does_not_execute_or_fake_completion():
         def generate_json(self, request):
             query = "A" + str(len(request["context"]["observations"]))
             return {"candidates": [tool("search_places", {"query": query, "region": "여수", "category": None})]}
-        def score_candidates(self, context, candidates):
-            return [1.] + [0.] * (len(candidates) - 1)
     class Tools:
         calls = 0
         async def execute(self, name, arguments):
@@ -67,7 +63,7 @@ def test_plan_result_uses_only_executed_calculations_and_retains_null():
     assert set(result["plan_draft"]) == {"selected_item_ids", "days", "cost", "validation", "blocking_conflict_ids"}
 
 
-async def test_invalid_model_scores_return_needs_input_without_tool_call():
+async def test_generation_never_calls_model_scorer_or_tools():
     from ai.runner import run_agent
     from ai.models.fake_actions import tool
     class Model:
@@ -75,11 +71,12 @@ async def test_invalid_model_scores_return_needs_input_without_tool_call():
             return {} if request["phase"] == "extract" else {"candidates": [tool("search_places",
                 {"query": "A", "region": "여수", "category": None})]}
         def score_candidates(self, context, candidates):
-            return [float("nan")]
+            raise AssertionError("Scoring must not run")
     class Tools:
         async def execute(self, name, arguments):
             raise AssertionError("Invalid decision executed")
     result = await run_agent(task(), Model(), Tools(), None)
+    assert result["candidates"][0]["tool_name"] == "search_places"
     assert result["completion"] == "needs_input"
     assert all(q["field"] != "constraint_value" or q["target_ref"] for q in result["questions"])
     assert not result["observations"]
@@ -119,7 +116,7 @@ async def test_ready_unchanged_plan_still_generates_candidates():
 
 
 async def test_action_model_receives_code_derived_calculations_and_route_time():
-    from ai.runner import choose_action
+    from ai.runner import generate_candidates
     class Model:
         def generate_json(self, request):
             context = request["context"]
@@ -127,20 +124,17 @@ async def test_action_model_receives_code_derived_calculations_and_route_time():
             meal = next(l for l in context["available_calculations"]["calculate_costs"]["lines"] if l["category"] == "meal")
             assert meal["unit_price_krw"] == 10000
             return {"candidates": [dict(action="ask", reason="test", tool_name=None, arguments={}, source_message_ids=[], source_refs=[])]}
-        def score_candidates(self, context, candidates):
-            return [1.] + [0.] * (len(candidates) - 1)
-    assert (await choose_action(task(), Model(), None, 1))["action"] == "ask"
+    assert (await generate_candidates(task(), Model(), None, 1))[0]["action"] == "ask"
 
 
-async def test_judge_can_select_later_day_instead_of_first_pipeline_step():
-    from ai.runner import choose_action
+async def test_generation_keeps_later_day_route_alternatives():
+    from ai.runner import generate_candidates
     class Model:
         def generate_json(self, request):
             return {"candidates": []}
-        def score_candidates(self, context, candidates):
-            return [10. if c["arguments"].get("from_ref") == "anchor:lodging" else 0. for c in candidates]
-    action = await choose_action(task(), Model(), None, 1)
-    assert action["tool_name"] == "get_car_route" and action["arguments"]["from_ref"] == "anchor:lodging"
+    candidates = await generate_candidates(task(), Model(), None, 1)
+    routes = [c for c in candidates if c["tool_name"] == "get_car_route"]
+    assert {c["arguments"]["from_ref"] for c in routes} == {"anchor:origin", "anchor:lodging"}
 
 
 def test_budget_overrun_is_blocking_even_when_calculation_is_complete():

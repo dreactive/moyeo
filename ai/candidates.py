@@ -1,4 +1,3 @@
-import math
 from ai.tools.validation import PARAMETERS, validate_arguments
 from ai.planning import pending_routes, planned_visits, itinerary_arguments
 from ai.tools.context import build_tool_context
@@ -55,14 +54,6 @@ def grounded_options(context):
     options.append(dict(action="ask", reason="부족하거나 모호한 여행 조건을 확인해주세요.",
                         tool_name=None, arguments={}, source_message_ids=[], source_refs=[]))
     return options
-
-
-def select_candidate(candidates, scores):
-    if not candidates or len(scores) != len(candidates):
-        raise ValueError("Candidate score count mismatch")
-    if any(isinstance(s, bool) or not isinstance(s, (float, int)) or not math.isfinite(s) for s in scores):
-        raise ValueError("Nonfinite or invalid judge score")
-    return max(range(len(candidates)), key=scores.__getitem__)
 
 
 def build_candidates(context):

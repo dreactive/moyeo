@@ -76,7 +76,7 @@ def test_generation_returns_only_new_tokens(monkeypatch):
     assert generate_object(model, Tokenizer(), {"phase": "extract", "context": {}}) == {"ok": True}
 
 
-def test_base_generation_judge_switch_and_variable_candidates(monkeypatch):
+def test_base_generation_disables_adapter_and_restores_after_error(monkeypatch):
     from contextlib import contextmanager
     import ai.models.local_qwen as module
     class Model:
@@ -91,12 +91,9 @@ def test_base_generation_judge_switch_and_variable_candidates(monkeypatch):
     model = Model()
     monkeypatch.setattr(module, "load_components", lambda *args: (model, object()))
     monkeypatch.setattr(module, "generate_object", lambda m, t, r: {"disabled": m.disabled, "view": r.get("context")})
-    monkeypatch.setattr(module, "score_objects", lambda m, t, c, choices: [float(not m.disabled)] * len(choices))
     backend = module.LocalQwenBackend("base", "adapter")
     assert backend.generate_json({"context": {"polyline": [1], "seconds": 2}}) == {
         "disabled": True, "view": {"seconds": 2}}
-    for count in (1, 2, 5):
-        assert backend.score_candidates({}, [{}] * count) == [1.] * count
     def fail(*args):
         raise ValueError("invalid JSON")
     monkeypatch.setattr(module, "generate_object", fail)
