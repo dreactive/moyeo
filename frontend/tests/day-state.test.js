@@ -10,3 +10,10 @@ test('personal day survives refresh but falls back when removed', () => {
   state.applySnapshot({room_id:'day',current_plan:{...plan,days:[plan.days[0]]}});
   assert.equal(state.getSelectedDay?.(),'2026-11-21');
 });
+test('changing rooms clears a private place even when the same provider ID exists', () => {
+  const plan={item_snapshots:[{place_ref:'p'}],days:[]};
+  state.applySnapshot({room_id:'a',current_plan:plan});
+  state.setSelectedPlace('p');
+  state.applySnapshot({room_id:'b',current_plan:plan});
+  assert.equal(state.getSelectedPlace(),null);
+});

@@ -7,7 +7,7 @@ export function applySnapshot(next) {
   snapshot = next;
   const days = (next?.review_plan ?? next?.current_plan)?.days ?? [];
   if (!sameRoom || !days.some(day => day.date === selectedDay)) selectedDay = days[0]?.date ?? null;
-  if (!(next?.review_plan ?? next?.current_plan)?.item_snapshots.some(item => item.place_ref === selectedPlace)) selectedPlace = null;
+  if (!sameRoom || !(next?.review_plan ?? next?.current_plan)?.item_snapshots.some(item => item.place_ref === selectedPlace)) selectedPlace = null;
   listeners.forEach(listener => listener(snapshot));
 }
 export function setSelectedPlace(ref) { selectedPlace = ref; }
