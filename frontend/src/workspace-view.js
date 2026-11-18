@@ -19,7 +19,8 @@ export function renderAgentBanner(snapshot) {
   const questions = snapshot.questions.filter(item => item.status === 'open').length;
   const conflicts = snapshot.conflicts.filter(item => item.status === 'open').length;
   html('agent',`<strong>${e(snapshot.agent_status.label)}</strong><p>확인 질문 ${questions}개 · 해결할 충돌 ${conflicts}개</p>`);
-  document.getElementById('replan').disabled = snapshot.agent_status.state === 'running';
+  const button = document.getElementById('replan');
+  button.disabled = snapshot.agent_status.state === 'running' || button.dataset?.pending === 'true';
 }
 import {displayPlan} from './plan.js';
 export const routeKey = (snapshot,date) => JSON.stringify([snapshot.room_id,displayPlan(snapshot)?.confirmation_target,snapshot.config,date]);

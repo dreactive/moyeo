@@ -6,8 +6,12 @@ export const run = task => Promise.resolve().then(task).catch(showError);
 export async function withPending(control,task) {
   if (control?.disabled) return;
   if (control) control.disabled = true;
+  if (control?.dataset) control.dataset.pending = 'true';
   try { return await task(); }
-  finally { if (control) control.disabled = false; }
+  finally {
+    if (control?.dataset) delete control.dataset.pending;
+    if (control) control.disabled = false;
+  }
 }
 export function runFormAction(event,task) {
   const control = event.submitter ?? event.target.querySelector('button[type="submit"],button:not([type])');

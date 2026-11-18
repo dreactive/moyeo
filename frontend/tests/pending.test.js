@@ -17,3 +17,13 @@ test('keyboard form submission shares the real button pending lock', async () =>
   const first=ui.runFormAction?.(event,action),second=ui.runFormAction?.(event,action);
   assert.equal(calls,1); load.resolve(); await Promise.all([first,second]);
 });
+import {renderAgentBanner} from '../src/workspace-view.js';
+test('an idle agent render cannot unlock a manual request in flight', async () => {
+  const button={disabled:false,dataset:{}};
+  globalThis.document={getElementById:id => id === 'replan' ? button : {set innerHTML(value){}}};
+  const load=Promise.withResolvers();
+  const pending=ui.withPending(button,() => load.promise);
+  renderAgentBanner({questions:[],conflicts:[],agent_status:{label:'idle',state:'idle'}});
+  assert.equal(button.disabled,true);
+  load.resolve(); await pending;
+});
