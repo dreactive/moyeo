@@ -15,3 +15,7 @@ export function chatRows(messages) {
     return [...heading,message];
   });
 }
+export function reconcileRows(rows,nodes,create) {
+  const previous = new Map(nodes.map(node => [node.id,node]));
+  return rows.map(row => previous.get('message-' + row.id) ?? create(row));
+}

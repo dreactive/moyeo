@@ -16,3 +16,9 @@ test('chat dates group Korean days rather than browser timezone', () => {
   assert.equal(rows?.length,4);
   assert.equal(rows?.[2].id,'day-11월 19일 목요일');
 });
+test('new chat rows reuse existing message nodes', () => {
+  const old={id:'message-a'};
+  const rows=chat.reconcileRows?.([{id:'a'},{id:'b'}],[old],row => ({id:'message-' + row.id}));
+  assert.equal(rows?.[0],old);
+  assert.equal(rows?.[1].id,'message-b');
+});
