@@ -11,7 +11,7 @@ initMaps({routeElement:route,placeElement:place});
 test('route map only displays the selected day', () => {
   renderRouteMap(plan,new Map(),config,'2026-11-22');
   assert.match(route.innerHTML,/2026-11-22/);
-  assert.doesNotMatch(route.innerHTML,/fixture:place-a|서버 polyline/);
+  assert.doesNotMatch(route.innerHTML,/가상 A식당|서버 polyline/);
 });
 
 test('route map shows lodging between the trip start and return', () => {
@@ -52,4 +52,10 @@ test('an SDK load failure keeps coordinates visible with the failure reason',asy
   await loading;
   assert.match(route.innerHTML,/지도를 불러오지 못했어요/);
   assert.match(route.innerHTML,/34[.]76, 127[.]66/);
+});
+
+test('the coordinate and travel lists use place names from the displayed plan', () => {
+  renderRouteMap(plan,new Map(),config,'2026-11-21');
+  assert.match(route.innerHTML,/가상 A식당 · 좌표 미확인/);
+  assert.match(route.innerHTML,/가상 A식당 → 가상 B공원/);
 });
