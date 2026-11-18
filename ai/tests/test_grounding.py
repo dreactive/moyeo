@@ -18,3 +18,14 @@ def test_normalized_place_keeps_original_mention_and_no_new_branch():
     assert project_item(proposal, value)['title'] == '롤링파스타'
     proposal['title'] = '롤링파스타 여수점'
     assert project_item(proposal, value) is None
+
+def test_condition_projection_rejects_greeting_hallucination_and_hidden_negation():
+    from ai.grounding import project_condition
+    value = task()
+    value['recent_messages'] = [dict(id='new', author_id='u1', text='안녕')]
+    proposal = dict(owner_id='u1', key='return_by', value='12:00', kind='hard',
+                    replaces_constraint_id=None, evidence=dict(message_id='new', quote='안녕'))
+    assert project_condition(proposal, value) is None
+    value['recent_messages'][0]['text'] = '내 예산은 20만원이 아니야'
+    proposal.update(key='budget', value=200000, evidence=dict(message_id='new', quote='예산은 20만원'))
+    assert project_condition(proposal, value) is None

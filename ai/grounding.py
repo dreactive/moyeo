@@ -27,3 +27,14 @@ def project_item(proposal, task):
         return None
     return dict(client_ref='client:' + message['id'], existing_item_id=proposal['existing_item_id'],
                 kind='place', title=proposal['title'], source_message_ids=[message['id']])
+
+
+def project_condition(proposal, task):
+    from ai.condition_grounding import condition_value
+    message = source_message(proposal['evidence'], task)
+    if not message or message['author_id'] != proposal['owner_id']:
+        return None
+    value = condition_value(proposal['key'], message['text'])
+    if value is None or type(value) is not type(proposal['value']) or value != proposal['value']:
+        return None
+    return dict({k: v for k, v in proposal.items() if k != 'evidence'}, source_message_ids=[message['id']])
