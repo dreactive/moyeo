@@ -3,7 +3,7 @@
 - 날짜: 2026-11-18 (Asia/Seoul).
 - 작업 브랜치: `codex/workspace-ui`, 별도 native worktree.
 - 시작 기준: `develop` `2cddfbd`. 승인 설계: [화면 설계](../superpowers/specs/2026-11-18-workspace-ui-design.md).
-- 통합한 원격 기준: `b033580` (Vercel·Cloudflare 배포 변경). 통합 커밋 `fed2c9a`.
+- 통합한 원격 기준: `b033580`의 Vercel 기반 변경(`fed2c9a`), 이어 `1f8a33c`의 무료 ngrok 전환(`3d73776`). 모두 충돌 없이 병합했다. 마지막 통합 후 FE 169개를 다시 확인했다.
 
 ## 구현 결과
 
@@ -59,7 +59,7 @@ Vercel 실제 빌드 함수로 새 HTML 3개와 `workspace.css`의 산출물 포
 
 - 최신 통합 기준 대비 자체 변경은 `frontend/**` 및 이 UI의 설계·계획·검증 문서다. `backend/**`, `ai/**`, 동결 계약에는 자체 변경이 없다.
 - 진행 중인 `codex/grounded-qwen-extraction`의 AI·Backend·스키마 파일을 수정하거나 그 브랜치를 병합하지 않았다.
-- 원격 배포 작업의 기존 `.gitignore`, Backend HTTP 설정, SSE 유지 신호, secure-cookie 설정을 보존했다. 새 화면이 Vercel allowlist에서 누락되는 접점만 `e699e9b`로 보완했다.
+- 원격 배포 작업의 기존 `.gitignore`, Backend HTTP 설정, SSE 유지 신호, secure-cookie 설정을 보존했다. 새 화면이 Vercel allowlist에서 누락되는 접점만 `e699e9b`로 보완했고, 이후 ngrok upstream request transform도 보존했다.
 - 새 기술 의존성이나 React를 추가하지 않았다. HTML/CSS/문서 외 실행 로직은 작동하는 작은 기능별로 테스트하고 커밋했다. 기능 경계를 위해 목표 분량을 넘긴 경우 커밋 본문에 이유를 남겼다.
 - 개인 `AGENTS.md`, `.local/skills/trip-agent-small-commits/`, `.planning/`은 기존 ignore 규칙을 유지했다. 다른 작업의 미추적 문서는 보존했다.
 
