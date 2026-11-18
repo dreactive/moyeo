@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {backendOrigin, publicHtml, deploymentConfig} from '../scripts/deployment.mjs';
-import {mkdtemp, readFile, readdir, rm} from 'node:fs/promises';
+import {mkdtemp, readFile, readdir, rm, writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join, resolve, sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -57,4 +57,7 @@ test('a complete build publishes routes and only the public environment key', as
   assert.equal(config.version, 3);
   assert.match(html, /content="public-map"/);
   assert.ok(!JSON.stringify(config).includes('private-sentinel') && !html.includes('private-sentinel'));
+  await writeFile(join(output, 'static/stale.txt'), 'old-build-secret');
+  await buildFrontend(root, {BACKEND_ORIGIN: 'https://api.example.com'});
+  await assert.rejects(readFile(join(output, 'static/stale.txt')), {code: 'ENOENT'});
 });
