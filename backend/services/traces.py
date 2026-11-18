@@ -27,7 +27,7 @@ def store_trace(db, event):
     if not getattr(db, 'trace_enabled', True):
         return False
     run = db.get('run:' + event['run_id'])
-    if not run or event['event'] not in ('decision','tool_call','tool_result','state_applied'):
+    if not run or event['event'] not in ('decision','tool_call','tool_result','state_applied','extraction','execution'):
         return False
     trace = db.traces.setdefault(event['run_id'], dict(run_id=event['run_id'], room_id=run['room_id'], started_at=event['created_at'], events=[]))
     trace['events'].append(sanitize({key:event[key] for key in ('run_id','step','event','call_id','created_at','payload')}))

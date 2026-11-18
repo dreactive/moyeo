@@ -72,6 +72,8 @@ def delete_room(db, room_id, actor_id):
         db.put('events:' + room_id, db.get('events:' + room_id)[-1:])
         runs = [key for key, run in db.scan('run:') if run.get('room_id') == room_id]
         db.delete_many(['room:' + room_id, 'invite:' + room['invite_code'], 'processed-message:' + room_id, 'failed-extraction:' + room_id, 'confirmed-history:' + room_id] + runs)
+        from backend.services.pipeline_store import PipelineStore
+        PipelineStore(db).purge_room(room_id)
         db.observations.pop(room_id, None)
         for run_id, trace in list(db.traces.items()):
             if trace['room_id'] == room_id:

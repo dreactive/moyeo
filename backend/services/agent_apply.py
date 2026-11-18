@@ -106,7 +106,7 @@ def prepare_result(room, result, old_observations):
 
 
 @serialized
-def apply_agent_result(db, result):
+def apply_agent_result(db, result, extra_records=None):
     if not valid_result_base(db, result):
         return False
     if result.get("extraction_report", {}).get("status") == "failed":
@@ -126,6 +126,7 @@ def apply_agent_result(db, result):
         if result.get('extraction_report'):
             from backend.services.extraction import recovered_failures
             records['failed-extraction:' + room_id] = recovered_failures(db.get('failed-extraction:' + room_id) or {}, run['message_ids'], processed)
+    records.update(extra_records or {})
     db.put_many(records)
     db.observations[room_id] = observations
     publish_event(db, room_id, 'room.updated', {'changed':['items','constraints','questions','conflicts','current_plan','versions']})

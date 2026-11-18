@@ -3,10 +3,16 @@ import asyncio
 from copy import deepcopy
 import re
 from time import perf_counter
-from ai.auxiliary_client import ExternalAuxiliary, AuxiliaryConfigurationError, AuxiliaryServiceError
+from ai.auxiliary_client import ExternalAuxiliary, AuxiliaryConfigurationError
 from ai.auxiliary_schema import AuxiliaryBatch, AuxiliaryAnalysis
 from ai.auxiliary_grounding import ground_batch
 from ai.auxiliary_requests import observed_places, request_needs_context, request_context_records
+
+
+from ai.prepared_auxiliary import (
+    PreparedAuxiliaryError, context_basis, explicit_request, literal_fallback, needs_fresh_context,
+    message_provenance, prepared_scope, rebind_item_mentions, scope_identity, validate_sources,
+)
 
 
 def create_auxiliary(config: dict):
@@ -120,41 +126,199 @@ def _failure(task, backend, code, attempts, elapsed):
                 completion='needs_input', last_processed_message_id=None)
 
 
-async def prepare_auxiliary(task: dict, auxiliary) -> dict:
+async def _extract_raw(scope, auxiliary, *, complete_context=True):
+    """Run the ordinary two bounded passes and retain their raw interpretations."""
     started = perf_counter()
     backend = getattr(auxiliary, 'backend', 'provided')
-    minimal = minimal_auxiliary_task(task)
-    scope = dict(task, recent_messages=deepcopy(task['recent_messages'][-20:]))
-    elapsed = lambda: round((perf_counter() - started) * 1000, 3)
+    minimalist = minimal_auxiliary_task(scope)
+
+    def report(status, issues, attempts, context_calls=0, context=()):
+        return dict(status=status, issue_codes=issues, attempts=attempts, backend=backend,
+                    context_completion_calls=context_calls,
+                    context_message_ids=[m['id'] for m in context],
+                    duration_ms=round((perf_counter() - started) * 1000, 3))
+
     if obvious_noop(scope):
-        analysis = dict(_empty_analysis(), summary='인사', noop=True, source_message_ids=[m['id'] for m in minimal['recent_messages']])
-        return dict(item_proposals=[], constraint_proposals=[], support_observations=[], questions=[], analysis=analysis,
-                    extraction_report=dict(status='ok', issue_codes=[], rejected_message_ids=[], attempts=0,
-                                           context_completion_calls=0, context_message_ids=[], backend=backend, duration_ms=elapsed()))
+        return dict(first_batch=None, batch=None, context_messages=[], noop=True,
+                    extraction_report=report('ok', [], 0))
     try:
-        first = AuxiliaryBatch.model_validate(await asyncio.to_thread(auxiliary.extract, deepcopy(minimal), stage=1))
+        first = AuxiliaryBatch.model_validate(await asyncio.to_thread(auxiliary.extract, deepcopy(minimalist), stage=1))
     except AuxiliaryConfigurationError:
-        return _failure(scope, backend, 'auxiliary_configuration_missing', 1, elapsed())
+        issue = 'auxiliary_configuration_missing'
     except (ValueError, TypeError):
-        return _failure(scope, backend, 'auxiliary_invalid_output', 1, elapsed())
+        issue = 'auxiliary_invalid_output'
     except Exception:
-        return _failure(scope, backend, 'auxiliary_request_failed', 1, elapsed())
-    domain_requests = first.model_dump()['analysis']['requests']
-    needs_context = first.analysis.needs_context or any(request_needs_context(r, scope) for r in domain_requests)
-    context = relevant_context(task, first.analysis.context_queries, domain_requests) if needs_context else []
-    batch, completion_calls, issues = first, 0, []
+        issue = 'auxiliary_request_failed'
+    else:
+        raw = first.model_dump(mode='json')
+        context = _completion_context(scope, raw)
+        batch, issues = first, []
+        if context and complete_context:
+            enriched = dict(deepcopy(minimalist), conversation_context=deepcopy(context), first_pass=deepcopy(raw))
+            try:
+                second = AuxiliaryBatch.model_validate(await asyncio.to_thread(auxiliary.extract, enriched, stage=2))
+                batch = _merge(first, second)
+            except Exception:
+                # Valid independent first-pass work survives a failed completion call.
+                issues.append('auxiliary_context_completion_failed')
+        if context and not complete_context:
+            issues.append('auxiliary_context_completion_skipped')
+        calls = int(bool(context) and complete_context)
+        return dict(first_batch=raw, batch=batch.model_dump(mode='json'), context_messages=context,
+                    extraction_report=report('filtered' if issues else 'ok', issues, 1 + calls, calls, context))
+    return dict(first_batch=None, batch=None, context_messages=[],
+                extraction_report=report('failed', [issue], 1))
+
+
+def _completion_context(scope, raw):
+    if raw is None:
+        return []
+    analysis = raw['analysis']
+    requests = analysis['requests']
+    if analysis['needs_context'] or any(request_needs_context(r, scope) for r in requests):
+        return relevant_context(scope, analysis['context_queries'], requests)
+    return []
+
+
+def _validate_envelope(task, scope, mode, prepared):
+    validate_sources(scope)
+    if (not isinstance(prepared, dict) or prepared.get('schema_version') != 1
+            or any(prepared.get(key) != scope.get(key) for key in ('room_id', 'run_id', 'goal'))
+            or prepared.get('source_mode') not in ('current', 'saved_context_retry', 'saved_state', 'selection_only')
+            or not isinstance(prepared.get('source_messages'), list)
+            or any(not isinstance(m, dict) or not isinstance(m.get('id'), str) for m in prepared['source_messages'])
+            or type(prepared.get('refresh_count')) is not int or prepared['refresh_count'] not in (0, 1)
+            or not isinstance(prepared.get('context_messages'), list)
+            or not isinstance(prepared.get('context_basis'), dict)
+            or not isinstance(prepared['context_basis'].get('items'), dict)
+            or not isinstance(prepared.get('extraction_report'), dict)):
+        raise PreparedAuxiliaryError('prepared_source_invalid')
+    validate_sources(dict(scope, recent_messages=prepared['source_messages']))
+    identity = scope_identity(mode, scope)
+    same_sources = all(prepared.get(key) == value for key, value in identity.items())
+    if not same_sources:
+        # A job with a reserved chat range must never change sources. Jobs
+        # without live sources may observe updated pending work at execution.
+        prior_mode = prepared['source_mode']
+        if (task['recent_messages'] or prior_mode != 'saved_context_retry' and prepared['source_messages']
+                or 'selection_only' in (mode, prior_mode)):
+            raise PreparedAuxiliaryError('prepared_source_invalid')
+        history = {m['id']: m for m in message_provenance(task.get('conversation_context', []))}
+        if any(m['id'] in history and m != history[m['id']] for m in prepared['source_messages']):
+            raise PreparedAuxiliaryError('prepared_source_invalid')
+    report = prepared['extraction_report']
+    if (report.get('status') not in ('ok', 'filtered', 'failed')
+            or not isinstance(report.get('issue_codes'), list)
+            or report['status'] == 'failed' and not report['issue_codes']
+            or not isinstance(report.get('duration_ms'), (float, int))
+            or type(report.get('attempts')) is not int or not isinstance(report.get('backend'), str)):
+        raise PreparedAuxiliaryError('prepared_source_invalid')
+    batches = []
+    for field in ('first_batch', 'batch'):
+        raw = prepared.get(field)
+        if isinstance(raw, dict):
+            try:
+                raw = AuxiliaryBatch.model_validate(raw).model_dump(mode='json')
+            except (ValueError, TypeError):
+                raise PreparedAuxiliaryError('prepared_source_invalid') from None
+        elif raw is not None:
+            raise PreparedAuxiliaryError('prepared_source_invalid')
+        batches.append(raw)
+    if None in batches and not (batches == [None, None] and
+            (prepared.get('noop') is True or report['status'] == 'failed' or prepared['source_mode'] in ('saved_state', 'selection_only'))):
+        raise PreparedAuxiliaryError('prepared_source_invalid')
+    if same_sources and prepared.get('noop') is True and not obvious_noop(scope):
+        raise PreparedAuxiliaryError('prepared_source_invalid')
+    return batches[0], batches[1], same_sources
+
+
+def _envelope(scope, mode, extracted, refresh_count=0):
+    minimal = minimal_auxiliary_task(scope)
+    batches = (extracted['first_batch'], extracted['batch'])
+    return dict(scope_identity(mode, scope), schema_version=1, refresh_count=refresh_count,
+                context_basis=context_basis(minimal, extracted['context_messages'], scope),
+                context_dependent=any(raw and needs_fresh_context(raw, minimal) for raw in batches),
+                **extracted)
+
+
+async def _refresh_raw(scope, previous, first, auxiliary):
+    """Use one fresh completion call when a queued interpretation's basis changed."""
+    started = perf_counter()
+    minimal = minimal_auxiliary_task(scope)
+    context = _completion_context(scope, first)
+    basis = context_basis(minimal, context, scope)
+    if first is None or basis == previous['context_basis'] and context == previous['context_messages']:
+        return dict(previous, refresh_count=1)
+    literal = literal_fallback(first, scope)
+    call = deepcopy(minimal)
     if context:
-        completion_calls = 1
-        enriched = dict(deepcopy(minimal), conversation_context=deepcopy(context), first_pass=first.model_dump())
-        try:
-            second = AuxiliaryBatch.model_validate(await asyncio.to_thread(auxiliary.extract, enriched, stage=2))
-            batch = _merge(first, second)
-        except Exception:
-            # Valid independent first-pass work is retained; unresolved context is explicit.
-            issues.append('auxiliary_context_completion_failed')
+        hints = deepcopy(literal)
+        hints['analysis'].update(needs_context=first['analysis']['needs_context'],
+                                 context_queries=first['analysis']['context_queries'])
+        call.update(conversation_context=deepcopy(context), first_pass=hints)
+    issues = []
+    try:
+        response = AuxiliaryBatch.model_validate(await asyncio.to_thread(auxiliary.extract, call, stage=2 if context else 1))
+        explicit = deepcopy(literal)
+        explicit['analysis']['requests'] = [r for r in first['analysis']['requests'] if explicit_request(r)]
+        refreshed = _merge(AuxiliaryBatch.model_validate(explicit), response).model_dump(mode='json')
+    except Exception:
+        refreshed = literal
+        issues.append('auxiliary_context_revalidation_failed')
+    report = deepcopy(previous['extraction_report'])
+    report.update(status='filtered' if issues else 'ok', issue_codes=issues, attempts=report['attempts'] + 1,
+                  revalidation_calls=1, context_message_ids=[m['id'] for m in context],
+                  duration_ms=report['duration_ms'] + round((perf_counter() - started) * 1000, 3))
+    return _envelope(scope, previous['source_mode'], dict(first_batch=first, batch=refreshed, context_messages=context,
+                    extraction_report=report), refresh_count=1)
+
+
+def _saved_state_extraction():
+    return dict(first_batch=None, batch=None, context_messages=[],
+                extraction_report=dict(status='ok', issue_codes=[], attempts=0, context_completion_calls=0,
+                                       context_message_ids=[], backend='saved-request-state', duration_ms=0))
+
+
+async def extract_auxiliary(task: dict, auxiliary, *, previous=None) -> dict:
+    """Return JSON-serializable model interpretations with source and context provenance."""
+    mode, scope = prepared_scope(task)
+    if previous is not None:
+        first, _, same_sources = _validate_envelope(task, scope, mode, previous)
+        if previous['refresh_count'] == 1:
+            return deepcopy(previous)
+        if not same_sources:
+            if mode != 'saved_context_retry':
+                return dict(previous, refresh_count=1)
+            extracted = await _extract_raw(scope, auxiliary, complete_context=False)
+            report = extracted['extraction_report']
+            report['revalidation_calls'] = report['attempts']
+            report['attempts'] += previous['extraction_report']['attempts']
+            return _envelope(scope, mode, extracted, refresh_count=1)
+        return await _refresh_raw(scope, previous, first, auxiliary)
+    validate_sources(scope)
+    extracted = (_saved_state_extraction() if mode in ('saved_state', 'selection_only')
+                 else await _extract_raw(scope, auxiliary))
+    return _envelope(scope, mode, extracted)
+
+def _ground_output(scope, extracted, raw, context):
+    report = deepcopy(extracted['extraction_report'])
+    issues = report['issue_codes']
+    if report['status'] == 'failed':
+        return _failure(scope, report['backend'], issues[0], report['attempts'], report['duration_ms'])
+    if raw is None:
+        analysis = _empty_analysis()
+        if extracted.get('noop'):
+            analysis.update(summary='인사', noop=True, source_message_ids=[m['id'] for m in scope['recent_messages']])
+        return dict(item_proposals=[], constraint_proposals=[], support_observations=[], questions=[], analysis=analysis,
+                    extraction_report=dict(report, rejected_message_ids=[]))
     transient = 'auxiliary_context_completion_failed' in issues
-    output, rejected = ground_batch(batch, scope, [] if transient else context)
-    if 'auxiliary_context_completion_failed' not in issues:
+    no_context = transient or 'auxiliary_context_completion_skipped' in issues
+    output, rejected = ground_batch(AuxiliaryBatch.model_validate(raw), scope, [] if no_context else context)
+    if {'auxiliary_context_revalidation_failed', 'auxiliary_context_revalidation_stale'} & set(issues):
+        for request in output['analysis']['requests']:
+            if request['operation'] == 'cancel' and not request['target_names']:
+                request.update(status='needs_input', cancelled_request_ids=[])
+    if not transient:
         for request in output['analysis']['requests']:
             if request['status'] == 'needs_context':
                 request['status'] = 'needs_input'
@@ -169,10 +333,42 @@ async def prepare_auxiliary(task: dict, auxiliary) -> dict:
     if output['analysis'].get('request_grounding_failed'):
         issues.append('ungrounded_request')
     status = 'failed' if output['analysis'].get('request_grounding_failed') else 'filtered' if issues else 'ok'
-    output['extraction_report'] = dict(status=status, issue_codes=issues,
-        rejected_message_ids=rejected, attempts=1 + completion_calls, context_completion_calls=completion_calls,
-        context_message_ids=[m['id'] for m in context], backend=backend, duration_ms=elapsed())
+    output['extraction_report'] = dict(report, status=status, rejected_message_ids=rejected)
     repairs = output['analysis'].pop('source_repairs', [])
     if repairs:
         output['extraction_report']['repairs'] = repairs
     return output
+
+
+def ground_auxiliary(task: dict, prepared: dict) -> dict:
+    """Ground a prepared interpretation locally against the latest authoritative room state."""
+    mode, scope = prepared_scope(task)
+    first, raw, same_sources = _validate_envelope(task, scope, mode, prepared)
+    if not same_sources:
+        if mode == 'saved_context_retry' and not prepared['refresh_count']:
+            raise PreparedAuxiliaryError('prepared_context_stale')
+        return _ground_output(scope, _saved_state_extraction(), None, [])
+    context = _completion_context(scope, first)
+    minimal = minimal_auxiliary_task(scope)
+    basis = context_basis(minimal, context, scope)
+    dependent = bool(context or prepared['context_messages']) or any(
+        batch and needs_fresh_context(batch, minimal) for batch in (first, raw))
+    dependent |= prepared.get('context_dependent') is True
+    if (dependent and (basis != prepared['context_basis'] or context != prepared['context_messages'])):
+        if not prepared['refresh_count']:
+            raise PreparedAuxiliaryError('prepared_context_stale')
+        raw = literal_fallback(first, scope)
+        report = dict(prepared['extraction_report'], status='filtered',
+                      issue_codes=['auxiliary_context_revalidation_stale'])
+        prepared = dict(prepared, extraction_report=report)
+        context = []
+    if raw is not None:
+        raw = rebind_item_mentions(raw, scope, prepared['context_basis'])
+    return _ground_output(scope, prepared, raw, context)
+
+
+async def prepare_auxiliary(task: dict, auxiliary) -> dict:
+    """Preserve the single-call API for callers outside the prepared queue."""
+    scope = dict(task, recent_messages=deepcopy(task['recent_messages'][-20:]))
+    extracted = await _extract_raw(scope, auxiliary)
+    return _ground_output(scope, extracted, extracted['batch'], extracted['context_messages'])

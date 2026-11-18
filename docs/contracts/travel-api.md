@@ -1,4 +1,4 @@
-# FE·BE·AI 공통 계약 v0.3
+# FE·BE·AI 공통 계약 v0.4
 
 - 기준: [MVP 설계](../superpowers/specs/2026-11-18-travel-agent-design.md), 2026-11-18 사용자 확정 사항.
 - 상태: 구현할 계약. 실제 배포된 endpoint나 생성된 OpenAPI가 아니다.
@@ -7,6 +7,8 @@
 - v0.2 변경: HTTP·SSE·제품 DTO는 유지하고 BE/AI 연결을 JSON AgentPort로 분리한다. 각 세션은 상대 폴더 import 없이 개발한다. [3세션 계획](../superpowers/plans/2026-11-18-three-session-plan.md)의 소유권과 통합 절차가 기존 BE·AI 합본 실행 순서보다 우선한다.
 - v0.3 변경: 2026-11-19 [도구 준비조건·불확실성 설계](../superpowers/specs/2026-11-19-tool-readiness-and-uncertainty-design.md)를 적용한다. 아래 기존 3세션 동결과 후보 생성 전용 브랜치 설명은 이전 구현의 경계이며, 이번 확장 범위에서는 7절을 따른다. 문서의 endpoint·타입 설명 자체는 실제 검증을 대신하지 않는다.
 - 화면 통합: 내 방 목록, 빈 방 생성, 등록된 사용자 이메일 초대, 방장 삭제·이름 변경, 선택 전 여행 조건을 추가한다. [화면 통합 설계](../superpowers/specs/2026-11-19-front-integration-design.md)에 따라 7절의 최신 AI 실행·요청·부분 결과 계약과 기존 추출·실패 복구·상태 보호를 함께 유지한다.
+
+- v0.4 변경: 보조 해석과 Qwen·도구 실행을 독립된 영속 큐로 처리한다. 아래 기존 직렬 처리·원시 응답 미저장 설명은 9절의 범위에서 대체한다.
 
 ## 0. 세션 독립성과 계약 동결
 
@@ -283,7 +285,7 @@ target_places의 선택지 `place_choices`는 `{place_ref,name,address}`이며 �
 
 ## 7. trace 계약
 
-TraceEvent 필드는 `run_id,step,event,call_id:null|string,created_at,payload`다. event는 decision/tool_call/tool_result/state_applied다.
+TraceEvent 필드는 `run_id,step,event,call_id:null|string,created_at,payload`다. event는 decision/tool_call/tool_result/state_applied/extraction/execution이다.
 
 - decision payload: goal,candidates,selected_index,scores,model_mode,base_versions. scores는 비교 점수이며 확률이 아님.
 - tool_call payload: tool_name,arguments。
@@ -313,3 +315,34 @@ AgentResult의 선택 필드 `extraction_report`는 `{status:"ok"|"filtered"|"fa
 - `failed`: 스키마/완결성/추론 실패. Backend는 부작용 제안이 섞여도 반영하지 않고 해당 실행으로 처리 포인터를 전진시키지 않는다. 등록된 메시지만 별도 실패 기록으로 보존한다. 새 메시지는 실패분을 제외해 처리하고, 수동 재계획은 실패분을 최대20개 재시도한다. 과거 실패의 복구는 포인터를 뒤로 돌리지 않는다.
 
 내부 MessageFacts/ExtractionBatch 및 원문 evidence.quote는 외부 필수 proposal 계약에 포함되지 않는다. quote는 API 입력 상한과 같은10000자까지 검증한다. 개발 trace에는 schema_version/decoder_mode/제안 건수/오류 코드가 남고 방의 agent_status.label은 실패·거절을 구분한다. 일반 대기 작업이 비면 직전의 의미 있는 상태를 보존한다.
+
+
+## 9. 보조 해석과 후속 실행의 2단계 큐
+
+### 9.1 내부 AgentPort
+
+실제 LocalAIBridge는 `extract(task, previous=None)`와 `run_prepared(task, prepared, emit_trace, is_current=None)`를 제공한다. 보조 작업자는 구조화 해석만 반환하고 Qwen/도구를 호출하지 않는다. 실행 작업자는 최신 방에서 grounding·후보 생성·Qwen 최종 선택·동일 인자 실행을 수행하며 보조 API를 직접 호출하지 않는다. 기존 run-only fixture port는 직렬 호환 경로를 유지한다.
+
+prepared artifact는 JSON 객체다. schema_version, room_id/run_id/goal, source_mode, 순서가 있는 source_messages, first_batch/batch, context_messages/context_basis, 문맥 의존 여부, refresh_count와 extraction_report를 보관한다. 이 값은 서버 내부 작업 자료이며 일반 room API나 프런트엔드에 원시 보조 출력을 노출하지 않는다. Qwen 프롬프트나 실행 후보를 저장해 그대로 재사용하지 않는다.
+
+원문 ID·작성자·순서·텍스트·방·범위와 과거 문맥을 최신 기록과 대조한다. 명시적인 사실은 새 발화가 도착해도 재사용할 수 있다. 문맥 해석 기준이 달라지면 해석 큐로 돌아가 최대1회 재검토한다. 최초 문맥 보완까지2회와 이 재검토1회는 구분해 기록한다. 실패 시 독립적으로 확인되는 사실만 보존하며 미확인 대상·취소를 확정하지 않는다.
+
+### 9.2 큐·커서·재시작
+
+기존 SQLite records 테이블의 방별 pipeline-job 레코드가 메시지 범위, run_id/extraction_id, 단계, 시도, 시각, 해석과 읽기 checkpoint를 보관한다. 단일 서버 프로세스에서 보조 작업자1개·실행 작업자1개이며 기존 Qwen 공유 잠금을 유지한다. 방 내 FIFO, 방 사이 공정한 순환을 적용한다. 기본 원문 범위 최대20개·배치 대기0ms, 준비 결과 전역64개·방별8개다. 초과 메시지는 저장된 backlog로 남으며 메모리 알림에 메시지 전체를 누적하지 않는다.
+
+`extracted-message:<room_id>`는 해석 완료 위치, 기존 `processed-message:<room_id>`는 실제 반영 위치다. pipeline-cursors의 extracted_seq/executed_seq는 단조 증가하며 실패한 개별 작업의 해결을 뜻하지 않는다. 실패/보류 receipt를 함께 확인한다. 뒤 발화의 해석이 완료돼도 실행 커서를 먼저 옮기지 않는다.
+
+최신 정정·취소가 기다릴 때 이전 배치는 사실과 미처리 의무를 순서대로 넘기고 오래된 외부 실행·계획은 보류한다. 수신된 해석을 그대로 확정 상태로 쓰지 않는다. 유효한 완료 결과·완료 작업·실행 커서는 같은 SQLite 반영으로 저장하고 run.applied fence로 중복 반영을 막는다. 미완료 작업과 저장 직후 큐 등록 전 종료된 발화는 재시작 시 복구한다.
+
+정상 종료한 search_places/get_place_details/get_car_route의 정규화 결과는 호출 receipt로 보존할 수 있다. 재사용 때 기존 방·지역·참조·방향·시각·좌표·TTL 검사를 유지한다. 중간에 종료된 외부 읽기는 완료 여부를 알 수 없어 제한적으로 다시 호출될 수 있다. 외부 API 정확히1회 호출은 보장하지 않는다. 상태 반영의 중복 방지와 구분한다. 이 checkpoint는 기존 프로세스 메모리 observation 저장 정책의 제한된 확장이다.
+
+단계별 자동 시도 상한2회, 문맥 재검토1회, 도구 회차 이어가기2회, 기본 시간 제한은 해석120초/실행300초다. 영구 설정 오류·잘못된 출처는 무한 재시도하지 않는다. 수동 재시도는 명시적인 새 작업이다. 삭제한 방의 작업·checkpoint를 지우고 늦게 도착한 결과는 반영하지 않는다. 한 uvicorn worker 배포 제약을 유지한다.
+
+### 9.3 공개 상태와 trace
+
+기존 agent_status.state enum은 유지한다. 해석 중/실행 대기는 running으로 표시하면서 선택적인 phase와 한국어 label로 구분한다. `room.agent_pipeline`은 단계별 counts, extraction_job_id, execution_job_id, cursors를 제공하는 선택 필드다. 이 필드나 trace 갱신만으로 현재 판단 snapshot을 무효화하지 않는다.
+
+trace는 기존 decision/tool_call/tool_result/state_applied에 extraction/execution 단계를 추가한다. 공통 run_id에 job_id/extraction_id/message_ids를 연결한다. 실행 이벤트 payload의 execution_id(`run_id:execution:attempt`)와 1부터 시작하는 attempt로 재시도마다 반복될 수 있는 step/call_id를 구분한다. claim token은 공개하지 않고 원래 call_id와 arguments는 바꾸지 않는다. 수신·단계 전환 시각, 대기/처리 시간, Qwen 점수와 도구 소요시간을 구분한다. 동시에 추출 중인 뒤 작업의 trace를 단일 active_run_id 때문에 버리지 않는다. 자격증명과 비공개 추론 필터는 유지한다.
+
+작업의 상태 반영 완료, 요청의 의미적 해결, 최종 여행안 확정은 별개다. 기존 같은 버전 전원 확인·ready·필수 조건 확인 정책을 바꾸지 않는다. 두 큐가 의미 추출·공급자 데이터 부족을 자동으로 해결한다고 보지 않는다.

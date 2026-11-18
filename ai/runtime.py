@@ -2,9 +2,10 @@
 import asyncio
 from ai.context import build_context
 from ai.judged_runner import run_judged_agent
-from ai.auxiliary import create_auxiliary
+from ai.auxiliary import create_auxiliary, extract_auxiliary
 from ai.models.fake import FakeModelBackend
 from ai.models.worker import ModelWorker
+from ai.selection import apply_selection
 from ai.tools.registry import RegisteredTools
 
 
@@ -32,6 +33,21 @@ class AgentRuntime:
         tools = RegisteredTools(task, self.config.get("provider_mode", "fixture"), self.config)
         return await run_judged_agent(task, self.model, tools, emit_trace, self.auxiliary,
                                       is_current, self.config.get('max_decision_rounds', 6))
+
+    async def extract(self, task, previous=None):
+        scope, selection_questions = apply_selection(build_context(task, []))
+        if selection_questions:
+            scope['_selection_only'] = True
+        return await extract_auxiliary(scope, self.auxiliary, previous=previous)
+
+    async def run_prepared(self, task, prepared, emit_trace, is_current=None):
+        task = build_context(task, [])
+        mode = self.config.get("provider_mode", "fixture")
+        task["_provider_mode"] = mode
+        tools = RegisteredTools(task, mode, self.config)
+        return await run_judged_agent(task, self.model, tools, emit_trace, None, is_current,
+                                      self.config.get('max_decision_rounds', 6), prepared=prepared)
+
 
     async def execute_tool(self, name, arguments, context):
         return await RegisteredTools(context, self.config.get("provider_mode", "fixture"),

@@ -75,16 +75,78 @@ async def _report(sink, task, step, model, candidates, scores, index, **extra):
         candidate_count=len(candidates), single_candidate=len(candidates) == 1, **extra))
 
 
-async def run_judged_agent(task, model, tools, emit_trace, auxiliary, is_current=None, max_rounds=6):
-    from ai.auxiliary import prepare_auxiliary
+_UNPREPARED = object()
+
+
+def _apply_historical_cancellation(order, saved, requests, request, control):
+    # Acknowledgment may have preceded recovery of all eligible earlier
+    # requests. Evaluate the batch as a whole before retiring any one target.
+    scope = dict(_request_source_order=order, recent_messages=[],
+                 _cancel_scopes=[r for r in requests if r.get('operation') == 'request'])
+    names = control.get('target_names', [])
+    options = cancellation_options(scope, control['owner_id'], names, control['source_message_id'])
+    if request['request_id'] not in options:
+        return False
+    active = next((r for r in saved if r['request_id'] == control['request_id']), None)
+    if control['status'] == 'completed':
+        if not names and control.get('cancelled_request_ids'):
+            return False  # The generic control already acted on a specific request.
+        if len(options) == 1:
+            request.update(status='cancelled', pending_refs=[], cancelled_by=control['request_id'])
+            return True
+        if active is None:
+            active = dict(deepcopy(control), status='needs_input', cancelled_request_ids=[])
+            active.pop('response', None)
+            saved.append(active)
+    if active is not None and 'prior_request_ids' in active:
+        active['prior_request_ids'] = list(dict.fromkeys(active['prior_request_ids'] + options))
+    return False
+
+
+def reconcile_request_order(task, saved, requests):
+    """Bind a recovered source to later controls already reflected in room state."""
+    order = task.get('_request_source_order')
+    if not order:
+        return superseded_requests(saved, requests)
+    retired = {}
+    history = task.get('request_history', [])
+    for request in requests:
+        position = order[request['source_message_id']]
+        earlier = [r for r in saved if order.get(r['source_message_id'], position) < position]
+        for old in superseded_requests(earlier, [request]):
+            retired[old['request_id']] = old
+        if request.get('operation') != 'request':
+            continue
+        later = sorted((r for r in history if r['owner_id'] == request['owner_id']
+                        and order.get(r['source_message_id'], -1) > position),
+                       key=lambda r: order[r['source_message_id']])
+        for control in later:
+            if control.get('operation') == 'cancel':
+                if _apply_historical_cancellation(order, saved, requests, request, control):
+                    break
+            elif control['status'] in ('pending', 'resolved', 'completed'):
+                replacements = superseded_requests([request], [dict(control, status='resolved')])
+                if replacements:
+                    request.update(replacements[0])
+                    break
+    return list(retired.values())
+
+
+async def run_judged_agent(task, model, tools, emit_trace, auxiliary, is_current=None, max_rounds=6, *,
+                           prepared=_UNPREPARED):
+    from ai.auxiliary import ground_auxiliary, prepare_auxiliary
 
     task, selection_questions = apply_selection(build_context(task, []))
+    grounded = None
+    if prepared is not _UNPREPARED:
+        grounded = ground_auxiliary(dict(task, _selection_only=bool(selection_questions)), prepared)
     result = empty_result(task)
     result['pending_item_ids'] = list(task.get('pending_item_ids', []))
     if selection_questions:
         result['questions'] = valid_questions(task, selection_questions)
         result['decision_report'] = dict(status='held', reason='selection_needs_input')
         return result
+    cancellation_scopes = task.get('_cancel_scopes', [])
     saved = [deepcopy(r) for r in task.get('pending_requests', []) if r.get('status') not in TERMINAL]
     if task.get('goal') == 'manual_replan':
         for r in saved:
@@ -95,25 +157,29 @@ async def run_judged_agent(task, model, tools, emit_trace, auxiliary, is_current
         output = dict(item_proposals=[], constraint_proposals=[], support_observations=[], questions=[],
             analysis=dict(requests=saved, summary='미처리 장소 조회를 계속합니다.'),
             extraction_report=dict(status='ok', issue_codes=[], attempts=0, backend='saved-request-state'))
-        retry_ids = {r['source_message_id'] for r in saved if r.get('status') == 'needs_context'}
-        history = task.get('conversation_context', [])
-        originals = [m for m in history if m['id'] in retry_ids]
-        if originals:
+        if prepared is _UNPREPARED:
+            retry_ids = {r['source_message_id'] for r in saved if r.get('status') == 'needs_context'}
+            history = task.get('conversation_context', [])
+            originals = [m for m in history if m['id'] in retry_ids]
             recovered = await prepare_auxiliary(dict(task, recent_messages=originals,
-                conversation_context=[m for m in history if m['id'] not in retry_ids]), auxiliary)
+                conversation_context=[m for m in history if m['id'] not in retry_ids]), auxiliary) if originals else None
+        else:
+            originals = prepared['source_messages'] if prepared['source_mode'] == 'saved_context_retry' else []
+            recovered = grounded if originals else None
+        if recovered is not None:
             refreshed = {r['request_id']: r for r in recovered['analysis'].get('requests', [])}
-            output['analysis']['requests'] = [refreshed.get(r['request_id'], r) if r.get('status')=='needs_context'
+            output['analysis']['requests'] = [refreshed.get(r['request_id'], r) if r.get('status') == 'needs_context'
                                               else r for r in saved]
             output['extraction_report'] = recovered['extraction_report']
         for request in output['analysis']['requests']:
-            if request.get('status')=='needs_context' and request['source_message_id'] not in {m['id'] for m in originals}:
+            if request.get('status') == 'needs_context' and request['source_message_id'] not in {m['id'] for m in originals}:
                 request['status'] = 'needs_input'
     else:
-        output = await prepare_auxiliary(task, auxiliary)
+        output = await prepare_auxiliary(task, auxiliary) if grounded is None else grounded
     analysis = output.pop('analysis', {})
     # Fresh user work owns this round. Saved work resumes only without a new
     # message; explicit same-owner corrections retire its previous scope.
-    retired = superseded_requests(saved, analysis.get('requests', [])) if task['recent_messages'] else []
+    retired = reconcile_request_order(task, saved, analysis.get('requests', [])) if task['recent_messages'] else []
     result.update(output)
     # Backend replaces its open-question list with this result. Carry existing
     # unresolved questions as state, separately from the newly selected action.
@@ -144,6 +210,14 @@ async def run_judged_agent(task, model, tools, emit_trace, auxiliary, is_current
         result['request_states'] = current_requests + retired
     task = preview_proposals(task, result)
     result['pending_item_ids'] = list(task['_new_item_refs'])
+    if task.get('_defer_execution'):
+        if not _current(is_current):
+            stale = empty_result(task)
+            stale.update(last_processed_message_id=None,
+                         decision_report=dict(status='stale', reason='request_changed'))
+            return stale
+        result['decision_report'] = dict(status='held', reason='newer_messages_pending')
+        return result
     # Calculation arguments do not capture every room setting (e.g. day end).
     # Recompute them for this run; newly executed calculations still deduplicate.
     task['observations'] = [o for o in task['observations']
@@ -165,7 +239,7 @@ async def run_judged_agent(task, model, tools, emit_trace, auxiliary, is_current
         task['_active_requests'] = current_requests
         # Saved requests and explicit question answers remain authoritative when
         # the source message has left the bounded conversation window.
-        known_requests = {r['request_id']:r for r in saved + current_requests + retired}
+        known_requests = {r['request_id']:r for r in cancellation_scopes + saved + current_requests + retired}
         task['pending_requests'] = deepcopy(list(known_requests.values()))
         task['_cancel_scopes'] = list(known_requests.values())
         task['_blocked_request_ids'] = set()

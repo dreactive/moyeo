@@ -47,8 +47,15 @@ class AgentJobs:
         self.db, self.port = db, port
         self.queue = asyncio.Queue()
         self.pending = Counter()
+        self.pipeline = None
+        if callable(getattr(port, 'extract', None)) and callable(getattr(port, 'run_prepared', None)):
+            from backend.services.agent_pipeline import PipelineJobs
+            self.pipeline = PipelineJobs(db, port)
+            self.queue = self.pipeline.queue
 
     async def enqueue(self, room_id, reason, selection=None):
+        if self.pipeline:
+            return await self.pipeline.enqueue(room_id, reason, selection)
         with self.db.lock:
             room = self.db.get('room:' + room_id)
             if room is None:
@@ -85,6 +92,9 @@ class AgentJobs:
                 raise
 
     async def work(self):
+        if self.pipeline:
+            await self.pipeline.work()
+            return
         while True:
             task = await self.queue.get()
             self.pending[task['room_id']] -= 1

@@ -2,11 +2,12 @@
 from backend.db import serialized
 
 
-def select_extraction_messages(messages, processed_id, failures, retry_failed=False):
+def select_extraction_messages(messages, processed_id, failures, retry_failed=False, limit=20):
     start = next((index + 1 for index, message in enumerate(messages) if message['id'] == processed_id), 0)
-    return [message for index, message in enumerate(messages)
+    selected = [message for index, message in enumerate(messages)
             if (failures.get(message['id'], {}).get('status') == 'retry_required' and retry_failed)
-            or index >= start and failures.get(message['id'], {}).get('status') != 'retry_required'][:20]
+            or index >= start and failures.get(message['id'], {}).get('status') != 'retry_required']
+    return selected if limit is None else selected[:limit]
 
 
 def record_extraction_failure(db, result):

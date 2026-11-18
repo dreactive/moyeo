@@ -271,7 +271,7 @@ def cancel_requested(clause):
 
 def cancellable_requests(task, owner, source_id):
     scopes = task.get('_cancel_scopes', task.get('pending_requests', []))
-    order = {m['id']: i for i,m in enumerate(task.get('recent_messages', []))}
+    order = task.get('_request_source_order') or {m['id']: i for i,m in enumerate(task.get('recent_messages', []))}
     control = next((r for r in scopes if r.get('source_message_id')==source_id
                     and r.get('owner_id')==owner and r.get('operation')=='cancel'), {})
     eligible = control.get('prior_request_ids')
