@@ -10,7 +10,11 @@ export async function loadKakao(appKey) {
   await new Promise(resolve => kakao.maps.load(resolve));
   return kakao.maps;
 }
+export function clearKakao(element) {
+  element.classList?.remove?.('sdk');
+}
 export function drawKakao(maps,element,points,lines = []) {
+  clearKakao(element);
   if (!points.length) { element.textContent = '표시할 좌표가 없습니다.'; return; }
   element.innerHTML = '';
   element.classList.add('sdk');

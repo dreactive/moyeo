@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {initMaps,renderRouteMap} from '../src/map.js';
+import {initMaps,renderRouteMap,renderPlaceMap} from '../src/map.js';
 import snapshot from '../fixtures/room-snapshot.json' with {type:'json'};
 
 const {current_plan:plan,config} = snapshot;
@@ -30,4 +30,15 @@ test('server route geometry stays folded under travel information', () => {
   renderRouteMap(plan,new Map(),config,'2026-11-21');
   assert.match(route.innerHTML,/900초/);
   assert.match(route.innerHTML,/<details><summary>서버 polyline<[/]summary>/);
+});
+
+test('clearing the personal map removes SDK mode from that host only', () => {
+  const classes = new Set(['sdk']);
+  place.classList = {remove: name => classes.delete(name)};
+  renderRouteMap(plan,new Map(),config,'2026-11-21');
+  const before = route.innerHTML;
+  renderPlaceMap(null);
+  assert.equal(classes.has('sdk'),false);
+  assert.match(place.innerHTML,/장소를 선택/);
+  assert.equal(route.innerHTML,before);
 });

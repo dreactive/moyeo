@@ -4,16 +4,17 @@ let routeElement, placeElement;
 export function initMaps(options) { ({routeElement,placeElement} = options); prepareSdk(options.appKey); }
 export function renderRouteMap(plan, placesById, config, date) {
   lastRoute = [plan,placesById,config,date];
-  const days = plan?.days ?? [];
+  if (!plan) return fallback(routeElement,'<p class="map-placeholder">여행안이 준비되면 동선을 볼 수 있어요.</p>');
+  const days = plan.days;
   const selected = days.find(day => day.date === date) ?? days[0];
   const visibleDays = date != null && selected ? [selected] : days;
   const anchorKeys = date != null && selected ? dailyAnchors(days,selected) : ['origin','lodging','destination'];
   if (sdk) return drawKakao(sdk,routeElement,[...anchorKeys.map(key => config[key]),...visibleDays.flatMap(day => day.visits.map(visit => placesById.get(visit.place_ref)))].filter(Boolean),visibleDays.flatMap(day => day.route_legs.map(leg => leg.polyline)));
-  routeElement.innerHTML = `<strong>지도 키 미설정 · 좌표와 서버 경로</strong>
+  fallback(routeElement,`<strong>지도 키 미설정 · 좌표와 서버 경로</strong>
 
   <ul>${anchorKeys.map(key => `<li>${e(config[key]?.label ?? anchorLabels[key])} · ${coordinates(config[key])}</li>`).join('')}</ul>
   ${visibleDays.map(day => `<h3>${e(day.date)}</h3><ol>${day.visits.map(visit => `<li>${e(placesById.get(visit.place_ref)?.name ?? visit.place_ref)} · ${coordinates(placesById.get(visit.place_ref))}</li>`).join('')}</ol>
-  ${day.route_legs.map(routeLegMarkup).join('')}`).join('')}`;
+  ${day.route_legs.map(routeLegMarkup).join('')}`).join('')}`);
 }
 function routeLegMarkup(leg) {
   return `<p>${e(leg.from_ref)} → ${e(leg.to_ref)} · ${e(leg.distance_m)}m · ${e(leg.duration_seconds)}초 · 통행료 ${money(leg.toll_krw)}</p>
@@ -31,9 +32,13 @@ function dailyAnchors(days,day) {
 export function renderPlaceMap(place) {
   lastPlace = place;
   if (sdk && place) return drawKakao(sdk,placeElement,[place]);
-  placeElement.innerHTML = place ? `개인 지도 대역 · ${e(place.name)}<p>${e(place.latitude)}, ${e(place.longitude)}</p>` : '개인 지도 · 장소를 선택하세요.';
+  fallback(placeElement,place ? `<strong>장소 좌표 · ${e(place.name)}</strong><p>${coordinates(place)}</p>` : '<p class="map-placeholder">장소를 선택하세요.</p>');
 }
-import {loadKakao,drawKakao} from './kakao-adapter.js';
+function fallback(element, markup) {
+  clearKakao(element);
+  element.innerHTML = markup;
+}
+import {loadKakao,drawKakao,clearKakao} from './kakao-adapter.js';
 let sdk = null;
 let lastRoute = null;
 let lastPlace = null;
