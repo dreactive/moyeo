@@ -3,6 +3,21 @@ const userColumns = {per_person_krw:'1인 전체 계획액',paid_by_user_krw:'�
 const costGroup = {intercity_transport:'transport',car:'transport',lodging:'lodging',meal:'meal',admission:'admission',other:'other'};
 const categoryLabels = {transport:'교통',lodging:'숙박',meal:'식사',admission:'입장·체험',other:'기타'};
 const scopeLabels = {shared:'공동 분담',per_person:'1인 기준'};
+function costComposition(cost) {
+  if (!cost.total_krw || cost.unknown_line_count) return '';
+  const groups = new Map();
+  for (const line of cost.lines) {
+    if (line.subtotal_krw == null) return '';
+    const group = costGroup[line.category] ?? 'other';
+    groups.set(group,(groups.get(group) ?? 0) + line.subtotal_krw);
+  }
+  const entries = [...groups];
+  return `<div class="cost-composition-bar" role="img" aria-label="방 전체 경비 구성">
+    ${entries.map(([group,amount]) => `<span data-category="${group}" style="flex-grow:${amount}"></span>`).join('')}
+  </div><ul class="cost-composition-legend">
+    ${entries.map(([group,amount]) => `<li data-category="${group}">${categoryLabels[group]} ${money(amount)}</li>`).join('')}
+  </ul>`;
+}
 export function renderCost(cost,userId,members = []) {
   if (!cost) return html('cost','경비 미확인');
   const names = new Map(members.map(({user_id,name}) => [user_id,name]));
@@ -14,6 +29,7 @@ export function renderCost(cost,userId,members = []) {
   </dl>` : '';
   html('cost', `${personal}${budget}<p>방 전체 계획액 <strong>${money(cost.total_krw)}</strong> · 알려진 소계 ${money(cost.known_total_krw)} · 전체 기지출 ${money(cost.paid_krw)}</p>
   <p>미확인 ${cost.unknown_line_count}건 · 추정 ${cost.estimated_line_count}건</p>
+  ${costComposition(cost)}
   <details class="card-details"><summary>참가자별 경비</summary>
   ${Object.keys(cost.per_person_krw).map(id => `<p><strong>${e(names.get(id) ?? id)}</strong></p>
     <dl class="card-facts">${Object.entries(userColumns).map(([key,label]) => `<dt>${label}</dt><dd>${money(cost[key][id])}</dd>`).join('')}</dl>`).join('')}
