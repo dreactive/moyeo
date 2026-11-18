@@ -49,3 +49,14 @@ class ExtractionBatch(StrictModel):
     constraint_proposals: Annotated[list[ConstraintProposal], Field(max_length=40)]
     item_proposals: Annotated[list[ItemProposal], Field(max_length=40)]
     support_observations: Annotated[list[SupportProposal], Field(max_length=40)]
+
+
+class ConditionFact(StrictModel):
+    key: Annotated[str, Field(min_length=1, max_length=64)]
+    value: int | str | bool
+
+
+class MessageFacts(StrictModel):
+    places: Annotated[list[Text], Field(max_length=20)]
+    conditions: Annotated[list[ConditionFact], Field(max_length=20)]
+    intents: Annotated[list[Literal['chitchat', 'place', 'condition', 'support', 'region', 'unclear']], Field(min_length=1, max_length=6)]

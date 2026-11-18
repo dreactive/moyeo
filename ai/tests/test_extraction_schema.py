@@ -10,3 +10,8 @@ def test_extraction_requires_all_lists_and_strict_fields():
     assert ExtractionBatch.model_validate(empty).item_proposals == []
     with pytest.raises(ValidationError):
         ExtractionBatch.model_validate(dict(empty, unexpected=True))
+
+def test_small_message_schema_preserves_unsupported_condition_keys():
+    from ai.extraction_schema import MessageFacts
+    facts = MessageFacts.model_validate(dict(places=[], conditions=[dict(key='wheelchair_access', value=True)], intents=['condition']))
+    assert facts.conditions[0].key == 'wheelchair_access'
