@@ -71,6 +71,30 @@ test('anchor, stay and menu questions offer controls with DTO field names', () =
   assert.match(card.innerHTML,/<select name="scope"/);
 });
 
+test('question place pickers and menu lists use the associated plan place', () => {
+  const card = {};
+  globalThis.document = {getElementById:() => card};
+  decisions.renderQuestions(scenarios.questions.snapshot);
+  assert.match(card.innerHTML,/data-anchor-picker="lodging"/);
+  assert.match(card.innerHTML,/<select name="menu_id" required data-menu-place="fixture:place-a"/);
+});
+
+test('menu questions follow the current draft when the same item has another frozen place', () => {
+  const room = structuredClone(scenarios.questions.snapshot);
+  room.review_plan = structuredClone(room.current_plan);
+  room.confirmed_plan = structuredClone(room.review_plan);
+  room.questions = room.questions.filter(question => question.field === 'menu_selection');
+  const target = room.questions[0].target_ref;
+  const currentItem = room.current_plan.item_snapshots.find(item => item.id === target);
+  const frozenRef = currentItem.place_ref;
+  currentItem.place_ref = 'new-draft-place';
+  const card = {};
+  globalThis.document = {getElementById:() => card};
+  decisions.renderQuestions(room);
+  assert.match(card.innerHTML,/<select name="menu_id" required data-menu-place="new-draft-place"/);
+  assert.doesNotMatch(card.innerHTML,new RegExp(`data-menu-place="${frozenRef}"`));
+});
+
 test('target questions offer only the items attached to the question', () => {
   const card = {};
   globalThis.document = {getElementById:() => card};

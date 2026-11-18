@@ -7,6 +7,23 @@ test('navigation carries only the selected fixture mode across pages', () => {
   session.navigate('/rooms.html');
 });
 
+test('navigation emits a local fallback for unsafe canonical URL paths', () => {
+  const unsafe = ['/a/..//evil.test','/a/%2e%2e//evil.test','/a/../%2f/evil.test','/a/../%5cevil.test','/a/../%00evil.test','/\t/evil.test'];
+  const visited = [];
+  globalThis.location = {search:'',assign: path => visited.push(path)};
+  for (const path of unsafe) {
+    assert.equal(session.pageUrl(path),'/rooms',path);
+    session.navigate(path);
+  }
+  assert.deepEqual(visited,unsafe.map(() => '/rooms'));
+  for (const path of visited) assert.equal(new URL(path,'https://app.test').origin,'https://app.test');
+  location.search = '?mode=fixture';
+  session.navigate(unsafe[0]);
+  assert.equal(visited.at(-1),'/rooms?mode=fixture');
+  assert.equal(session.pageUrl('/?invite=abc'),'/?invite=abc&mode=fixture');
+  assert.equal(session.pageUrl('/rooms'),'/rooms?mode=fixture');
+});
+
 test('only a rejected session redirects the protected page', async () => {
   const visited = [];
   globalThis.location = {search:'',assign: url => visited.push(url)};

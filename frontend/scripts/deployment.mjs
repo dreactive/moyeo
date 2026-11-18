@@ -27,6 +27,9 @@ export function deploymentConfig(value) {
         ]
       },
       {src: '/dev', dest: '/dev.html'},
+      {src: '/login', dest: '/login.html'},
+      {src: '/signup', dest: '/signup.html'},
+      {src: '/rooms', dest: '/rooms.html'},
       {src: '/', dest: '/index.html'},
       {handle: 'filesystem'}
     ]

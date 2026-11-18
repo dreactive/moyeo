@@ -63,7 +63,8 @@ import {agreementMarkup,planItemAgreements} from './agreement.js';
 let detailRequestSequence = 0;
 let loadedDetails;
 export function renderSelectedPlaceAgreement(snapshot) {
-  if (!getSelectedPlace() && loadedDetails) {
+  if (!getSelectedPlace()) {
+    detailRequestSequence++;
     loadedDetails = undefined;
     renderPlace(null);
     renderPlaceMap(null);

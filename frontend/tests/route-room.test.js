@@ -2,14 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import snapshot from '../fixtures/room-snapshot.json' with {type:'json'};
 import {initMaps} from '../src/map.js';
-import {applySnapshot,setSelectedDay} from '../src/state.js';
+import {applySnapshot,setSelectedDay,getSelectedPlace} from '../src/state.js';
 
 const elements = new Map();
 globalThis.document = {
+  querySelector: () => null,
   querySelectorAll: () => [],
   addEventListener(){},
   getElementById(id) {
-    if (!elements.has(id)) elements.set(id,{});
+    if (!elements.has(id)) elements.set(id,{dataset:{},children:[],setAttribute(){},querySelectorAll:() => [],replaceChildren(...children){this.children=children;}});
     return elements.get(id);
   }
 };
@@ -19,7 +20,7 @@ const {renderMaps,renderRoom} = await import('../src/room.js');
 await new Promise(setImmediate);
 
 const route = document.getElementById('route-map');
-await initMaps({routeElement:route,placeElement:{}});
+await initMaps({routeElement:route,placeElement:document.getElementById('place-map')});
 
 test('located mentions are shown without a plan and alongside scheduled visits', async () => {
   const room = structuredClone(snapshot);
@@ -144,4 +145,59 @@ test('a support-only room update redraws the route and selected details using al
   const costAfter = document.getElementById('cost').innerHTML;
   assert.match(costBefore,/같은 여행안 동의 0\/4/);
   assert.match(costAfter,/같은 여행안 동의 1\/4/);
+});
+
+test('the new workspace exposes current partial output without a plan and invalidates every input version', async () => {
+  const room = {...structuredClone(snapshot),room_id:'room-partial-workspace',messages:[],current_plan:null,review_plan:null,
+    agent_status:{state:'held',label:'held'}};
+  const {days,cost} = snapshot.current_plan;
+  room.agent_results = {run_id:'workspace-partial',versions:{...room.versions},build_itinerary:{days},calculate_costs:{
+    ...cost,total_krw:null,known_total_krw:99000,unknown_line_count:1}};
+  globalThis.fetch = async () => { throw new Error('A partial workspace without located places must not collect details'); };
+  applySnapshot(room);
+  renderRoom(room);
+  await new Promise(setImmediate);
+  assert.match(document.getElementById('route-summary').innerHTML,/agent-itinerary[^]*11:30–12:30/);
+  assert.match(document.getElementById('cost').innerHTML,/agent-cost[^]*미확인[^]*알려진 소계 99,000원/);
+  assert.match(document.getElementById('agent').innerHTML,/최신 내용에 맞춰 작업[^]*href="#agent-itinerary"[^]*href="#agent-cost"/);
+  for (const key of ['participant_version','constraint_version','evidence_version','plan_revision']) {
+    const changed = {...room,versions:{...room.versions,[key]:room.versions[key]+1}};
+    applySnapshot(changed);
+    renderRoom(changed);
+    assert.doesNotMatch(document.getElementById('route-summary').innerHTML,/agent-itinerary|11:30–12:30/,key);
+    assert.equal(document.getElementById('cost').innerHTML,'경비 미확인',key);
+    assert.match(document.getElementById('agent').innerHTML,/이전 입력 기준/,key);
+    assert.doesNotMatch(document.getElementById('agent').innerHTML,/href="#agent-(?:itinerary|cost)"/,key);
+  }
+});
+
+test('same-version partial or request removal clears pending details without an intervening selection render', async () => {
+  const {selectPlace} = await import('../src/place.js');
+  for (const source of ['partial','request']) {
+    const ref='transient:' + source;
+    const room={...structuredClone(snapshot),room_id:'room-pending-source-' + source,messages:[],current_plan:null,review_plan:null};
+    if (source === 'partial') room.agent_results={run_id:'partial',versions:{...room.versions},build_itinerary:{
+      days:[],unplaced_items:[{item_id:room.items[0].id,place_ref:ref,reason:'missing_route'}]}};
+    else room.agent_requests=[{request_id:'lookup',status:'completed',target_refs:[ref],result_refs:[ref]}];
+    applySnapshot(room);
+    renderRoom(room);
+    await new Promise(setImmediate);
+    const response=Promise.withResolvers();
+    globalThis.fetch=async () => response.promise;
+    const pending=selectPlace(room.room_id,ref);
+    try {
+      assert.equal(getSelectedPlace(),ref);
+      assert.match(document.getElementById('place').innerHTML,/불러오는 중/);
+      const changed={...room,agent_results:null,agent_requests:[]};
+      applySnapshot(changed);
+      assert.equal(getSelectedPlace(),null);
+      renderRoom(changed);
+      assert.equal(document.getElementById('place').innerHTML,'동선에서 장소를 선택해 주세요.',source);
+      assert.match(document.getElementById('place-map').innerHTML,/장소를 선택하세요/);
+    } finally {
+      response.resolve(Response.json({place:{id:ref,name:'이전 결과의 장소'},menus:[],evidence:[]}));
+      await pending;
+    }
+    assert.equal(document.getElementById('place').innerHTML,'동선에서 장소를 선택해 주세요.',source);
+  }
 });

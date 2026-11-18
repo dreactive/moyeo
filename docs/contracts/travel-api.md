@@ -6,6 +6,7 @@
 - 로그인 세션은 같은 origin cookie. 브라우저가 user_id를 임의 지정해 타인의 지지/확인 표를 작성하지 않는다.
 - v0.2 변경: HTTP·SSE·제품 DTO는 유지하고 BE/AI 연결을 JSON AgentPort로 분리한다. 각 세션은 상대 폴더 import 없이 개발한다. [3세션 계획](../superpowers/plans/2026-11-18-three-session-plan.md)의 소유권과 통합 절차가 기존 BE·AI 합본 실행 순서보다 우선한다.
 - v0.3 변경: 2026-11-19 [도구 준비조건·불확실성 설계](../superpowers/specs/2026-11-19-tool-readiness-and-uncertainty-design.md)를 적용한다. 아래 기존 3세션 동결과 후보 생성 전용 브랜치 설명은 이전 구현의 경계이며, 이번 확장 범위에서는 7절을 따른다. 문서의 endpoint·타입 설명 자체는 실제 검증을 대신하지 않는다.
+- 화면 통합: 내 방 목록, 빈 방 생성, 등록된 사용자 이메일 초대, 방장 삭제·이름 변경, 선택 전 여행 조건을 추가한다. [화면 통합 설계](../superpowers/specs/2026-11-19-front-integration-design.md)에 따라 7절의 최신 AI 실행·요청·부분 결과 계약과 기존 추출·실패 복구·상태 보호를 함께 유지한다.
 
 ## 0. 세션 독립성과 계약 동결
 
@@ -29,7 +30,7 @@
 | Versions | participant_version, constraint_version, evidence_version, plan_revision: 각 정수 |
 | ConfirmationTarget | Versions의 네 값 + content_hash |
 
-`region`은 국내 지역명. 첫 데모 여수, 기간 2일이다. source_ref는 공급자 결과를 식별하는 내부 참조이며 사용자에게 비밀 키를 포함하지 않는다.
+`region`은 국내 지역명이며 새 방의 기본값은 빈 문자열이다. `start_date`, `end_date`, `per_person_budget_krw`는 선택 전 null이며 빈 문자열 입력도 null로 정규화한다. 예산을 지정하면 0 이상이어야 한다. 날짜가 하나라도 비어 있으면 AgentInput에 전달하는 복사본에서 지정된 날짜 또는 Asia/Seoul의 오늘을 하루 일정으로 사용한다. RoomSnapshot의 원본 날짜와 미확인 예산은 유지한다. source_ref는 공급자 결과를 식별하는 내부 참조이며 사용자에게 비밀 키를 포함하지 않는다.
 
 day_start_time/day_end_time은 해당 여행일 Asia/Seoul의 기본 활동 구간이며 사용자 입력으로 바꿀 수 있다. 1일차는 origin→방문지→lodging, 2일차는 lodging→방문지→destination이다. 확인한 개인 귀가 제한이 더 이르면 그 제한을 적용한다. 신규 사용자 입력 CostLine.id는 브라우저가 만든 UUID를 사용하고 저장 후 유지한다.
 
@@ -87,7 +88,7 @@ remaining_budget_krw는 **사용자 예산−기지출**(앞으로 쓸 수 있�
 `RoomSnapshot` 필드:
 
 ```text
-room_id, title, invite_code, seq, config:TripConfig, members:Member[],
+room_id, title, owner_id, invite_code, seq, config:TripConfig, members:Member[],
 versions:Versions, messages:Message[], items:DecisionItem[], constraints:Constraint[],
 current_plan:PlanSnapshot/null, review_plan:PlanSnapshot/null, active_target:ConfirmationTarget/null,
 confirmed_plan:PlanSnapshot/null, confirmations:Confirmation[],
@@ -95,6 +96,8 @@ conflicts:Conflict[], questions:Question[], agent_status:AgentStatus
 ```
 
 스냅샷 messages는 최근 50개이며 이전 근거 메시지는 메시지 API로 조회한다. seq는 방 이벤트의 증가 번호이며 메시지에도 별도 seq가 있다. plan_revision은 계획 내용이나 실질적 근거가 바뀔 때 증가하고, 단순 대화·장소 열람은 계획 버전을 올리지 않는다. 참가자·조건·근거 변경은 해당 version을 올린다. 확인 대상의 어느 값이든 바뀌면 이전 확인 표를 재사용하지 않는다.
+
+`owner_id`는 생성자 ID이며 기존 방에 저장된 값이 없으면 첫 번째 멤버의 ID를 사용한다. 새 방은 `created_at`도 포함한다. `RoomSummary`는 `room_id,title,invite_code,owner_id,is_owner,region,start_date,end_date,members,last_message,plan_stage,plan_revision,agent_state,updated_at`을 제공한다. `last_message`는 null 또는 `{author_name,text,created_at,mine}`이며 text는 최대120자다. `plan_stage`는 empty/draft/confirmed다. 목록은 본인이 참가한 방만 마지막 메시지 시각(없으면 생성 시각)의 내림차순으로 반환하고 전체 messages/constraints를 포함하지 않는다.
 
 current_plan은 최신 초안, review_plan은 active_target에 대응하는 불변 검토 스냅샷이다. active_target이 있으면 review_plan.confirmation_target과 반드시 같다. 검토 중 새 초안이 생겨도 current_plan만 바뀌고 review_plan은 유지한다. 이때 확인은 최신 초안 번호가 아니라 review_plan의 대상과 비교한다. 참가자·조건·실질적 근거가 바뀌면 기존 검토 대상과 확인 표를 종료하고 새 대상에서 다시 시작한다. 새 안으로의 단순 순서 변경 제안은 기존 검토를 자동 교체하지 않는다.
 
@@ -111,10 +114,13 @@ current_plan은 최신 초안, review_plan은 active_target에 대응하는 불�
 | POST /api/auth/logout | 없음 | {ok:true} |
 | GET /api/auth/me | - | User |
 | GET /api/health | - | DB 접근 가능 시 {status:"ok"}, 불가 시 503 {status:"unavailable"}. 모델·공급자 준비 상태와 별개 |
-| POST /api/rooms | title + TripConfig 각 필드 | RoomSnapshot + 입장한 참가자 |
+| GET /api/rooms | - | {rooms:RoomSummary[]} |
+| POST /api/rooms | title와 TripConfig 필드 모두 선택, 빈 객체 허용 | RoomSnapshot + 생성자 멤버·owner_id. title 생략 시 "이름의 여행방" |
 | POST /api/rooms/join | invite_code | RoomSnapshot |
+| POST /api/rooms/{room_id}/members | email | 현재 멤버가 등록된 사용자를 초대. {user_id,name,added:bool}, 201. 재초대는 added:false, 미등록 사용자 404 |
 | GET /api/rooms/{room_id} | - | RoomSnapshot |
-| PATCH /api/rooms/{room_id}/trip | 수정할 TripConfig 필드 | RoomSnapshot. 재계획 입력이며 과거 확정안은 수정하지 않음 |
+| DELETE /api/rooms/{room_id} | - | 방장만 가능, {ok:true}. 초대 코드·작업·관련 캐시 제거, 삭제 후 방 접근 404 |
+| PATCH /api/rooms/{room_id}/trip | 수정할 TripConfig 필드, title 선택 | RoomSnapshot. 실제 title 변경은 방장만 가능하며 trim 후 1~200자. 이름만 바꾸면 버전·계획·확인 표 유지. 실제 조건 변경 시 재계획 |
 | GET /api/rooms/{room_id}/messages | after_seq:int=0 | {messages:Message[],last_seq:int} |
 | GET /api/rooms/{room_id}/messages/{message_id} | - | Message. 근거 메시지 이동용 |
 | POST /api/rooms/{room_id}/messages | text | Message. 즉시 저장/전달 후 Agent 비동기 처리 |
@@ -131,6 +137,8 @@ current_plan은 최신 초안, review_plan은 active_target에 대응하는 불�
 | GET /api/dev/rooms/{room_id}/traces | run_id 선택, X-Dev-Token 필수 | {runs:RunTrace[]} |
 
 place_ref는 현재 방의 조회 결과 또는 fixture라고 표시한 데이터에서 나온 값이어야 한다. 이 API는 임의 웹페이지 수집 지시를 받지 않는다. 명시적 재검토나 전체 초안 재생성은 manual_replan으로 요청하고, 일상적인 새 조건 변화는 자동 실행한다.
+
+회원가입은 이름·이메일의 공백을 제거하고 이메일을 소문자로 정규화한다. 중복 이메일은409, 잘못된 이메일·공백 이름·공백 비밀번호는422다. 비밀번호는8~256자다. 세션은30일 후 만료되고 쿠키의 Max-Age도 같은 기간이다. 기존 문자열 형식의 세션은 호환한다. `/login`, `/signup`, `/rooms`는 로컬 정적 화면의 별칭이며 API 인증 상태는 쿠키로 판단한다.
 
 공개 배포에서는 같은 origin의 Vercel `/api/*`가 PC 서버로 중계한다. API 응답과 오류는
 `Cache-Control: no-store`이며 `COOKIE_SECURE=1`은 host-only HttpOnly SameSite=Lax cookie에
@@ -149,10 +157,13 @@ Secure를 추가한다. `PUBLIC_REQUESTS_PER_MINUTE` 기본 60은 단일 프로�
 |---|---|---|
 | message.created | {room_id,seq,message:Message} | message.id로 중복 제거 후 추가 |
 | room.updated | {room_id,seq,changed:string[]} | RoomSnapshot 조회 후 관련 공동 화면 함께 갱신 |
+| room.deleted | {room_id,seq} | 삭제 안내 후 방 목록으로 이동, 현재 스트림 종료 |
 | agent.status | {room_id,seq,status:AgentStatus} | 작업 상태 라벨 갱신. 사람 채팅에 AI 메시지 삽입 안 함 |
 | plan.confirmed | {room_id,seq,target:ConfirmationTarget} | RoomSnapshot 조회 후 초록/확인 인원 갱신 |
 
 처음 열거나 연결을 복원하면 최신 스냅샷을 조회한다. 알림 도착만으로 관련 데이터가 모두 반영됐다고 간주하지 않는다. token·모델 후보·tool trace는 사용자 이벤트에 포함하지 않는다.
+
+삭제 알림은 이미 연결된 멤버에게 전달하기 위해 이벤트 기록에 남기며 새 연결은 방 존재·멤버십을 다시 검사해404로 거절한다. 삭제된 방의 대기 작업과 실행 중 늦게 도착한 결과·trace·장소 조회는 방이나 캐시를 복원하지 않는다. 서버 종료 신호 또는 lifespan 종료 시 열린 스트림도 종료한다.
 
 ## 5. Agent와 Backend 연결 계약
 

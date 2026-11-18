@@ -42,3 +42,17 @@ test('an arriving member name refreshes a bubble created before the member snaps
   chat.reconcileChat(list,{...room,members:[{user_id:'u2',name:'실시간 확인'}]},'u1');
   assert.match(list.children.at(-1).html,/실시간 확인/);
 });
+
+test('floating chat reuses calendar and message nodes while preserving a scrolled reading position', () => {
+  globalThis.document={getElementById:() => ({}),createElement:() => ({content:{},set innerHTML(value){this.content.firstElementChild={id:value.match(/id="([^"]+)"/)[1],html:value};}})};
+  const list={dataset:{},children:[],scrollTop:40,scrollHeight:500,clientHeight:100,replaceChildren(...nodes){this.children=nodes;this.scrollHeight=600;},querySelector:() => ({id:'message-m1'}),querySelectorAll:() => [{id:'message-m1'}]};
+  const room={members:[{user_id:'u1',name:'민수'}],messages:[{id:'m1',author_id:'u1',text:'첫 대화',created_at:'2026-11-18T01:00:00Z'}]};
+  chat.renderGroupedChat?.(room,'u1',list);
+  const [day,message]=list.children;
+  assert.match(day?.html ?? '',/data-date-menu/);
+  assert.match(message?.html ?? '',/class="msg mine"/);
+  chat.renderGroupedChat?.({...room,messages:[...room.messages,{...room.messages[0],id:'m2',text:'새 대화'}]},'u1',list);
+  assert.equal(list.children[0],day);
+  assert.equal(list.children[1],message);
+  assert.equal(list.scrollTop,40);
+});

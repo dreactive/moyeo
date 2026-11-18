@@ -76,6 +76,15 @@ test('the consensus marks each traveler by their vote on the displayed plan', ()
   assert.match(output,/참가자2 · 아직/);
 });
 
+test('the new confirmation bar labels a withdrawn vote without counting it as confirmation', () => {
+  const room = structuredClone(fixture);
+  room.confirmations = [{user_id:'u1',stance:'withdraw',target:room.current_plan.confirmation_target}];
+  const output = renderConsensus(room);
+  assert.match(output,/class="confirm-bar/);
+  assert.match(output,/0\/4/);
+  assert.match(output,/참가자1 · 동의 철회/);
+});
+
 import {setUser} from '../src/state.js';
 test('a traveler who already voted is offered withdrawal for the active target', () => {
   const room = structuredClone(fixture);
@@ -109,4 +118,12 @@ test('the previous official plan opens independently from the current vote contr
   globalThis.document = {getElementById:id => hosts[id]};
   plan.renderPlan({...fixture,confirmed_plan:fixture.current_plan,review_plan:null,current_plan:null});
   assert.match(hosts['confirmed-plan'].innerHTML,/<details[^>]*><summary>이전 확정안 보기 · v1/);
+});
+
+test('archived dates remain visible after the current room dates are cleared', () => {
+  const hosts={plan:{},'confirmed-plan':{}};
+  globalThis.document={getElementById:id => hosts[id]};
+  plan.renderPlan({...fixture,config:{...fixture.config,start_date:null,end_date:null},confirmed_plan:fixture.current_plan});
+  assert.match(hosts['confirmed-plan'].innerHTML,/2026-11-21/);
+  assert.doesNotMatch(hosts['confirmed-plan'].innerHTML,/날짜 미정/);
 });

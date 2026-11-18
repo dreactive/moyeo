@@ -2,7 +2,16 @@ import {getDataMode,requestJson} from './api.js';
 import {showError} from './ui.js';
 
 export function pageUrl(path) {
-  const url = new URL(path, 'http://workspace.local');
+  const base = 'http://workspace.local';
+  let url = new URL('/rooms',base);
+  try {
+    const value = String(path ?? '');
+    const decoded = decodeURIComponent(value);
+    const candidate = new URL(value,base);
+    const pathname = decodeURIComponent(candidate.pathname);
+    if (value.startsWith('/') && candidate.origin === base && !/[\\\u0000-\u001f\u007f]/.test(decoded)
+      && !pathname.startsWith('//') && !/[\\\u0000-\u001f\u007f]/.test(pathname)) url = candidate;
+  } catch { /* Invalid paths use the local room selection page. */ }
   if (getDataMode() === 'fixture') url.searchParams.set('mode', 'fixture');
   return url.pathname + url.search + url.hash;
 }

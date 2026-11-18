@@ -30,8 +30,9 @@ function isRecordList(rows) {
 
 function isSavedTrip(config) {
   return isRecordList(config?.fixed_costs)
-    && Object.entries(initial.config).every(([key, value]) => typeof config[key] === typeof value)
-    && [config.start_date,config.end_date].every(date => Number.isFinite(Date.parse(date)));
+    && Object.entries(initial.config).every(([key, value]) => ['start_date','end_date','per_person_budget_krw'].includes(key) || typeof config[key] === typeof value)
+    && [config.start_date,config.end_date].every(date => date === null || (typeof date === 'string' && Number.isFinite(Date.parse(date))))
+    && (config.per_person_budget_krw === null || (Number.isInteger(config.per_person_budget_krw) && config.per_person_budget_krw >= 0));
 }
 
 function isSavedDay(day) {
@@ -101,12 +102,14 @@ function hydrateFixture() {
   setFixtureUser(saved.userId);
   fixtureAuthenticated = true;
   Object.assign(fixtureRoom, saved.snapshot);
+  fixtureRoom.deleted = saved.snapshot.deleted === true;
   setScenarioPlaces(saved.scenario);
 }
 function resetFixtureMemory() {
   fixtureAuthenticated = false;
   setFixtureUser('u1');
   Object.assign(fixtureRoom, structuredClone(initial));
+  fixtureRoom.deleted = false;
   setScenarioPlaces('initial');
 }
 
@@ -141,6 +144,25 @@ export async function requestFixture(path, {method = 'GET',body,headers} = {}) {
     return structuredClone(fixtureUser);
   }
   if (parts[2] === 'rooms') requireFixtureLogin();
+  if (parts[2] === 'rooms' && parts.length === 3 && method === 'GET') {
+    return {rooms:fixtureRoom.deleted ? [] : [fixtureRoomSummary()]};
+  }
+  if (parts[2] === 'rooms' && parts.length === 3 && method === 'POST') fixtureRoom.deleted = false;
+  if (parts[2] === 'rooms' && parts.length >= 4 && fixtureRoom.deleted) {
+    throw Object.assign(new Error('fixture 방을 찾을 수 없어요.'), {status:404});
+  }
+  if (parts[2] === 'rooms' && parts.length === 4 && method === 'DELETE') {
+    if (fixtureUser.id !== fixtureRoom.members[0]?.user_id) throw Object.assign(new Error('방장만 삭제할 수 있어요.'), {status:403});
+    fixtureRoom.deleted = true;
+    persistFixture();
+    emitFixture('onRoomDeleted',{room_id:fixtureRoom.room_id});
+    return {ok:true};
+  }
+  if (parts[4] === 'members' && method === 'POST') {
+    const member = initial.members.find(member => member.user_id + '@fixture.test' === String(body.email).trim().toLowerCase());
+    if (!member) throw Object.assign(new Error('가입된 fixture 사용자가 아니에요.'), {status:404});
+    return {...member,added:false};
+  }
   if (parts[4] === 'places') return structuredClone(fixturePlaces.get(parts[5]));
   if (parts[2] === 'rooms' && parts.length === 4 && method === 'GET') {
     if (parts[3] !== fixtureRoom.room_id) throw Object.assign(new Error('fixture 방을 찾을 수 없어요.'), {status:404});
@@ -201,6 +223,22 @@ export async function requestFixture(path, {method = 'GET',body,headers} = {}) {
     return {run_id:'run-fixture-selected',base_versions:structuredClone(fixtureRoom.versions)};
   }
   throw new Error('fixture 미지원 요청: ' + method + ' ' + path);
+}
+
+function fixtureRoomSummary() {
+  const last = fixtureRoom.messages.at(-1);
+  const plan = fixtureRoom.review_plan ?? fixtureRoom.current_plan;
+  const target = plan?.confirmation_target;
+  const current = target && ['participant_version','constraint_version','evidence_version'].every(key => fixtureRoom.versions[key] === target[key]);
+  const official = current && sameTarget(fixtureRoom.confirmed_plan?.confirmation_target,target);
+  return {
+    room_id:fixtureRoom.room_id,title:fixtureRoom.title,invite_code:fixtureRoom.invite_code,
+    owner_id:fixtureRoom.members[0]?.user_id,is_owner:fixtureUser.id === fixtureRoom.members[0]?.user_id,
+    region:fixtureRoom.config.region,start_date:fixtureRoom.config.start_date,end_date:fixtureRoom.config.end_date,
+    members:structuredClone(fixtureRoom.members),agent_state:fixtureRoom.agent_status.state,
+    plan_stage:official ? 'confirmed' : plan ? 'draft' : 'empty',plan_revision:plan?.plan_revision ?? null,
+    last_message:last ? {...last,author_name:fixtureRoom.members.find(member => member.user_id === last.author_id)?.name,mine:last.author_id === fixtureUser.id} : null
+  };
 }
 const subscriptions = new Map();
 export function subscribeFixture(roomId, handlers) {

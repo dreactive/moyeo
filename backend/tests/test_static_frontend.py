@@ -7,6 +7,9 @@ def test_static_frontend_mount_preserves_api_and_injects_only_public_key(tmp_pat
     (tmp_path / 'src').mkdir()
     (tmp_path / 'index.html').write_text('<meta name="kakao-map-app-key" content="">', encoding='utf-8')
     (tmp_path / 'dev.html').write_text('developer view', encoding='utf-8')
+    (tmp_path / 'login.html').write_text('login view', encoding='utf-8')
+    (tmp_path / 'signup.html').write_text('signup view', encoding='utf-8')
+    (tmp_path / 'rooms.html').write_text('rooms <meta name="kakao-map-app-key" content="">', encoding='utf-8')
     (tmp_path / 'src' / 'a.js').write_text('export const a=1;', encoding='utf-8')
     settings = read_settings()
     settings['public_map_key'] = 'public-map'
@@ -14,4 +17,7 @@ def test_static_frontend_mount_preserves_api_and_injects_only_public_key(tmp_pat
         assert 'content="public-map"' in client.get('/').text
         assert client.get('/src/a.js').status_code == 200
         assert client.get('/dev').status_code == 200
+        assert client.get('/login').text == 'login view'
+        assert client.get('/signup').text == 'signup view'
+        assert 'content="public-map"' in client.get('/rooms').text
         assert client.get('/api/auth/me').status_code == 401

@@ -1,213 +1,128 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="kakao-map-app-key" content="">
-  <title>여행 작업방 · 모여</title>
-  <link rel="stylesheet" href="/styles.css">
-  <link rel="stylesheet" href="/workspace.css">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="kakao-map-app-key" content="">
+<title>모여 · 함께 만드는 여행</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="/styles.css">
 </head>
-<body class="workspace-page">
-  <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" hidden>
-    <symbol id="icon-brand" viewBox="0 0 24 24"><circle cx="17" cy="6" r="2.5"/><circle cx="7" cy="18" r="2.5"/><path d="M14.5 6H7a3 3 0 0 0 0 6h10a3 3 0 0 1 0 6H9.5"/></symbol>
-    <symbol id="icon-spark" viewBox="0 0 24 24"><path d="m12 2 1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8L12 2ZM5 14l1.1 2.9L9 18l-2.9 1.1L5 22l-1.1-2.9L1 18l2.9-1.1L5 14ZM19 14v6m-3-3h6"/></symbol>
-    <symbol id="icon-conditions" viewBox="0 0 24 24"><path d="M3 6h5m4 0h9M3 12h11m4 0h3M3 18h3m4 0h11M8 3v6m6 0v6m-8 0v6"/></symbol>
-    <symbol id="icon-route" viewBox="0 0 24 24"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6ZM9 3v15m6-12v15"/></symbol>
-    <symbol id="icon-place" viewBox="0 0 24 24"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></symbol>
-    <symbol id="icon-cost" viewBox="0 0 24 24"><path d="M20 8V5a2 2 0 0 0-2-2H6a3 3 0 0 0 0 6h14a1 1 0 0 1 1 1v8a2 2 0 0 1-2 2H6a3 3 0 0 1-3-3V6m18 6h-5a2 2 0 0 0 0 4h5"/></symbol>
-    <symbol id="icon-send" viewBox="0 0 24 24"><path d="M12 19V5m-6 6 6-6 6 6"/></symbol>
-    <symbol id="icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
-  </svg>
+<body>
+<div class="app">
+<header class="app-bar">
+  <a class="brand" href="/rooms.html" data-app-link="/rooms.html" title="내 여행방으로"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/><path d="M9 6.5h6a3.5 3.5 0 0 1 0 7H9a3.5 3.5 0 0 0 0 7h6"/></svg></span><strong>모여</strong></a>
+  <div class="app-user"><span id="session" class="user-chip">로그인 전</span><button id="logout" type="button" class="ghost sm">로그아웃</button></div>
+</header>
+<div id="mode" class="mode-bar" role="status"></div>
+<div class="error-bar"><div id="error" role="alert"></div><button id="retry" type="button" class="ghost sm">연결 재시도</button></div>
 
-  <div class="workspace-shell">
-    <header class="workspace-header">
-      <nav class="workspace-nav" aria-label="주 메뉴">
-        <a class="app-brand" aria-label="모여 여행 작업방" href="/" data-app-link="/">
-          <span class="brand-icon"><svg class="app-icon" aria-hidden="true"><use href="#icon-brand"></use></svg></span>
-          <span>모여</span>
-        </a>
-        <span class="nav-current" aria-current="page">여행 작업방</span>
-        <a href="/rooms.html" data-app-link="/rooms.html">방 선택</a>
-      </nav>
-      <div class="workspace-user">
-        <span id="session" class="user-chip">연결 중</span>
-        <button class="quiet-button" id="logout" type="button">로그아웃</button>
-      </div>
-    </header>
+<section id="fixture-controls" class="dev-bar" hidden><strong>개발 시나리오</strong><label>사용자<select id="fixture-user"><option value="u1">참가자1</option><option value="u2">참가자2</option><option value="u3">참가자3</option><option value="u4">참가자4</option></select></label><label>시나리오<select id="scenario" aria-label="fixture 시나리오"></select></label><button id="replay">재생</button><button id="reconnect">재연결 재생</button></section>
 
-    <section class="room-overview" aria-labelledby="room-heading">
-      <div class="room-description">
-        <h1 id="room-heading">여행 작업방</h1>
-        <p id="room-meta" class="room-meta">여행 정보를 불러오는 중</p>
-      </div>
-      <div class="room-access">
-        <div id="members" class="room-members"></div>
-        <div class="room-actions">
-          <span class="room-invite">초대 코드 <code id="invite-code">—</code></span>
-          <button class="quiet-button" id="copy-invite" type="button">복사</button>
-          <button class="quiet-button" id="open-settings" type="button" aria-haspopup="dialog">여행 설정</button>
-        </div>
-      </div>
+
+
+<section class="trip-head">
+  <div class="trip-title"><h1 id="room-heading">여행방을 불러오는 중…</h1><p id="trip-meta" class="muted"></p></div>
+  <div class="trip-side">
+    <div id="members" class="members"></div>
+    <div id="invite-box" class="invite-box"></div>
+  </div>
+</section>
+
+<main class="workspace">
+<aside class="side-panel" aria-label="여행 조건">
+  <section id="trip-settings" class="trip-settings" aria-labelledby="trip-settings-title">
+    <div class="settings-head"><h2 id="trip-settings-title">여행 조건</h2><span id="trip-save-status" class="save-status" role="status" aria-live="polite"></span><button type="submit" form="trip" name="action" value="update" class="primary sm">저장</button></div>
+    <form id="trip">
+    <label><span class="label-text">채팅방 이름<span class="req" aria-hidden="true">*</span></span><input name="title" required maxlength="200" aria-required="true" aria-describedby="title-owner-hint"><small id="title-owner-hint" class="field-hint" hidden>방장만 바꿀 수 있어요</small></label>
+    <label><span class="label-text">도시<span class="req" aria-hidden="true">*</span></span><input name="region" required aria-required="true"></label>
+    <label>시작일<input name="start_date" type="date"></label>
+    <label>종료일<input name="end_date" type="date"></label>
+    <label>활동 시작<input name="day_start_time" type="time"></label>
+    <label>활동 종료<input name="day_end_time" type="time"></label>
+    <label><span class="label-text">1인 전체 예산 (원)<span class="req" aria-hidden="true">*</span></span><input name="per_person_budget_krw" type="number" min="0" step="1" required aria-required="true"></label>
+    <fieldset data-anchor-picker="lodging"><legend>숙소</legend><input name="lodging_label" aria-label="숙소 명칭" placeholder="명칭">
+      <details class="anchor-manual" data-anchor-manual><summary>좌표 직접 입력</summary>
+        <label>위도<input name="lodging_latitude" type="number" min="-90" max="90" step="any" aria-label="숙소 위도"></label>
+        <label>경도<input name="lodging_longitude" type="number" min="-180" max="180" step="any" aria-label="숙소 경도"></label>
+      </details><small class="muted" data-anchor-fallback hidden>검색을 사용할 수 없으면 숙소 이름과 좌표를 직접 입력할 수 있어요.</small>
+      <input type="hidden" name="lodging_source_ref"><button type="button" class="ghost sm" data-clear-anchor>숙소 지우기</button>
+    </fieldset>
+    <div class="wide"><h3>고정비</h3><p class="muted">‘1인당 각각’ + 대상 ‘전체 참가자’는 모든 참가자에게 각각 같은 금액이 붙어요. 소계는 서버 계산을 따릅니다.</p><div id="fixed-costs"></div><button id="add-cost" type="button">비용 추가</button></div>
+    <p class="wide muted small"><span class="req" aria-hidden="true">*</span> 표시는 꼭 입력해야 해요. 바꾼 항목만 저장돼요.</p>
+    </form>
+  </section>
+</aside>
+
+<div class="board">
+  <section class="agent-banner" aria-label="Agent 작업">
+    <span class="banner-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18 9.4l-4.2 1.8L12 16l-1.8-4.8L6 9.4l4.2-1.8z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></span>
+    <div class="banner-body"><div id="agent">대기</div></div>
+    <button id="replan" class="icon-btn" title="다시 계획" aria-label="다시 계획"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.6-4.5L4 8M4 4v4h4M4 13a8 8 0 0 0 14.6 4.5L20 16M20 20v-4h-4"/></svg></button>
+  </section>
+
+  <section class="card-panel decisions">
+    <div class="panel-head"><h2><span class="ico" aria-hidden="true">◎</span>함께 고르는 장소</h2></div>
+    <p class="legend"><span class="mentioned">빨강 · 언급됨</span><span class="supported">노랑 · 다수 지지</span><span class="confirmed">초록 · 전체 여행안 확정</span><span class="conflict-key">! 충돌</span></p>
+    <div id="items" class="item-grid"></div><div id="conflicts"></div>
+  </section>
+
+  <div class="grid-2">
+    <section class="card-panel">
+      <div class="panel-head"><h2><span class="ico" aria-hidden="true">☰</span>우리의 여행 조건</h2></div>
+      <p class="panel-sub">꼭 지킬 것과 좋아하는 것을 모았어요</p>
+      <div id="constraints"></div><div id="questions"></div>
+      <p class="panel-note">개인 조건은 본인이 확인하고 수정해요</p>
     </section>
-
-    <div id="mode" role="status"></div>
-    <div class="workspace-alert">
-      <div id="error" role="alert"></div>
-      <button id="retry" type="button">연결 재시도</button>
-    </div>
-
-    <section id="fixture-controls" class="fixture-controls" aria-label="개발 시나리오" hidden>
-      <strong>개발 시나리오</strong>
-      <label>사용자<select id="fixture-user">
-        <option value="u1">참가자1</option>
-        <option value="u2">참가자2</option>
-        <option value="u3">참가자3</option>
-        <option value="u4">참가자4</option>
-      </select></label>
-      <select id="scenario" aria-label="재생할 시나리오"></select>
-      <button id="replay" type="button">재생</button>
-      <button id="reconnect" type="button">재연결 재생</button>
+    <section class="card-panel">
+      <div class="panel-head"><h2><span class="ico" aria-hidden="true">▦</span>함께 가는 동선</h2><span id="route-badge" class="pill"></span></div>
+      <nav id="route-days" class="route-days" aria-label="여행 날짜"></nav>
+      <div id="route-map" class="map"></div>
+      <div id="route-legend"></div>
+      <div id="route-legend" class="agreement-legend" aria-label="장소 동의 상태 범례"></div>
+      <div id="route-load-status" class="route-load-status" role="status"></div>
+      <div id="route-summary" class="route-summary"></div>
     </section>
-
-    <main class="workspace-main">
-      <section class="workspace-chat" aria-labelledby="chat-heading">
-        <div class="chat-heading">
-          <h2 id="chat-heading">우리의 대화</h2>
-          <button id="history" class="quiet-button" type="button">이전 대화</button>
-        </div>
-        <ol id="messages" aria-label="대화 메시지" tabindex="0"></ol>
-        <div class="chat-compose">
-          <button id="new-messages" type="button" hidden>새 메시지 보기 ↓</button>
-          <form id="message" class="message-composer">
-            <label class="visually-hidden" for="message-text">메시지</label>
-            <textarea id="message-text" name="text" rows="2" placeholder="친구들과 여행 이야기를 나눠보세요" aria-describedby="composer-hint" required></textarea>
-            <button class="primary-button send-button" type="submit" aria-label="메시지 보내기">
-              <svg class="app-icon" aria-hidden="true"><use href="#icon-send"></use></svg>
-            </button>
-          </form>
-          <p id="composer-hint">Enter 전송 · Shift+Enter 줄바꿈</p>
-        </div>
-      </section>
-
-      <div class="workspace-board" aria-label="여행 계획">
-        <section class="agent-banner" aria-label="계획 도우미">
-          <span class="agent-icon"><svg class="app-icon" aria-hidden="true"><use href="#icon-spark"></use></svg></span>
-          <div id="agent" role="status">
-            <strong>여행 계획을 불러오는 중</strong>
-          </div>
-          <button id="replan" class="quiet-button" type="button">다시 계획</button>
-        </section>
-
-        <div class="workspace-cards">
-          <section class="workspace-card conditions-card" aria-labelledby="conditions-heading">
-            <div class="card-heading">
-              <svg class="app-icon" aria-hidden="true"><use href="#icon-conditions"></use></svg>
-              <h2 id="conditions-heading">우리의 여행 조건</h2>
-            </div>
-            <div id="constraints"></div>
-            <div id="questions"></div>
-            <div id="items"></div>
-            <div id="conflicts"></div>
-          </section>
-
-          <section class="workspace-card route-card" aria-labelledby="route-heading">
-            <div class="card-heading">
-              <svg class="app-icon" aria-hidden="true"><use href="#icon-route"></use></svg>
-              <h2 id="route-heading">함께 가는 동선</h2>
-            </div>
-            <div class="route-toolbar">
-              <div id="route-days" aria-label="일정 날짜"></div>
-              <span class="muted">자동차</span>
-            </div>
-            <div id="route-map" class="map" role="region" aria-label="함께 가는 동선 지도">
-              <p class="map-placeholder">여행안이 준비되면 동선을 볼 수 있어요.</p>
-            </div>
-            <div id="route-legend"></div>
-            <div id="route-load-status" role="status"></div>
-            <div id="route-summary"></div>
-          </section>
-
-          <section class="workspace-card place-card" aria-labelledby="place-heading">
-            <div class="card-heading">
-              <svg class="app-icon" aria-hidden="true"><use href="#icon-place"></use></svg>
-              <h2 id="place-heading">지금 살펴보는 장소</h2>
-              <span class="badge">나만 보는 중</span>
-            </div>
-            <div id="place-map" class="map" role="region" aria-label="선택한 장소 지도">
-              <p class="map-placeholder">동선에서 장소를 선택해 주세요.</p>
-            </div>
-            <div id="place"></div>
-          </section>
-
-          <section class="workspace-card budget-card" aria-labelledby="budget-heading">
-            <div class="card-heading">
-              <svg class="app-icon" aria-hidden="true"><use href="#icon-cost"></use></svg>
-              <h2 id="budget-heading">예상 경비</h2>
-              <span class="badge">1인 기준</span>
-            </div>
-            <div id="cost"><p class="muted">여행안이 준비되면 경비를 볼 수 있어요.</p></div>
-          </section>
-        </div>
-
-        <section class="consensus-bar" aria-label="여행안 동의">
-          <div id="plan"><p class="muted">동의할 여행안이 아직 없어요.</p></div>
-          <div id="confirmed-plan"></div>
-        </section>
-      </div>
-    </main>
+    <section class="card-panel">
+      <div class="panel-head"><h2><span class="ico" aria-hidden="true">◉</span>지금 살펴보는 장소</h2><span class="pill muted-pill">나만 보는 중</span></div>
+      <div id="place-map" class="map small-map"></div><div id="place"></div>
+      <p class="panel-note">장소 열람은 공동 여행안이나 다른 사람의 화면을 바꾸지 않아요</p>
+    </section>
+    <section class="card-panel">
+      <div class="panel-head"><h2><span class="ico" aria-hidden="true">▤</span>예상 경비</h2><span class="pill muted-pill">같은 여행안 기준</span></div>
+      <div id="cost"></div>
+    </section>
   </div>
 
-  <dialog id="trip-settings" class="trip-settings" aria-labelledby="settings-heading">
-    <div class="settings-heading">
-      <div>
-        <h2 id="settings-heading">여행 설정</h2>
-        <p class="muted">현재 방에서 수정한 항목을 저장합니다.</p>
-      </div>
-      <button class="quiet-button" type="button" data-close-settings aria-label="여행 설정 닫기">
-        <svg class="app-icon" aria-hidden="true"><use href="#icon-close"></use></svg>
-      </button>
-    </div>
-    <form id="trip" class="entry-form trip-form">
-      <label class="wide">방 이름<input name="title" readonly></label>
-      <label>도시<input name="region" required></label>
-      <label>1인 전체 예산 (원)<input name="per_person_budget_krw" type="number" min="0" required></label>
-      <label>시작일<input name="start_date" type="date" required></label>
-      <label>종료일<input name="end_date" type="date" required></label>
-      <label>활동 시작<input name="day_start_time" type="time" required></label>
-      <label>활동 종료<input name="day_end_time" type="time" required></label>
-      <p class="wide muted">여행 중 이동수단은 자동차입니다.</p>
-      <fieldset class="wide">
-        <legend>출발 지점</legend>
-        <label>명칭<input name="origin_label"></label>
-        <label>위도<input name="origin_latitude" type="number" step="any" min="-90" max="90"></label>
-        <label>경도<input name="origin_longitude" type="number" step="any" min="-180" max="180"></label>
-      </fieldset>
-      <fieldset class="wide">
-        <legend>귀가 지점</legend>
-        <label>명칭<input name="destination_label"></label>
-        <label>위도<input name="destination_latitude" type="number" step="any" min="-90" max="90"></label>
-        <label>경도<input name="destination_longitude" type="number" step="any" min="-180" max="180"></label>
-      </fieldset>
-      <fieldset class="wide">
-        <legend>숙소</legend>
-        <label>명칭<input name="lodging_label"></label>
-        <label>위도<input name="lodging_latitude" type="number" step="any" min="-90" max="90"></label>
-        <label>경도<input name="lodging_longitude" type="number" step="any" min="-180" max="180"></label>
-      </fieldset>
-      <div class="wide settings-costs">
-        <h3>고정비</h3>
-        <p class="muted">1인 기준 비용의 대상을 전체로 두면 같은 금액을 참가자마다 적용합니다.</p>
-        <div id="fixed-costs"></div>
-        <button id="add-cost" type="button">비용 추가</button>
-      </div>
-      <div class="wide form-actions">
-        <button class="quiet-button" type="button" data-close-settings>닫기</button>
-        <button class="primary-button" name="action" value="update" type="submit">여행 설정 저장</button>
-      </div>
-    </form>
-  </dialog>
-
-  <script type="module" src="/src/room.js"></script>
-</body>
-</html>
+  <section class="card-panel confirm-panel" aria-label="전체 여행안 확인"><div id="plan"></div></section>
+  <section class="history-panel"><details><summary>기존 확정안 보관함</summary><div id="confirmed-plan"></div></details></section>
+</div>
+</main>
+</div>
+<dialog id="setup-dialog" class="confirm-dialog setup-dialog" aria-labelledby="setup-title" aria-describedby="setup-desc">
+  <h2 id="setup-title">여행방을 시작해요</h2>
+  <p id="setup-desc">다음 설정을 완료하면, 대화를 시작할 수 있어요. 나중에 여행 조건 탭에서 바꿀 수 있어요.</p>
+  <form id="setup-form" novalidate>
+    <label><span class="label-text">채팅방 이름<span class="req" aria-hidden="true">*</span></span><input name="title" required maxlength="200" autocomplete="off"></label>
+    <label><span class="label-text">도시<span class="req" aria-hidden="true">*</span></span><input name="region" required maxlength="100" autocomplete="off" placeholder="도시 입력"></label>
+    <label><span class="label-text">1인 전체 예산 (원)<span class="req" aria-hidden="true">*</span></span><input name="per_person_budget_krw" type="number" min="0" step="1" inputmode="numeric" required placeholder="1인 전체 예산 입력"></label>
+    <section class="setup-people" aria-labelledby="setup-people-title">
+      <h3 id="setup-people-title">참여 인원 <span id="setup-count"></span></h3>
+      <ul id="setup-members"></ul>
+      <p id="setup-invite" class="muted small"></p>
+    </section>
+    <p id="setup-error" class="setup-error" role="alert" hidden></p>
+    <div class="dialog-actions"><button type="submit" class="primary">시작하기</button></div>
+  </form>
+</dialog>
+<button type="button" id="chat-launcher" class="chat-launcher" aria-controls="chat-panel" aria-expanded="false" aria-label="채팅방 열기" title="눌러서 열기 · 끌어서 옮기기">
+  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1.1-4.6A8 8 0 1 1 21 12z"/></svg>
+  <span id="chat-unread" class="chat-unread" hidden></span>
+</button>
+<section id="chat-panel" class="chat chat-panel" aria-labelledby="chat-title" hidden>
+  <div class="chat-head"><h2 id="chat-title">채팅방</h2><span id="chat-count" class="muted"></span><button type="button" class="icon-btn chat-close" data-chat-close aria-label="채팅방 닫기">✕</button><div id="people-list" class="people-list" hidden></div></div>
+  <ol id="messages"></ol>
+  <button id="new-messages" type="button" class="new-messages" hidden>새 메시지 보기 ↓</button>
+  <div id="date-menu" class="people-list date-menu" role="menu" hidden></div>
+  <form id="message" class="composer"><label class="sr-only" for="message-text">메시지</label><input id="message-text" name="text" required autocomplete="off" placeholder="친구들과 여행 이야기를 나눠보세요"><button class="send" aria-label="보내기"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button></form>
+</section>
+<script type="module" src="/src/room.js"></script></body></html>

@@ -9,12 +9,46 @@ from contextlib import suppress
 from fastapi import FastAPI
 import asyncio
 import os
+import signal
+
+
+def watch_shutdown_signals(stopping):
+    """Set `stopping` on Ctrl+C/SIGTERM, then let uvicorn handle the signal as usual.
+
+    Uvicorn waits for open connections before running lifespan shutdown, so live
+    event streams must notice the signal themselves or the server never exits.
+    """
+    loop = asyncio.get_running_loop()
+    previous = {}
+    for name in ('SIGINT', 'SIGTERM', 'SIGBREAK'):
+        sig = getattr(signal, name, None)
+        if sig is None:
+            continue
+        try:
+            before = signal.getsignal(sig)
+            def handler(signum, frame, before=before):
+                loop.call_soon_threadsafe(stopping.set)
+                if callable(before):
+                    before(signum, frame)
+                elif before == signal.SIG_DFL and signum == signal.SIGINT:
+                    raise KeyboardInterrupt
+            signal.signal(sig, handler)
+            previous[sig] = before
+        except (ValueError, OSError):
+            pass
+    def restore():
+        for sig, before in previous.items():
+            with suppress(ValueError, OSError):
+                signal.signal(sig, before)
+    return restore
 
 
 def create_app(agent_port: AgentPort | None = None, *, database_path=None, settings=None, frontend_path=None) -> FastAPI:
     settings = settings if settings is not None else read_settings()
     @asynccontextmanager
     async def lifespan(app):
+        app.state.stopping = asyncio.Event()
+        restore_signals = watch_shutdown_signals(app.state.stopping)
         app.state.agent = agent_port if agent_port is not None else FixtureAgentPort()
         if agent_port is None and settings['agent_mode'] == 'local_ai':
             app.state.agent = LocalAIBridge(settings['runtime_config'])
@@ -31,6 +65,8 @@ def create_app(agent_port: AgentPort | None = None, *, database_path=None, setti
         try:
             yield
         finally:
+            app.state.stopping.set()
+            restore_signals()
             worker.cancel()
             with suppress(asyncio.CancelledError):
                 await worker

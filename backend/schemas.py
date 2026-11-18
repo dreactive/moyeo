@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Any, Literal
 
 
@@ -37,10 +37,10 @@ class Anchor(Request):
 
 
 class TripConfig(Request):
-    region: str = '여수'
-    start_date: str
-    end_date: str
-    per_person_budget_krw: int = Field(ge=0)
+    region: str = ''
+    start_date: str | None = None
+    end_date: str | None = None
+    per_person_budget_krw: int | None = Field(default=None, ge=0)
     transport: Literal['car'] = 'car'
     day_start_time: str = '09:00'
     day_end_time: str = '18:00'
@@ -49,9 +49,18 @@ class TripConfig(Request):
     lodging: dict | None = None
     fixed_costs: list[dict] = Field(default_factory=list)
 
+    @field_validator('start_date', 'end_date', 'per_person_budget_krw', mode='before')
+    @classmethod
+    def blank_is_unset(cls, value):
+        return None if isinstance(value, str) and not value.strip() else value
+
 
 class CreateRoom(TripConfig):
-    title: str = Field(min_length=1, max_length=200)
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+
+
+class InviteMember(Request):
+    email: str = Field(min_length=3, max_length=254)
 
 
 class JoinRoom(Request):

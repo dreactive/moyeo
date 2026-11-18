@@ -43,4 +43,4 @@ async def agent_run(room_id: str, body: AgentRun, request: Request, user=Depends
 @router.get('/events')
 async def events(room_id: str, request: Request, last_event_id: int = Header(0), user=Depends(current_user)):
     require_room(request.app.state.db, room_id, user['id'])
-    return StreamingResponse(room_event_stream(request.app.state.db, room_id, last_event_id), media_type='text/event-stream', headers={'Cache-Control':'no-cache'})
+    return StreamingResponse(room_event_stream(request.app.state.db, room_id, last_event_id, request.app.state.stopping), media_type='text/event-stream', headers={'Cache-Control':'no-cache'})

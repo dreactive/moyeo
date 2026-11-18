@@ -18,3 +18,16 @@ test('optional SDK adapter uses given coordinates and server polylines only', as
   assert.equal(markers[1].position.lng,127.7);
   assert.deepEqual(paths[0],markers.map(marker=>marker.position));
 });
+
+test('map and search share one SDK script that includes the places services', async t => {
+  const scripts=[];
+  globalThis.document={createElement:() => ({}),head:{append:script => scripts.push(script)}};
+  t.after(() => { delete globalThis.document; delete globalThis.kakao; });
+  const first=loadKakao('shared-key'),second=loadKakao('shared-key');
+  assert.match(scripts[0].src,/libraries=services/);
+  assert.equal(scripts.length,1);
+  const maps={load:ready => ready(),services:{}};
+  globalThis.kakao={maps};
+  scripts.forEach(script => script.onload());
+  assert.deepEqual(await Promise.all([first,second]),[maps,maps]);
+});

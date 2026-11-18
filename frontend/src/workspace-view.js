@@ -18,12 +18,12 @@ export function renderOverview(snapshot) {
   html('invite-code',e(snapshot.invite_code));
   html('members',snapshot.members.map(member => `<span class="member-avatar" title="${e(member.name)}">${e(member.name.slice(0,1))}</span>`).join('') + `<span class="member-count">${snapshot.members.length}명 참여</span>`);
 }
-const agentLabels = {idle:'여행 이야기를 기다리고 있어요',running:'조건과 동선을 검토하고 있어요',needs_input:'확인이 필요한 내용이 있어요',done:'여행안 검토가 끝났어요',
+export const agentLabels = {idle:'여행 이야기를 기다리고 있어요',running:'조건과 동선을 검토하고 있어요',needs_input:'확인이 필요한 내용이 있어요',done:'여행안 검토가 끝났어요',
   waiting:'아직 완료되지 않은 작업이 있어요',failed:'일부 작업을 완료하지 못했어요',held:'최신 내용에 맞춰 작업을 다시 확인하는 중이에요'};
 const requestLabels = {needs_context:'요청 문맥 확인 필요',needs_input:'답변 필요',pending:'조회 대기',resolved:'조회 대상 확인됨',
   completed:'완료',cancelled:'취소됨',superseded:'새 요청으로 변경됨',unsupported:'지원하지 않는 요청',failed:'조회 실패'};
 const lookupFields = {price:'가격',opening_hours:'영업시간',location:'위치',details:'상세 정보'};
-function requestProgress(snapshot) {
+export function requestProgress(snapshot) {
   const requests = snapshot.agent_requests ?? [];
   if (!requests.length) return '';
   const messages = new Map(snapshot.messages.map(message => [message.id,message]));
@@ -60,7 +60,7 @@ function requestProgress(snapshot) {
     </li>`;
   }).join('')}</ul></details>`;
 }
-function latestCalculations(snapshot) {
+export function latestCalculations(snapshot) {
   const results = snapshot.agent_results;
   if (!results?.build_itinerary && !results?.calculate_costs) return '';
   if (!currentAgentResults(snapshot)) return `<p>${resultBasis(results,true)}</p>`;

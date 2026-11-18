@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import room from '../fixtures/room-snapshot.json' with {type:'json'};
 import place from '../fixtures/place-details.json' with {type:'json'};
 import otherPlace from '../fixtures/place-details-b.json' with {type:'json'};
-import {applySnapshot} from '../src/state.js';
-import {selectPlace} from '../src/place.js';
+import {applySnapshot,getSelectedPlace} from '../src/state.js';
+import {selectPlace,renderSelectedPlaceAgreement} from '../src/place.js';
 import {initMaps} from '../src/map.js';
 
 function prepare() {
@@ -28,6 +28,71 @@ function details(price) {
   result.evidence[0].raw_value = 'price-' + price;
   return result;
 }
+
+function partialOnlyRoom() {
+  const snapshot = structuredClone(room);
+  snapshot.current_plan = snapshot.review_plan = snapshot.confirmed_plan = null;
+  snapshot.agent_requests = [];
+  snapshot.agent_results = {run_id:'partial-only',versions:{...snapshot.versions},build_itinerary:{
+    days:[{date:'2026-11-21',visits:[{place_ref:place.place.id}]}]
+  }};
+  return snapshot;
+}
+
+for (const outcome of ['success','error']) {
+  test(`deselecting a partial-only place clears loading before a late ${outcome}`, async () => {
+    const {requests,output,placeMap} = prepare();
+    const snapshot = partialOnlyRoom();
+    applySnapshot(snapshot);
+    const pending = selectPlace(snapshot.room_id,place.place.id);
+    assert.match(output.place,/불러오는 중/);
+    const next = {...snapshot,agent_results:null};
+    applySnapshot(next);
+    assert.equal(getSelectedPlace(),null);
+    renderSelectedPlaceAgreement(next);
+    const empty = output.place;
+    if (outcome === 'success') requests[0].resolve(Response.json(place));
+    else requests[0].reject(new Error('Obsolete detail failure'));
+    await assert.doesNotReject(pending);
+    assert.equal(output.place,empty);
+    assert.match(empty,/동선에서 장소를 선택해 주세요/);
+    assert.doesNotMatch(empty,/불러오는 중|불러오지 못했어요/);
+    assert.match(placeMap.innerHTML,/장소를 선택하세요/);
+  });
+}
+
+test('deselecting a failed partial-only place clears its obsolete retry action', async () => {
+  const {requests,output} = prepare();
+  const snapshot = partialOnlyRoom();
+  applySnapshot(snapshot);
+  const pending = selectPlace(snapshot.room_id,place.place.id);
+  requests[0].reject(new Error('Detail failure'));
+  await assert.rejects(pending);
+  assert.match(output.place,/장소 정보 다시 시도/);
+  const next = {...snapshot,agent_results:null};
+  applySnapshot(next);
+  renderSelectedPlaceAgreement(next);
+  assert.match(output.place,/동선에서 장소를 선택해 주세요/);
+  assert.doesNotMatch(output.place,/다시 시도|불러오지 못했어요/);
+});
+
+test('a newer selection survives an obsolete response after deselection cleanup', async () => {
+  const {requests,output} = prepare();
+  const snapshot = partialOnlyRoom();
+  applySnapshot(snapshot);
+  const obsolete = selectPlace(snapshot.room_id,place.place.id);
+  const next = {...snapshot,agent_results:null};
+  applySnapshot(next);
+  renderSelectedPlaceAgreement(next);
+  const current = selectPlace(next.room_id,otherPlace.place.id);
+  renderSelectedPlaceAgreement(next);
+  requests[0].reject(new Error('Obsolete detail failure'));
+  await assert.doesNotReject(obsolete);
+  assert.match(output.place,/불러오는 중/);
+  requests[1].resolve(Response.json(otherPlace));
+  await current;
+  assert.match(output.place,/가상 B공원/);
+});
 test('older detail request cannot overwrite a newer response for the same place', async () => {
   const {requests,output} = prepare();
   const oldRequest = selectPlace(room.room_id,place.place.id);

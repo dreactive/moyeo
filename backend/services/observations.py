@@ -1,4 +1,5 @@
 from backend.services.planning import substantive
+from backend.services.trip_config import agent_config
 from copy import deepcopy
 from datetime import datetime, timezone
 from fastapi import HTTPException
@@ -69,11 +70,14 @@ async def fetch_place(db, port, room, place_ref, location_only=False):
     allowed = known_place_ids(observations)
     if place_ref not in allowed:
         raise HTTPException(404, 'Place not observed in this room')
-    context = deepcopy(dict(room_id=room['room_id'], config=room['config'], observations=observations))
+    context = deepcopy(dict(room_id=room['room_id'], config=agent_config(room['config']), observations=observations))
     result = await port.execute_tool('get_place_details', {'place_ref':place_ref}, context)
     if result['place']['id'] != place_ref:
         raise HTTPException(502, 'Tool returned a different place')
-    project_observations(db, room['room_id'], [dict(tool_name='get_place_details', arguments={'place_ref':place_ref}, result=result, observed_at=datetime.now(timezone.utc).isoformat(), source_refs=[e['id'] for e in result['evidence']])])
+    with db.lock:
+        if db.get('room:' + room['room_id']) is None:
+            raise HTTPException(404, 'Room not found')
+        project_observations(db, room['room_id'], [dict(tool_name='get_place_details', arguments={'place_ref':place_ref}, result=result, observed_at=datetime.now(timezone.utc).isoformat(), source_refs=[e['id'] for e in result['evidence']])])
     return result
 
 

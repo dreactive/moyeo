@@ -38,6 +38,15 @@ test('proxy routing preserves authenticated API paths and disables caching', () 
   assert.equal(route.headers['x-vercel-enable-rewrite-caching'], '0');
 });
 
+test('entry URLs resolve to packaged HTML while preserving API proxy priority', () => {
+  const config = deploymentConfig('https://api.example.com');
+  for (const page of ['login','signup','rooms']) {
+    const route = config.routes.find(route => route.src === '/' + page);
+    assert.equal(route?.dest, '/' + page + '.html');
+    assert.ok(config.routes.indexOf(route) > 0);
+  }
+});
+
 test('static packaging excludes server and development files', async t => {
   const output = await temporary(t);
   await copyStatic(fileURLToPath(new URL('../', import.meta.url)), output);

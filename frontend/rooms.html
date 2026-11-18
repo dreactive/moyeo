@@ -1,83 +1,61 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>방 선택 · 모여</title>
-  <link rel="stylesheet" href="/styles.css">
-  <link rel="stylesheet" href="/workspace.css">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="kakao-map-app-key" content="">
+<title>모여 · 함께 만드는 여행</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="/styles.css">
 </head>
-<body class="rooms-page">
-  <header class="entry-header">
-    <div class="app-brand">
-      <span class="brand-icon"><svg class="app-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="17" cy="6" r="2.5"/><circle cx="7" cy="18" r="2.5"/><path d="M14.5 6H7a3 3 0 0 0 0 6h10a3 3 0 0 1 0 6H9.5"/></svg></span>
-      <span>모여</span>
-    </div>
-    <div class="workspace-user">
-      <span id="session" class="user-chip">연결 중</span>
-      <button id="logout" class="quiet-button" type="button" disabled>로그아웃</button>
-    </div>
-  </header>
-  <main class="rooms-content" aria-labelledby="rooms-heading">
-    <h1 id="rooms-heading">어떤 여행을 함께할까요?</h1>
-    <p id="mode" role="status"></p>
-    <p id="error" role="alert"></p>
-    <button id="retry" type="button" hidden>다시 시도</button>
-    <div class="room-actions" id="room-actions" hidden>
-      <button type="button" class="room-action-card" data-room-action aria-controls="trip" aria-expanded="false">
-        <strong>방 만들기</strong>
-        <span>새 여행에 친구를 초대해요.</span>
-      </button>
-      <button type="button" class="room-action-card" data-room-action aria-controls="join" aria-expanded="false">
-        <strong>방 참가하기</strong>
-        <span>초대 코드로 여행에 합류해요.</span>
-      </button>
-    </div>
-    <form id="trip" class="entry-form trip-form" method="post" hidden>
-      <h2>새 여행방 만들기</h2>
-      <label class="wide">방 이름<input name="title" maxlength="200" required></label>
-      <label>지역<input name="region" placeholder="예: 여수" required></label>
-      <label>1인 전체 예산 (원)<input name="per_person_budget_krw" type="number" min="0" required></label>
-      <label>시작일<input name="start_date" type="date" required></label>
-      <label>종료일<input name="end_date" type="date" required></label>
-      <label>활동 시작<input name="day_start_time" type="time" value="09:00" required></label>
-      <label>활동 종료<input name="day_end_time" type="time" value="18:00" required></label>
-      <p class="wide muted">여행 중 이동수단은 자동차입니다.</p>
-      <details class="wide">
-        <summary>거점과 고정비 설정</summary>
-        <fieldset>
-          <legend>출발 지점</legend>
-          <label>명칭<input name="origin_label"></label>
-          <label>위도<input name="origin_latitude" type="number" min="-90" max="90" step="any"></label>
-          <label>경도<input name="origin_longitude" type="number" min="-180" max="180" step="any"></label>
-        </fieldset>
-        <fieldset>
-          <legend>귀가 지점</legend>
-          <label>명칭<input name="destination_label"></label>
-          <label>위도<input name="destination_latitude" type="number" min="-90" max="90" step="any"></label>
-          <label>경도<input name="destination_longitude" type="number" min="-180" max="180" step="any"></label>
-        </fieldset>
-        <fieldset>
-          <legend>숙소</legend>
-          <label>명칭<input name="lodging_label"></label>
-          <label>위도<input name="lodging_latitude" type="number" min="-90" max="90" step="any"></label>
-          <label>경도<input name="lodging_longitude" type="number" min="-180" max="180" step="any"></label>
-        </fieldset>
-        <div class="settings-costs">
-          <h3>고정비</h3>
-          <div id="fixed-costs"></div>
-          <button id="add-cost" type="button">비용 추가</button>
-        </div>
-      </details>
-      <div class="form-actions"><button type="submit" class="primary-button">방 만들기</button></div>
-    </form>
-    <form id="join" class="entry-form" method="post" hidden>
-      <h2>초대받은 방에 참가하기</h2>
-      <label class="wide">초대 코드<input name="invite_code" autocomplete="off" autocapitalize="none" spellcheck="false" required></label>
-      <p id="fixture-invite" class="wide muted" hidden>fixture 초대 코드 <strong>FIXTURE</strong></p>
-      <div class="form-actions"><button type="submit" class="primary-button">방 참가하기</button></div>
-    </form>
-  </main>
-  <script type="module" src="/src/rooms-page.js"></script>
+<body>
+<div class="app lobby">
+<header class="app-bar">
+  <a class="brand" href="/rooms" data-app-link title="내 여행방으로"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/><path d="M9 6.5h6a3.5 3.5 0 0 1 0 7H9a3.5 3.5 0 0 0 0 7h6"/></svg></span><strong>모여</strong></a>
+  <div class="app-user"><span id="mode" class="muted small" role="status"></span><span id="session" class="user-chip">로그인 전</span><button id="logout" type="button" class="ghost sm" disabled>로그아웃</button></div>
+</header>
+<div class="error-bar"><div id="error" role="alert"></div></div>
+<button id="retry" type="button" class="ghost" hidden>연결 다시 시도</button>
+<p id="notice" class="notice-bar" role="status"></p>
+<main class="lobby-main">
+  <section class="lobby-list">
+    <div class="lobby-head"><div><h1>내 여행방</h1><p id="room-count" class="muted">불러오는 중…</p></div><button id="open-create" type="button" class="primary" disabled>새 여행방 만들기</button></div>
+    <div id="rooms" class="room-grid" aria-live="polite"></div>
+  </section>
+
+</main>
+<footer class="lobby-footer" aria-labelledby="help-title">
+  <h2 id="help-title">여행방에서 하는 일</h2>
+  <ol class="flow-steps">
+    <li title="가고 싶은 곳, 예산, 일정 이야기를 편하게 나눠요"><span class="flow-num">1</span>자유롭게 대화해요</li>
+    <li title="대화를 정리해 동선과 경비가 담긴 여행안을 보여 줘요"><span class="flow-num">2</span>계획 도우미가 여행안을 만들어요</li>
+    <li title="참가자 모두가 같은 여행안을 확인하면 확정돼요"><span class="flow-num">3</span>모두 확인하면 확정돼요</li>
+  </ol>
+</footer>
+<dialog id="create-dialog" class="create-dialog start-dialog" aria-labelledby="create-title">
+  <div class="dialog-head"><h2 id="create-title">여행방 시작하기</h2><button type="button" class="icon-btn" data-close-create aria-label="닫기">✕</button></div>
+  <div class="segmented" role="tablist" aria-label="시작 방법">
+    <button type="button" role="tab" id="tab-create" aria-selected="true" aria-controls="pane-create" data-start-tab="create">새로 만들고 초대하기</button>
+    <button type="button" role="tab" id="tab-join" aria-selected="false" aria-controls="pane-join" data-start-tab="join">초대 코드로 입장</button>
+  </div>
+  <section id="pane-create" role="tabpanel" aria-labelledby="tab-create">
+    <p class="muted">함께 갈 친구의 가입 이메일을 넣어 주세요. 채팅방 이름·도시·1인 예산은 방에 들어가서 정해요.</p>
+    <form id="invite-add" class="invite-add" novalidate><label class="sr-only" for="invite-email">초대할 이메일</label><input id="invite-email" type="email" autocomplete="off" placeholder="friend@example.com"><button class="ghost">추가</button></form>
+    <p id="invite-hint" class="field-hint" role="status"></p>
+    <ul id="invitees" class="invitees" aria-label="초대할 사람"></ul>
+    <div id="invite-result" class="invite-result" hidden></div>
+    <div class="dialog-actions"><button type="button" id="create-room" class="primary lg">여행방 만들기</button><span class="muted small" id="invite-count">혼자 먼저 만들고 나중에 초대해도 돼요</span></div>
+  </section>
+  <section id="pane-join" role="tabpanel" aria-labelledby="tab-join" hidden>
+    <p class="muted">친구에게 받은 초대 코드를 넣으면 같은 여행방에 들어가요.</p>
+    <form id="join" class="join-form"><label class="sr-only" for="invite-code">초대 코드</label><input id="invite-code" name="invite_code" required autocomplete="off" placeholder="초대 코드"><button class="primary">입장</button></form>
+  </section>
+</dialog>
+<dialog id="delete-dialog" class="confirm-dialog" aria-labelledby="delete-title" aria-describedby="delete-desc">
+  <h2 id="delete-title">대화방을 삭제할까요?</h2>
+  <p id="delete-desc"><strong id="delete-room-name"></strong>의 대화와 여행 계획이 모든 참가자에게서 사라지고, 되돌릴 수 없어요.</p>
+  <div class="dialog-actions"><button type="button" id="delete-cancel" class="ghost">취소</button><button type="button" id="delete-confirm" class="danger">삭제</button></div>
+</dialog>
+</div>
+<script type="module" src="/src/lobby.js"></script>
 </body>
 </html>

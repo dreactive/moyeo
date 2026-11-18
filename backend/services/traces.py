@@ -1,4 +1,5 @@
 from copy import deepcopy
+from backend.db import serialized
 import re
 
 
@@ -21,6 +22,7 @@ def sanitize(value):
 
 
 
+@serialized
 def store_trace(db, event):
     if not getattr(db, 'trace_enabled', True):
         return False

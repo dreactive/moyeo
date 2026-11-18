@@ -10,6 +10,15 @@ test('login succeeds directly into room selection', async () => {
   assert.equal(visited,'/rooms.html');
 });
 
+test('successful auth never emits a network-path redirect after normalization', async () => {
+  const visited = [];
+  globalThis.location = {search:'',assign: path => visited.push(path)};
+  globalThis.fetch = async () => Response.json({id:'u1'});
+  await auth.submitAuth('login',{email:'test@example.test',password:'example-password'},'/a/..//evil.test');
+  assert.deepEqual(visited,['/rooms']);
+  assert.equal(new URL(visited[0],'https://app.test').origin,'https://app.test');
+});
+
 test('signup refuses mismatched passwords before sending a request', async () => {
   globalThis.fetch = () => assert.fail('signup should stay on the form');
   await assert.rejects(auth.submitAuth('register', {password:'long-enough',password_confirmation:'different'}), RangeError);

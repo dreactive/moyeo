@@ -20,14 +20,19 @@ def event_frame(event):
 
 
 
-async def room_event_stream(db, room_id, after_seq):
+async def room_event_stream(db, room_id, after_seq, stopping=None):
     heartbeat_at = monotonic() + 15
     yield ': keepalive\n\n'
-    while True:
-        for event in db.get('events:' + room_id) or []:
+    while stopping is None or not stopping.is_set():
+        events = db.get('events:' + room_id) or []
+        for event in events:
             if event['data']['seq'] > after_seq:
                 after_seq = event['data']['seq']
                 yield event_frame(event)
+                if event['event'] == 'room.deleted':
+                    return
+        if any(event['event'] == 'room.deleted' for event in events):
+            return
         if monotonic() >= heartbeat_at:
             yield ': keepalive\n\n'
             heartbeat_at = monotonic() + 15

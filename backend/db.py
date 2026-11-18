@@ -33,6 +33,16 @@ class Database:
         row = self.connection.execute('SELECT value FROM records WHERE key=?', (key,)).fetchone()
         return json.loads(row[0]) if row else None
 
+    @serialized
+    def scan(self, prefix):
+        rows = self.connection.execute('SELECT key, value FROM records WHERE key >= ? AND key < ? ORDER BY key', (prefix, prefix + '\uffff')).fetchall()
+        return [(key, json.loads(value)) for key, value in rows]
+
+    @serialized
+    def delete_many(self, keys):
+        with self.connection:
+            self.connection.executemany('DELETE FROM records WHERE key=?', [(key,) for key in keys])
+
     def close(self):
         self.connection.close()
 

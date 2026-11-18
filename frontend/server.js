@@ -4,7 +4,7 @@ const types = {'.html':'text/html', '.js':'text/javascript', '.css':'text/css', 
 createServer(async (req, res) => {
   try {
     const path = new URL(req.url, 'http://localhost').pathname;
-    const file = new URL('.' + (path === '/' ? '/index.html' : path === '/dev' ? '/dev.html' : path), import.meta.url);
+    const file = new URL('.' + (path === '/' ? '/index.html' : ['/dev','/login','/signup','/rooms'].includes(path) ? path + '.html' : path), import.meta.url);
     const data = await readFile(file);
     res.writeHead(200, {'Content-Type':types[file.pathname.slice(file.pathname.lastIndexOf('.'))] || 'text/plain'});
     res.end(data);

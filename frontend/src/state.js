@@ -1,3 +1,4 @@
+import {currentAgentResults} from './agent-results.js';
 let snapshot = null;
 let selectedPlace = null;
 export const getSnapshot = () => snapshot;
@@ -7,7 +8,7 @@ export function applySnapshot(next) {
   snapshot = next;
   const plan = next?.review_plan ?? next?.current_plan;
   const days = plan?.days ?? [];
-  const partial = next?.agent_results?.build_itinerary;
+  const partial = currentAgentResults(next)?.build_itinerary;
   if (!sameRoom || !days.some(day => day.date === selectedDay)) selectedDay = days[0]?.date ?? null;
   const knownPlace = selectedPlace && (plan?.item_snapshots.some(item => item.place_ref === selectedPlace)
     || plan?.unplaced_items?.some(item => item.place_ref === selectedPlace)

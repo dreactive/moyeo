@@ -2,7 +2,7 @@ def test_messages_are_human_and_monotonic():
     from backend.services.messages import save_message
     from backend.db import Database
     db = Database(':memory:')
-    db.put('room:r', {'messages':[], 'seq':0})
+    db.put('room:r', {'messages':[], 'seq':0, 'members':[{'user_id':'u1'},{'user_id':'u2'}]})
     first = save_message(db, 'r', 'u1', 'hello')
     second = save_message(db, 'r', 'u2', 'hello again')
     assert first['author_id'] == 'u1'
@@ -33,7 +33,7 @@ def test_concurrent_messages_are_not_lost():
     from backend.services.messages import save_message
     from backend.db import Database
     db = Database(':memory:')
-    db.put('room:r', {'messages':[], 'seq':0})
+    db.put('room:r', {'messages':[], 'seq':0, 'members':[{'user_id':str(i)} for i in range(12)]})
     with ThreadPoolExecutor(4) as pool:
         messages = list(pool.map(lambda i: save_message(db, 'r', str(i), 'hello'), range(12)))
     assert len(db.get('room:r')['messages']) == 12
@@ -60,7 +60,7 @@ def test_status_updates_do_not_lose_concurrent_messages():
     from backend.services.messages import save_message
     from concurrent.futures import ThreadPoolExecutor
     db = Database(':memory:')
-    db.put('room:r', {'seq':0,'messages':[]})
+    db.put('room:r', {'seq':0,'messages':[], 'members':[{'user_id':'u'}]})
     def change(index):
         if index % 2:
             save_message(db, 'r', 'u', str(index))

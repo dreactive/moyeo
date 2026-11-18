@@ -218,7 +218,8 @@ test('a region question accepts plain text and trims the submitted region', () =
   assert.deepEqual(readDecisionValue({dataset:{valueMode:'fields'},elements:[{name:'value',type:'text',value:' 여수 '}]}),{value:'여수'});
 });
 
-test('an owned departure question submits the entered Seoul wall time with an explicit offset', () => {
+test('an owned departure question submits the entered Seoul wall time with an explicit offset', t => {
+  t.mock.method(Date,'now',() => Date.parse('2026-11-20T12:00:00+09:00'));
   const {output,room} = setup();
   room.questions = [{id:'departure',field:'route_departure',target_ref:'r1',owner_id:'u1',status:'open',text:'언제 출발하나요?'}];
   setUser({id:'u2'});

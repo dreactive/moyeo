@@ -14,6 +14,19 @@ export async function withPending(control,task) {
   }
 }
 export function runFormAction(event,task) {
-  const control = event.submitter ?? event.target.querySelector('button[type="submit"],button:not([type])');
+  const control = event.submitter ?? event.target.querySelector('button[type="submit"],button:not([type])')
+    ?? event.target.ownerDocument?.querySelector(`button[type="submit"][form="${event.target.id}"]`);
   return withPending(control,task);
 }
+const avatarColors = ['#efe7dc','#e3ecfb','#f6e1e6','#e4eefe','#e6f3ea','#f1e9fb'];
+export const avatar = name => {
+  const text = String(name ?? '?');
+  const color = avatarColors[[...text].reduce((sum,char) => sum + char.charCodeAt(0),0) % avatarColors.length];
+  return `<span class="avatar" style="background:${color}" aria-hidden="true">${escapeHtml(text.replace(/^참가자/,'').slice(0,2))}</span>`;
+};
+const seoulTime = new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+export const clock = value => {
+  const text = String(value ?? '');
+  if (/T\d{2}:\d{2}.*(Z|[+-]\d{2}:?\d{2})$/.test(text) && !Number.isNaN(Date.parse(text))) return seoulTime.format(new Date(text));
+  return /T(\d{2}:\d{2})/.exec(text)?.[1] ?? escapeHtml(text);
+};

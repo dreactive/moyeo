@@ -17,6 +17,16 @@ test('keyboard form submission shares the real button pending lock', async () =>
   const first=ui.runFormAction?.(event,action),second=ui.runFormAction?.(event,action);
   assert.equal(calls,1); load.resolve(); await Promise.all([first,second]);
 });
+
+test('keyboard submission locks a sidebar save button associated outside the form', async () => {
+  const button={disabled:false};
+  const event={submitter:null,target:{id:'trip',querySelector:() => null,ownerDocument:{querySelector:() => button}}};
+  const load=Promise.withResolvers(); let calls=0;
+  const first=ui.runFormAction(event,() => {calls++;return load.promise;});
+  const second=ui.runFormAction(event,() => {calls++;});
+  assert.equal(calls,1);
+  load.resolve();await Promise.all([first,second]);
+});
 import {renderAgentBanner} from '../src/workspace-view.js';
 test('an idle agent render cannot unlock a manual request in flight', async () => {
   const button={disabled:false,dataset:{}};

@@ -82,7 +82,11 @@ export function readDecisionValue(form) {
     const value = form.elements.value.value;
     if (!value) throw new Error('한국 시간 기준 출발 날짜와 시각을 입력해 주세요.');
     const timestamp = value.length === 16 ? value + ':00' : value;
-    return {value:timestamp + '+09:00'};
+    const departure = timestamp + '+09:00';
+    if (!Number.isFinite(Date.parse(departure)) || Date.parse(departure) <= Date.now()) {
+      throw new Error('한국 시간 기준 미래의 출발 날짜와 시각을 입력해 주세요.');
+    }
+    return {value:departure};
   }
   if (mode === 'target-places') {
     const place_ref = form.elements.place_ref?.value;
@@ -94,6 +98,18 @@ export function readDecisionValue(form) {
   if (mode !== 'fields') return JSON.parse(form.elements.value.value);
   const fields = Array.from(form.elements).filter(field => field.name);
   return Object.fromEntries(fields.map(field => [field.name,fieldValue(field)]));
+}
+export function parseValue(value) {
+  try { return JSON.parse(value); }
+  catch { return value; }
+}
+export function readAnswer(field,data) {
+  if (field === 'constraint_value') return {value:parseValue(data.value)};
+  const numeric = new Set(['quantity','stay_minutes','latitude','longitude']);
+  return Object.fromEntries(Object.entries(data).map(([key,value]) => [key,numeric.has(key) ? Number(value) : value]));
+}
+export function placeRefOf(snapshot,id) {
+  return snapshot.current_plan?.item_snapshots.find(item => item.id === id)?.place_ref ?? null;
 }
 const anchorFields = `<label>이름<input name="label" required></label>
   <label>위도<input name="latitude" type="number" min="-90" max="90" step="any" required></label>
@@ -127,9 +143,14 @@ const questionModes = {target_places:'target-places',route_departure:'route-depa
 export function renderQuestions(snapshot) {
   const cards = snapshot.questions.filter(question => question.status === 'open').map(question => {
     const targetPlaces = question.field === 'target_places';
-    const fields = question.field === 'support_target'
+    let fields = question.field === 'support_target'
       ? supportFields(snapshot.items,question.related_item_ids)
       : targetPlaces ? targetPlaceFields(question) : questionFields[question.field];
+    if (['origin','destination','lodging'].includes(question.field)) fields = `<fieldset data-anchor-picker="${e(question.field)}"><legend>${e(questionLabels[question.field])}</legend>${fields}<button type="button" class="ghost sm" data-clear-anchor>입력 지우기</button></fieldset>`;
+    if (question.field === 'menu_selection') {
+      const ref = placeRefOf(snapshot,question.target_ref);
+      if (ref) fields = fields.replace('<input name="menu_id" required>',`<select name="menu_id" required data-menu-place="${e(ref)}"><option value="">메뉴 불러오는 중…</option></select>`);
+    }
     const condition = question.field === 'constraint_value'
       ? snapshot.constraints.find(item => item.id === question.target_ref)
       : null;

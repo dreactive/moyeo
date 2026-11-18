@@ -39,8 +39,8 @@ def answer_question(room, question_id, actor_id, value, observations=None):
     question = next((q for q in room['questions'] if q['id'] == question_id), None)
     if question is None:
         raise HTTPException(404, 'Question not found')
-    if question.get('status') in ('cancelled','closed'):
-        raise HTTPException(409, 'Question is closed')
+    if question.get('status') != 'open':
+        raise HTTPException(409, 'Question is not open')
     value = validate_answer(room, question, actor_id, value)
     field = question['field']
     if field == 'menu_selection':

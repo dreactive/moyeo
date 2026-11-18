@@ -63,3 +63,37 @@ test('same-room refresh retains older loaded messages and deduplicates later del
   state.appendMessage(messages.at(-1),61);
   assert.deepEqual(state.getSnapshot().messages,messages);
 });
+
+test('a partial-only place loses selection when any input basis changes or the current result removes it', () => {
+  const versions={participant_version:1,constraint_version:1,evidence_version:1,plan_revision:1};
+  for (const key of Object.keys(versions)) {
+    const room={room_id:'partial-selection-' + key,versions,current_plan:null,
+      agent_results:{run_id:'partial',versions:{...versions},build_itinerary:{days:[{visits:[{place_ref:'partial-only'}]}]}}};
+    state.applySnapshot(room);
+    state.setSelectedPlace('partial-only');
+    state.applySnapshot(structuredClone(room));
+    assert.equal(state.getSelectedPlace(),'partial-only');
+    state.applySnapshot({...room,versions:{...versions,[key]:2}});
+    assert.equal(state.getSelectedPlace(),null,key);
+  }
+  const room={room_id:'partial-selection-replaced',versions,current_plan:null,
+    agent_results:{run_id:'partial',versions,build_itinerary:{unplaced_items:[{place_ref:'partial-only'}]}}};
+  state.applySnapshot(room);
+  state.setSelectedPlace('partial-only');
+  state.applySnapshot({...room,agent_results:{...room.agent_results,build_itinerary:{days:[]}}});
+  assert.equal(state.getSelectedPlace(),null);
+});
+
+test('a stale partial result does not remove a place independently present in the displayed plan or request results', () => {
+  const versions={participant_version:1,constraint_version:1,evidence_version:1,plan_revision:1};
+  for (const source of [{current_plan:{item_snapshots:[{place_ref:'known-place'}]}},
+    {agent_requests:[{result_refs:['known-place']}]}]) {
+    const room={room_id:'independent-selection',versions,...source,
+      agent_results:{run_id:'stale',versions:{...versions,evidence_version:0},
+        build_itinerary:{days:[{visits:[{place_ref:'known-place'}]}]}}};
+    state.applySnapshot(room);
+    state.setSelectedPlace('known-place');
+    state.applySnapshot(structuredClone(room));
+    assert.equal(state.getSelectedPlace(),'known-place');
+  }
+});

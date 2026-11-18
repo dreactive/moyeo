@@ -1,9 +1,9 @@
-import {readTripConfig} from './trip-input.js';
+import {readAnchor,readTripConfig} from './trip-input.js';
 import {appendCost,readFixedCosts} from './fixed-costs.js';
 
 export function readTripForm(form) {
   const data = Object.fromEntries(new FormData(form));
-  return {title:data.title,...readTripConfig(data, readFixedCosts())};
+  return {title:data.title,...readTripConfig(data, readFixedCosts()),origin:readAnchor(data,'origin'),destination:readAnchor(data,'destination')};
 }
 
 export function restoreTripForm(snapshot) {
@@ -20,7 +20,7 @@ export function restoreTripForm(snapshot) {
   }
   if (snapshot.config.fixed_costs) {
     document.getElementById('fixed-costs').innerHTML = '';
-    snapshot.config.fixed_costs.forEach(appendCost);
+    snapshot.config.fixed_costs.forEach(line => appendCost(line,snapshot.members));
   }
   const {title,...baseline} = readTripForm(form);
   return baseline;
