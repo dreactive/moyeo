@@ -98,3 +98,9 @@ def test_provider_failure_does_not_expose_secrets(api, monkeypatch):
     response = api.post('/api/dev/tools/search_places', json=tool_examples('search_places')['fixture']['value'],
                         headers={'X-Dev-Token': 'test-dev'})
     assert response.status_code == 502 and 'secret' not in response.text
+
+
+def test_developer_agent_is_lazy_and_separate_from_fixture(api):
+    bridge = api.app.state.dev_agent
+    assert bridge.runtime is None
+    assert bridge is not api.app.state.agent
