@@ -141,3 +141,13 @@ def test_explicit_condition_assistance_uses_source_value_not_model_guess():
     output = ground_extraction(ExtractionBatch.model_validate(raw),value)
     assert output.proposals['constraint_proposals'][0]['value'] == 25000
     assert 'condition_rule_assisted' in output.issue_codes
+
+def test_known_place_support_does_not_report_unresolved_new_place():
+    from ai.extraction_run import extraction_output
+    from ai.extraction_projection import facts_to_batch
+    from ai.extraction_schema import ExtractionBatch
+    value = task()
+    message = dict(id='new',author_id='u1',text='B공원 좋아')
+    value['recent_messages'] = [message]
+    batch = ExtractionBatch.model_validate(facts_to_batch(dict(places=['B공원'],conditions=[],intents=['place','support']),message,value))
+    assert extraction_output(batch,1,None,value)['extraction_report']['status'] == 'ok'

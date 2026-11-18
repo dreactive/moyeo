@@ -44,6 +44,8 @@ def unresolved_messages(batch, proposals):
     missing = []
     for assessment in batch.message_assessments:
         for intent in assessment.intents:
+            if intent == 'place' and any(p['source_message_id'] == assessment.message_id for p in proposals['support_observations']):
+                continue
             field = {'place': 'item_proposals', 'condition': 'constraint_proposals'}.get(intent)
             if intent in ('region', 'unclear') or field and not any(assessment.message_id in p['source_message_ids'] for p in proposals[field]):
                 missing.append(assessment.message_id)
