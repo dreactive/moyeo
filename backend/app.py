@@ -40,6 +40,8 @@ def create_app(agent_port: AgentPort | None = None, *, database_path=None, setti
             app.state.db.close()
     app = FastAPI(title="Travel Agent", lifespan=lifespan)
     app.state.cookie_secure = settings.get('cookie_secure', False)
+    from backend.public_http import configure_public_http
+    configure_public_http(app, settings)
     from backend.routes.auth import router
     app.include_router(router)
     from backend.routes.rooms import router as rooms_router
