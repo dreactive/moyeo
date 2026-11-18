@@ -11,7 +11,7 @@ import {applySnapshot,subscribeState,setUser} from './state.js';
 import {showError} from './ui.js';
 import {getSnapshot,appendMessage,applyRoomResponse} from './state.js';
 import {openRoomEvents} from './events.js';
-import {run} from './ui.js';
+import {run,withPending} from './ui.js';
 import {renderItems,renderConstraints,renderQuestions,renderConflicts,readDecisionValue} from './items.js';
 import {renderPlan,displayPlan} from './plan.js';
 import {renderCost} from './cost.js';
@@ -44,7 +44,7 @@ export async function startRoomApp() {
   const savedRoom = readRoomId();
   if (!savedRoom) return navigate('/rooms.html');
   initMaps({routeElement:document.getElementById('route-map'),placeElement:document.getElementById('place-map'),appKey:document.querySelector('meta[name="kakao-map-app-key"]').content});
-  bindSessionActions(); bindFixtureControls(); bindPlanActions(); bindDecisionActions(); bindTripInput(); bindHistory();
+  bindSessionActions(); bindChatKeys(); bindFixtureControls(); bindPlanActions(); bindDecisionActions(); bindTripInput(); bindHistory();
   html('mode', getDataMode() === 'fixture' ? '개발용 fixture · 실제 API 조회 아님' : 'LIVE · Backend 연결');
   subscribeState(snapshot => snapshot && renderRoom(snapshot));
   setUser(user);
@@ -74,7 +74,7 @@ export function enterRoom(snapshot) {
 function bindForm(id, task) {
   document.getElementById(id).onsubmit = event => {
     event.preventDefault();
-    run(() => task(Object.fromEntries(new FormData(event.target)),event.submitter?.value,event.target));
+    run(() => withPending(event.submitter,() => task(Object.fromEntries(new FormData(event.target)),event.submitter?.value,event.target)));
   };
 }
 function showUser(user) { setUser(user); html('session',e(user?.name ?? '로그인 전')); }
@@ -90,6 +90,18 @@ function bindSessionActions() {
     appendMessage(await requestJson('/api/rooms/' + encodeURIComponent(roomId) + '/messages',{method:'POST',body}));
     form.reset();
   });
+}
+
+function bindChatKeys() {
+  const form = document.getElementById('message');
+  form.elements.text.onkeydown = event => {
+    if (isSendKey(event)) { event.preventDefault(); form.requestSubmit(); }
+  };
+  document.getElementById('new-messages').onclick = event => {
+    const list = document.getElementById('messages');
+    list.scrollTop = list.scrollHeight;
+    event.currentTarget.hidden = true;
+  };
 }
 
 function bindFixtureControls() {
