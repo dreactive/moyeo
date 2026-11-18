@@ -72,3 +72,15 @@ test('a failing entry action unlocks its whole control group', async () => {
   await request;
   assert.equal(peer.disabled,false);
 });
+
+test('a browser-restored page reloads to check the current session', () => {
+  let receive;
+  let reloads = 0;
+  globalThis.addEventListener = (type,callback) => { if (type === 'pageshow') receive = callback; };
+  globalThis.location = {search:'',reload: () => reloads++};
+  globalThis.document = {getElementById: () => ({}),querySelectorAll: () => []};
+  session.preparePage();
+  receive({persisted:false});
+  receive({persisted:true});
+  assert.equal(reloads,1);
+});

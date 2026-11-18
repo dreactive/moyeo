@@ -43,7 +43,12 @@ export async function signOut() {
   navigate('/login.html');
 }
 
+function reloadRestoredPage(event) {
+  if (event.persisted) location.reload();
+}
+
 export function preparePage() {
+  globalThis.addEventListener?.('pageshow', reloadRestoredPage);
   document.getElementById('mode').textContent = getDataMode() === 'fixture'
     ? '개발용 fixture · 실제 계정/여행 데이터 아님'
     : 'LIVE · Backend 연결';
