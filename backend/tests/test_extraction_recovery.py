@@ -15,3 +15,14 @@ def test_task_separates_past_context_from_unprocessed_messages():
     value = make_task(room,'run','new_message',[],None,'23')
     assert [m['id'] for m in value['recent_messages']] == ['24']
     assert [m['id'] for m in value['conversation_context']] == [str(i) for i in range(4,24)]
+
+def test_failed_extraction_never_applies_even_with_proposals(room, agent_result):
+    from backend.db import Database
+    from backend.services.agent_apply import apply_agent_result
+    db = Database(':memory:')
+    db.put('room:' + room['room_id'], room)
+    db.put('run:' + agent_result['run_id'], dict(room_id=room['room_id'],base_versions=room['versions'],message_ids=['m4']))
+    agent_result['extraction_report'] = dict(status='failed',issue_codes=['ValidationError'],attempts=2,rejected_message_ids=['m4'])
+    assert apply_agent_result(db,agent_result) is False
+    assert db.get('room:' + room['room_id']) == room
+    assert db.get('processed-message:' + room['room_id']) is None

@@ -80,6 +80,8 @@ def prepare_result(room, result, old_observations):
 
 @serialized
 def apply_agent_result(db, result):
+    if result.get("extraction_report", {}).get("status") == "failed":
+        return False
     if not valid_result_base(db, result):
         return False
     room_id = result['room_id']
