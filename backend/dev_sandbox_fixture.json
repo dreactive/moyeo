@@ -1,0 +1,532 @@
+{
+  "run_id": "dev-run",
+  "room_id": "dev-sandbox",
+  "base_versions": {
+    "participant_version": 1,
+    "constraint_version": 1,
+    "evidence_version": 1,
+    "plan_revision": 1
+  },
+  "goal": "replan",
+  "recent_messages": [],
+  "members": [
+    {
+      "user_id": "u1",
+      "name": "참가자1"
+    },
+    {
+      "user_id": "u2",
+      "name": "참가자2"
+    },
+    {
+      "user_id": "u3",
+      "name": "참가자3"
+    },
+    {
+      "user_id": "u4",
+      "name": "참가자4"
+    }
+  ],
+  "config": {
+    "region": "여수",
+    "start_date": "2026-11-21",
+    "end_date": "2026-11-22",
+    "transport": "car",
+    "day_start_time": "09:00",
+    "day_end_time": "18:00",
+    "per_person_budget_krw": 200000,
+    "origin": {
+      "label": "예시 출발지",
+      "latitude": 34.76,
+      "longitude": 127.66,
+      "source_ref": "fixture:anchor"
+    },
+    "destination": {
+      "label": "예시 귀가 지점",
+      "latitude": 34.76,
+      "longitude": 127.66,
+      "source_ref": "fixture:anchor"
+    },
+    "lodging": {
+      "label": "예시 숙소",
+      "latitude": 34.75,
+      "longitude": 127.67,
+      "source_ref": "fixture:anchor"
+    },
+    "fixed_costs": [
+      {
+        "id": "cost-lodging",
+        "category": "lodging",
+        "scope": "shared",
+        "owner_id": null,
+        "description": "계약 예시 숙박비",
+        "unit_price_krw": 80000,
+        "quantity": 1,
+        "subtotal_krw": 80000,
+        "paid": true,
+        "evidence_id": null,
+        "assumption": "fixture 사용자 입력"
+      }
+    ]
+  },
+  "constraints": [
+    {
+      "id": "constraint-budget",
+      "owner_id": "u1",
+      "key": "budget_krw",
+      "value": 200000,
+      "kind": "hard",
+      "status": "confirmed",
+      "source_message_ids": [
+        "m0"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "id": "item-a",
+      "item_version": 1,
+      "kind": "place",
+      "title": "가상 A식당",
+      "source_message_ids": [
+        "m1"
+      ],
+      "included_in_plan": true,
+      "supporter_ids": [
+        "u1"
+      ],
+      "opponent_ids": [],
+      "support_threshold": 3,
+      "state": "mentioned",
+      "conflict_ids": []
+    },
+    {
+      "id": "item-b",
+      "item_version": 1,
+      "kind": "place",
+      "title": "가상 B공원",
+      "source_message_ids": [
+        "m2",
+        "m3",
+        "m4"
+      ],
+      "included_in_plan": true,
+      "supporter_ids": [
+        "u2",
+        "u3",
+        "u4"
+      ],
+      "opponent_ids": [],
+      "support_threshold": 3,
+      "state": "supported",
+      "conflict_ids": []
+    }
+  ],
+  "questions": [],
+  "user_selection": null,
+  "current_plan": {
+    "participant_version": 1,
+    "constraint_version": 1,
+    "evidence_version": 1,
+    "plan_revision": 1,
+    "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "selected_item_ids": [
+      "item-a",
+      "item-b"
+    ],
+    "days": [
+      {
+        "date": "2026-11-21",
+        "visits": [
+          {
+            "item_id": "item-a",
+            "place_ref": "fixture:place-a",
+            "date": "2026-11-21",
+            "start_at": "2026-11-21T11:30:00+09:00",
+            "end_at": "2026-11-21T12:30:00+09:00",
+            "stay_minutes": 60,
+            "selected_menu_ids": [
+              "fixture:menu-a"
+            ],
+            "assumptions": [
+              "계약 예시"
+            ]
+          },
+          {
+            "item_id": "item-b",
+            "place_ref": "fixture:place-b",
+            "date": "2026-11-21",
+            "start_at": "2026-11-21T14:00:00+09:00",
+            "end_at": "2026-11-21T15:00:00+09:00",
+            "stay_minutes": 60,
+            "selected_menu_ids": [],
+            "assumptions": [
+              "기본 체류시간 가정"
+            ]
+          }
+        ],
+        "route_legs": [
+          {
+            "from_ref": "fixture:place-a",
+            "to_ref": "fixture:place-b",
+            "distance_m": 5000,
+            "duration_seconds": 900,
+            "toll_krw": 0,
+            "polyline": [
+              {
+                "latitude": 34.761,
+                "longitude": 127.661
+              },
+              {
+                "latitude": 34.77,
+                "longitude": 127.68
+              }
+            ],
+            "evidence_id": "fixture:route-a-b"
+          }
+        ]
+      },
+      {
+        "date": "2026-11-22",
+        "visits": [],
+        "route_legs": []
+      }
+    ],
+    "cost": {
+      "lines": [
+        {
+          "id": "cost-lodging",
+          "category": "lodging",
+          "scope": "shared",
+          "owner_id": null,
+          "description": "계약 예시 숙박비",
+          "unit_price_krw": 80000,
+          "quantity": 1,
+          "subtotal_krw": 80000,
+          "paid": true,
+          "evidence_id": null,
+          "assumption": "fixture 사용자 입력"
+        },
+        {
+          "id": "cost-meal",
+          "category": "meal",
+          "scope": "per_person",
+          "owner_id": null,
+          "description": "계약 예시 1인 메뉴",
+          "unit_price_krw": 10000,
+          "quantity": 1,
+          "subtotal_krw": 40000,
+          "paid": false,
+          "evidence_id": "fixture:price-a",
+          "assumption": "참가자마다 메뉴 1개"
+        }
+      ],
+      "known_total_krw": 120000,
+      "total_krw": 120000,
+      "per_person_krw": {
+        "u1": 30000,
+        "u2": 30000,
+        "u3": 30000,
+        "u4": 30000
+      },
+      "paid_krw": 80000,
+      "paid_by_user_krw": {
+        "u1": 20000,
+        "u2": 20000,
+        "u3": 20000,
+        "u4": 20000
+      },
+      "remaining_budget_krw": {
+        "u1": 180000,
+        "u2": 180000,
+        "u3": 180000,
+        "u4": 180000
+      },
+      "planned_balance_krw": {
+        "u1": 170000,
+        "u2": 170000,
+        "u3": 170000,
+        "u4": 170000
+      },
+      "unknown_line_count": 0,
+      "estimated_line_count": 0
+    },
+    "validation": "needs_input",
+    "blocking_conflict_ids": [],
+    "item_snapshots": [
+      {
+        "id": "item-a",
+        "item_version": 1,
+        "kind": "place",
+        "title": "가상 A식당",
+        "source_message_ids": [
+          "m1"
+        ],
+        "place_ref": "fixture:place-a"
+      },
+      {
+        "id": "item-b",
+        "item_version": 1,
+        "kind": "place",
+        "title": "가상 B공원",
+        "source_message_ids": [
+          "m2",
+          "m3",
+          "m4"
+        ],
+        "place_ref": "fixture:place-b"
+      }
+    ],
+    "confirmation_target": {
+      "participant_version": 1,
+      "constraint_version": 1,
+      "evidence_version": 1,
+      "plan_revision": 1,
+      "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  },
+  "observations": [
+    {
+      "tool_name": "get_place_details",
+      "arguments": {
+        "place_ref": "fixture:place-a"
+      },
+      "result": {
+        "place": {
+          "id": "fixture:place-a",
+          "name": "가상 A식당",
+          "address": "계약 예시용 주소, 실제 업소 아님",
+          "latitude": 34.761,
+          "longitude": 127.661,
+          "provider_refs": {
+            "fixture": "place-a"
+          }
+        },
+        "menus": [
+          {
+            "id": "fixture:menu-a",
+            "name": "예시 메뉴",
+            "price_krw": 10000,
+            "price_text": "10,000원",
+            "serving_basis": "fixture 1인분",
+            "evidence_id": "fixture:price-a"
+          }
+        ],
+        "opening_hours": {
+          "raw_text": "예시 매일 10:00-20:00",
+          "intervals": [
+            {
+              "day": "2026-11-21",
+              "start": "10:00",
+              "end": "20:00"
+            }
+          ],
+          "holiday_text": null,
+          "evidence_id": "fixture:hours-a"
+        },
+        "evidence": [
+          {
+            "id": "fixture:price-a",
+            "provider": "fixture",
+            "provider_record_id": "fixture:place-a",
+            "source_url": "https://example.invalid/fixture/place-a",
+            "field": "menu_price",
+            "raw_value": "10,000원",
+            "normalized_value": 10000,
+            "status": "api_observed",
+            "retrieved_at": "2026-11-18T10:05:00+09:00",
+            "provider_updated_at": null,
+            "mode": "fixture",
+            "match_status": "matched"
+          },
+          {
+            "id": "fixture:hours-a",
+            "provider": "fixture",
+            "provider_record_id": "fixture:place-a",
+            "source_url": "https://example.invalid/fixture/place-a",
+            "field": "opening_hours",
+            "raw_value": "10:00-20:00",
+            "normalized_value": [
+              {
+                "day": "2026-11-21",
+                "start": "10:00",
+                "end": "20:00"
+              }
+            ],
+            "status": "api_observed",
+            "retrieved_at": "2026-11-18T10:05:00+09:00",
+            "provider_updated_at": null,
+            "mode": "fixture",
+            "match_status": "matched"
+          }
+        ]
+      },
+      "observed_at": "2026-11-18T10:05:00+09:00",
+      "source_refs": [
+        "fixture:price-a",
+        "fixture:hours-a"
+      ]
+    },
+    {
+      "tool_name": "get_place_details",
+      "arguments": {
+        "place_ref": "fixture:place-b"
+      },
+      "result": {
+        "place": {
+          "id": "fixture:place-b",
+          "name": "가상 B공원",
+          "address": "계약 예시용 공원 주소, 실제 장소 아님",
+          "latitude": 34.77,
+          "longitude": 127.68,
+          "provider_refs": {
+            "fixture": "place-b"
+          }
+        },
+        "menus": [],
+        "opening_hours": {
+          "raw_text": "예시 매일 10:00-20:00",
+          "intervals": [
+            {
+              "day": "2026-11-21",
+              "start": "10:00",
+              "end": "20:00"
+            }
+          ],
+          "holiday_text": null,
+          "evidence_id": "fixture:hours-b"
+        },
+        "evidence": [
+          {
+            "id": "fixture:hours-b",
+            "provider": "fixture",
+            "provider_record_id": "fixture:place-b",
+            "source_url": "https://example.invalid/fixture/place-b",
+            "field": "opening_hours",
+            "raw_value": "10:00-20:00",
+            "normalized_value": [
+              {
+                "day": "2026-11-21",
+                "start": "10:00",
+                "end": "20:00"
+              }
+            ],
+            "status": "api_observed",
+            "retrieved_at": "2026-11-18T10:05:00+09:00",
+            "provider_updated_at": null,
+            "mode": "fixture",
+            "match_status": "matched"
+          }
+        ]
+      },
+      "observed_at": "2026-11-18T10:05:00+09:00",
+      "source_refs": [
+        "fixture:hours-b"
+      ]
+    },
+    {
+      "tool_name": "get_car_route",
+      "arguments": {
+        "from_ref": "anchor:origin",
+        "to_ref": "fixture:place-a",
+        "departure_at": "2026-11-21T09:00:00+09:00"
+      },
+      "result": {
+        "from_ref": "anchor:origin",
+        "to_ref": "fixture:place-a",
+        "distance_m": 4000,
+        "duration_seconds": 600,
+        "toll_krw": 0,
+        "polyline": [
+          {
+            "latitude": 34.76,
+            "longitude": 127.66
+          },
+          {
+            "latitude": 34.761,
+            "longitude": 127.661
+          }
+        ],
+        "evidence_id": "fixture:route:anchor:origin:fixture:place-a"
+      }
+    },
+    {
+      "tool_name": "get_car_route",
+      "arguments": {
+        "from_ref": "fixture:place-a",
+        "to_ref": "fixture:place-b",
+        "departure_at": "2026-11-21T12:30:00+09:00"
+      },
+      "result": {
+        "from_ref": "fixture:place-a",
+        "to_ref": "fixture:place-b",
+        "distance_m": 4000,
+        "duration_seconds": 600,
+        "toll_krw": 0,
+        "polyline": [
+          {
+            "latitude": 34.761,
+            "longitude": 127.661
+          },
+          {
+            "latitude": 34.77,
+            "longitude": 127.68
+          }
+        ],
+        "evidence_id": "fixture:route:fixture:place-a:fixture:place-b"
+      }
+    },
+    {
+      "tool_name": "get_car_route",
+      "arguments": {
+        "from_ref": "fixture:place-b",
+        "to_ref": "anchor:lodging",
+        "departure_at": "2026-11-21T15:00:00+09:00"
+      },
+      "result": {
+        "from_ref": "fixture:place-b",
+        "to_ref": "anchor:lodging",
+        "distance_m": 4000,
+        "duration_seconds": 600,
+        "toll_krw": 0,
+        "polyline": [
+          {
+            "latitude": 34.77,
+            "longitude": 127.68
+          },
+          {
+            "latitude": 34.75,
+            "longitude": 127.67
+          }
+        ],
+        "evidence_id": "fixture:route:fixture:place-b:anchor:lodging"
+      }
+    },
+    {
+      "tool_name": "get_car_route",
+      "arguments": {
+        "from_ref": "anchor:lodging",
+        "to_ref": "anchor:destination",
+        "departure_at": "2026-11-22T09:00:00+09:00"
+      },
+      "result": {
+        "from_ref": "anchor:lodging",
+        "to_ref": "anchor:destination",
+        "distance_m": 4000,
+        "duration_seconds": 600,
+        "toll_krw": 0,
+        "polyline": [
+          {
+            "latitude": 34.75,
+            "longitude": 127.67
+          },
+          {
+            "latitude": 34.76,
+            "longitude": 127.66
+          }
+        ],
+        "evidence_id": "fixture:route:anchor:lodging:anchor:destination"
+      }
+    }
+  ]
+}
