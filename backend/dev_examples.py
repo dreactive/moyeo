@@ -16,3 +16,10 @@ def tool_examples(name):
     context = json.loads(Path(__file__).with_name('dev_sandbox_fixture.json').read_text(encoding='utf-8'))
     return {'fixture': {'summary': 'Synthetic fixture; use PROVIDER_MODE=fixture',
                         'value': {'context': context, 'arguments': TOOL_ARGUMENTS[name]}}}
+
+
+def utterance_examples():
+    context = tool_examples('search_places')['fixture']['value']['context']
+    return {goal: {'summary': goal + ' (fake/fixture example)',
+                   'value': {'context': context, 'text': '예산은 15만원이야.', 'author_id': 'u1', 'goal': goal}}
+            for goal in ('extract', 'new_message', 'manual_replan')}

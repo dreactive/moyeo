@@ -1,7 +1,7 @@
 from backend.dev_auth import require_developer
-from backend.dev_examples import tool_examples
-from backend.dev_schemas import SearchTool, DetailsTool, RouteTool, ItineraryTool, CostTool
-from backend.services.dev_sandbox import execute_tool
+from backend.dev_examples import tool_examples, utterance_examples
+from backend.dev_schemas import SearchTool, DetailsTool, RouteTool, ItineraryTool, CostTool, Utterance
+from backend.services.dev_sandbox import execute_tool, run_utterance
 from fastapi import APIRouter, Body, Depends, Request
 
 
@@ -31,3 +31,9 @@ async def build_itinerary(request: Request, body: ItineraryTool = Body(openapi_e
 @router.post('/tools/calculate_costs', summary='Calculate KRW totals and personal shares (developer only)')
 async def calculate_costs(request: Request, body: CostTool = Body(openapi_examples=tool_examples('calculate_costs'))):
     return await execute_tool(body, 'calculate_costs', request.app.state.dev_runtime_config)
+
+
+@router.post('/agent/utterance', summary='Send an isolated utterance to the Agent (developer only)',
+             description='Returns Agent result and sanitized traces without saving a message or applying proposals. Uses the configured model/provider. Goals: extract, new_message, manual_replan.')
+async def utterance(request: Request, body: Utterance = Body(openapi_examples=utterance_examples())):
+    return await run_utterance(request, body)

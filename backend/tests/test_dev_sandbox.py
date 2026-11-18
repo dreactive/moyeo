@@ -139,3 +139,12 @@ def test_utterance_service_returns_agent_result_and_trace(api):
     result = api.portal.call(run_utterance, request, body)
     assert result['result']['constraint_proposals']
     assert result['trace'][0]['event'] == 'decision'
+
+
+def test_utterance_endpoint_delivers_text_to_agent(api):
+    from backend.dev_examples import utterance_examples
+    api.app.state.dev_token = 'test-dev'
+    response = api.post('/api/dev/agent/utterance', json=utterance_examples()['extract']['value'],
+                        headers={'X-Dev-Token': 'test-dev'})
+    assert response.status_code == 200, response.text
+    assert response.json()['result']['constraint_proposals'][0]['value'] == 150000
