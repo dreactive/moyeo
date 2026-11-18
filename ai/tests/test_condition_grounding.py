@@ -30,3 +30,13 @@ def test_third_person_facts_without_quotation_are_not_owned_by_speaker(key,text)
 def test_negation_uncertainty_and_multiple_values_need_clarification(text):
     from ai.condition_grounding import condition_value
     assert condition_value('budget',text) is None
+
+@pytest.mark.parametrize('key,text', [('budget','내 예산은 20만원일 수도 있어'),('budget','예산은 20만원이래'),('budget','예산 없고 선물은 20만원'),('return_by','16시까지 동생이 귀가해야 해'),('return_by','16시까지 귀가할 수도 있어')])
+def test_only_complete_personal_assertions_produce_hard_values(key,text):
+    from ai.condition_grounding import condition_value
+    assert condition_value(key,text) is None
+
+
+def test_complete_grouped_won_amount_is_not_parsed_as_zero():
+    from ai.condition_grounding import condition_value
+    assert condition_value('budget','내 예산은 200,000원') == 200000
