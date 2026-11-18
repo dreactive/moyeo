@@ -85,3 +85,16 @@ def test_invalid_place_returns_validation_error(api):
     body['arguments']['place_ref'] = 'unknown'
     response = api.post('/api/dev/tools/get_place_details', json=body, headers={'X-Dev-Token': 'test-dev'})
     assert response.status_code == 422
+
+
+def test_provider_failure_does_not_expose_secrets(api, monkeypatch):
+    import httpx
+    from ai.tools.registry import RegisteredTools
+    from backend.dev_examples import tool_examples
+    async def fail(*args):
+        raise httpx.ConnectError('provider-token=secret')
+    monkeypatch.setattr(RegisteredTools, 'execute', fail)
+    api.app.state.dev_token = 'test-dev'
+    response = api.post('/api/dev/tools/search_places', json=tool_examples('search_places')['fixture']['value'],
+                        headers={'X-Dev-Token': 'test-dev'})
+    assert response.status_code == 502 and 'secret' not in response.text

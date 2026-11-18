@@ -2,6 +2,7 @@
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from fastapi import HTTPException
+from httpx import HTTPError
 
 
 async def execute_tool(body, name, settings):
@@ -15,6 +16,8 @@ async def sandbox_errors():
         yield
     except (ValueError, KeyError, TypeError, IndexError, AttributeError, OverflowError) as error:
         raise HTTPException(422, {'error': type(error).__name__, 'message': 'Invalid sandbox arguments or context'}) from None
+    except HTTPError:
+        raise HTTPException(502, 'Provider request failed; check server configuration and connectivity') from None
 
 
 async def tool_result(body, name, settings):
