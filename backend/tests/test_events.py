@@ -17,6 +17,7 @@ def test_stream_replays_only_after_cursor():
         db = Database(':memory:')
         db.put('events:r', [{'event':'room.updated','data':{'seq':1}},{'event':'agent.status','data':{'seq':2}}])
         stream = room_event_stream(db, 'r', 1)
+        assert await anext(stream) == ': keepalive\n\n'
         assert (await anext(stream)).startswith('id: 2\n')
         await stream.aclose()
     asyncio.run(scenario())
@@ -27,3 +28,22 @@ def test_events_endpoint_is_authenticated():
     from backend.app import create_app
     with TestClient(create_app(database_path=':memory:')) as client:
         assert client.get('/api/rooms/r/events').status_code == 401
+
+
+def test_idle_stream_sends_periodic_heartbeat(monkeypatch):
+    import asyncio
+    import backend.services.events as events
+    from backend.db import Database
+    clock = [0]
+    monkeypatch.setattr(events, 'monotonic', lambda: clock[0], raising=False)
+    async def tick(_):
+        assert clock[0] < 16, 'idle stream did not emit a heartbeat'
+        clock[0] += 1
+    monkeypatch.setattr(events.asyncio, 'sleep', tick)
+    async def scenario():
+        stream = events.room_event_stream(Database(':memory:'), 'r', 4)
+        assert await anext(stream) == ': keepalive\n\n'
+        clock[0] = 15
+        assert await anext(stream) == ': keepalive\n\n'
+        await stream.aclose()
+    asyncio.run(scenario())

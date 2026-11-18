@@ -24,8 +24,8 @@ class Registration(BaseModel):
     password: str = Field(min_length=8)
 
 
-def set_session(response, db, user):
-    response.set_cookie('session', issue_session(db, user['id']), httponly=True, samesite='lax')
+def set_session(response, db, user, secure=False):
+    response.set_cookie('session', issue_session(db, user['id']), httponly=True, samesite='lax', secure=secure)
 
 
 @router.post('/register', status_code=201)
@@ -34,13 +34,13 @@ def register(body: Registration, request: Request, response: Response):
     if db.get('email:' + body.email.lower()):
         raise HTTPException(409, 'Email already registered')
     user = register_user(db, body.name, body.email, body.password)
-    set_session(response, db, user)
+    set_session(response, db, user, request.app.state.cookie_secure)
     return user
 
 @router.post('/logout')
 def logout(request: Request, response: Response):
     request.app.state.db.put('session:' + request.cookies.get('session', ''), None)
-    response.delete_cookie('session')
+    response.delete_cookie('session', secure=request.app.state.cookie_secure, httponly=True, samesite='lax')
     return {'ok': True}
 
 
@@ -58,5 +58,5 @@ def login(body: Login, request: Request, response: Response):
     if stored is None or not verify_password(body.password, stored['password_hash']):
         raise HTTPException(401, 'Invalid credentials')
     user = {key: stored[key] for key in ('id', 'name', 'email')}
-    set_session(response, db, user)
+    set_session(response, db, user, request.app.state.cookie_secure)
     return user

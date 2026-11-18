@@ -1,6 +1,7 @@
 from backend.db import serialized
 import asyncio
 import json
+from time import monotonic
 
 
 @serialized
@@ -20,9 +21,14 @@ def event_frame(event):
 
 
 async def room_event_stream(db, room_id, after_seq):
+    heartbeat_at = monotonic() + 15
+    yield ': keepalive\n\n'
     while True:
         for event in db.get('events:' + room_id) or []:
             if event['data']['seq'] > after_seq:
                 after_seq = event['data']['seq']
                 yield event_frame(event)
+        if monotonic() >= heartbeat_at:
+            yield ': keepalive\n\n'
+            heartbeat_at = monotonic() + 15
         await asyncio.sleep(.15)

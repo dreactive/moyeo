@@ -39,6 +39,11 @@
 
 ## 실행
 
+Vercel 화면과 개인 Windows PC 서버를 연결하려면
+[Cloudflare Tunnel 배포 가이드](./docs/deployment/vercel-cloudflare.md)를 따른다.
+`frontend/vercel.json`은 `BACKEND_ORIGIN`과 공개 지도 키로 정적 배포 산출물을 생성한다.
+외부 계정·DNS·배포 설정과 실제 공개 후 확인은 가이드의 별도 단계다.
+
 저장소 루트에서 실행한다. Windows의 `python` 별칭이 실행되지 않으면 설치된 Python 실행 파일의 절대 경로를 사용한다. 로컬 Qwen 통합 환경은 Python 3.12를 사용했다.
 
 ```powershell

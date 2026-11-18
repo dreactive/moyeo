@@ -16,6 +16,9 @@ def read_settings(env_file=None):
         'agent_mode':mode,
         'public_map_key':values.get('KAKAO_JAVASCRIPT_KEY',''),
         'trace_enabled':values.get('TRACE_ENABLED','1') != '0',
+        'cookie_secure':values.get('COOKIE_SECURE','0') == '1',
+        'public_requests_per_minute':int(values.get('PUBLIC_REQUESTS_PER_MINUTE','60')),
+        'serve_frontend':values.get('SERVE_FRONTEND','1') == '1',
         'runtime_config':{
             'model_backend':values.get('MODEL_BACKEND','fake'),
             'provider_mode':values.get('PROVIDER_MODE','fixture'),

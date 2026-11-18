@@ -39,6 +39,11 @@ def create_app(agent_port: AgentPort | None = None, *, database_path=None, setti
                 await app.state.dev_agent.aclose()
             app.state.db.close()
     app = FastAPI(title="Travel Agent", lifespan=lifespan)
+    app.state.cookie_secure = settings.get('cookie_secure', False)
+    from backend.public_http import configure_public_http
+    configure_public_http(app, settings)
+    from backend.routes.health import router as health_router
+    app.include_router(health_router)
     from backend.routes.auth import router
     app.include_router(router)
     from backend.routes.rooms import router as rooms_router
@@ -55,7 +60,8 @@ def create_app(agent_port: AgentPort | None = None, *, database_path=None, setti
     app.include_router(places_router)
     from pathlib import Path
     from backend.routes.static import mount_frontend
-    mount_frontend(app, frontend_path or Path(__file__).resolve().parents[1] / 'frontend', settings['public_map_key'])
+    if settings.get('serve_frontend', True):
+        mount_frontend(app, frontend_path or Path(__file__).resolve().parents[1] / 'frontend', settings['public_map_key'])
     return app
 
 
