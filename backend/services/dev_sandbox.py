@@ -6,6 +6,7 @@ from httpx import HTTPError
 from uuid import uuid4
 from backend.services.traces import sanitize
 from decimal import DecimalException
+import httpx
 
 
 async def execute_tool(body, name, settings):
@@ -82,6 +83,15 @@ async def run_utterance(request, body):
         bridge = request.app.state.dev_agent
         await bridge.start()
         result = await bridge.run(task, capture)
+        raise_termination_error(trace)
         settings = request.app.state.dev_runtime_config
         return dict(model_backend=settings.get('model_backend', 'fake'),
                     provider_mode=settings.get('provider_mode', 'fixture'), result=result, trace=trace)
+
+
+def raise_termination_error(trace):
+    for event in trace:
+        reason = event.get('payload', {}).get('termination', '')
+        error_type = getattr(httpx, reason, None)
+        if isinstance(error_type, type) and issubclass(error_type, HTTPError):
+            raise HTTPException(502, 'Agent provider request failed')

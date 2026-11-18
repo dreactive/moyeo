@@ -107,6 +107,19 @@ def test_invalid_server_modes_are_unavailable(api, key):
     assert response.status_code == 503
 
 
+def test_agent_caught_provider_failure_is_not_http_success(api, monkeypatch):
+    import httpx
+    from ai.tools.registry import RegisteredTools
+    from backend.dev_examples import utterance_examples
+    async def fail(*args):
+        raise httpx.ConnectError('secret-provider-detail')
+    monkeypatch.setattr(RegisteredTools, 'execute', fail)
+    api.app.state.dev_token = 'test-dev'
+    response = api.post('/api/dev/agent/utterance', json=utterance_examples()['manual_replan']['value'],
+                        headers={'X-Dev-Token': 'test-dev'})
+    assert response.status_code == 502 and 'secret' not in response.text
+
+
 def test_missing_live_credentials_are_server_error(api, monkeypatch):
     from ai.tools import registry
     from backend.dev_examples import tool_examples
