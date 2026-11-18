@@ -129,3 +129,15 @@ def test_place_grounding_rejects_generic_activity_and_current_region():
         value['recent_messages'] = [dict(id='new',author_id='u1',text=text)]
         proposal = dict(title=title,mention_text=title,existing_item_id=None,evidence=dict(message_id='new',quote=text))
         assert project_item(proposal,value) is None
+
+def test_explicit_condition_assistance_uses_source_value_not_model_guess():
+    from ai.grounding import ground_extraction
+    from ai.extraction_schema import ExtractionBatch
+    from ai.extraction_projection import facts_to_batch
+    value = task()
+    message = dict(id='new',author_id='u1',text='내 예산은 2.5만원')
+    value['recent_messages'] = [message]
+    raw = facts_to_batch(dict(places=[],conditions=[dict(key='budget_krw',value=250000)],intents=['condition']),message,value)
+    output = ground_extraction(ExtractionBatch.model_validate(raw),value)
+    assert output.proposals['constraint_proposals'][0]['value'] == 25000
+    assert 'condition_rule_assisted' in output.issue_codes

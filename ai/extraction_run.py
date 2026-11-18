@@ -35,7 +35,7 @@ def extraction_output(batch, attempts, error, task):
     if missing:
         grounded.issue_codes.append("unresolved_intent")
         grounded.rejected_message_ids = list(dict.fromkeys(grounded.rejected_message_ids + missing))
-    report = dict(status='filtered' if grounded.issue_codes else 'ok', issue_codes=grounded.issue_codes,
+    report = dict(status='filtered' if any(code != 'condition_rule_assisted' for code in grounded.issue_codes) else 'ok', issue_codes=grounded.issue_codes,
                   rejected_message_ids=grounded.rejected_message_ids, attempts=attempts)
     return dict(grounded.proposals, extraction_report=report)
 

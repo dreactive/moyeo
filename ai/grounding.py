@@ -66,8 +66,11 @@ def ground_extraction(batch, task):
     conditions, condition_errors = project_many(raw['constraint_proposals'], project_condition, task)
     supports, questions, support_errors = support_results(raw['support_observations'], task, items)
     rejected = list(dict.fromkeys(item_errors + condition_errors + support_errors))
+    issues = ['ungrounded_proposal'] if rejected else []
+    if assist_conditions(conditions, task):
+        issues.append('condition_rule_assisted')
     return GroundedExtraction(dict(item_proposals=items, constraint_proposals=conditions,
-        support_observations=supports, questions=questions), ['ungrounded_proposal'] if rejected else [], rejected)
+        support_observations=supports, questions=questions), issues, rejected)
 
 
 def validate_assessments(batch, task):
@@ -92,3 +95,21 @@ def support_results(raw, task, items):
     modeled, rejected = project_many(raw, project_support, scope)
     valid = validate_extraction(dict(support_observations=claims + modeled), scope)
     return valid['support_observations'], questions + valid['questions'], rejected
+
+
+def assist_conditions(conditions, task):
+    from ai.condition_grounding import condition_value
+    from ai.extraction_schema import ConditionFact
+    from ai.extraction_projection import condition_proposal
+    added = 0
+    for message in task['recent_messages']:
+        for key in ('budget_krw', 'return_by'):
+            value = condition_value(key, message['text'])
+            if value is None:
+                continue
+            raw = condition_proposal(ConditionFact(key=key,value=value), message, task, dict(message_id=message['id'],quote=message['text']))
+            proposal = project_condition(raw, task)
+            if proposal and proposal not in conditions:
+                conditions.append(proposal)
+                added += 1
+    return added
