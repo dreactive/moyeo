@@ -34,6 +34,7 @@ function hydrateFixture() {
   }
   fixtureAuthenticated = true;
   Object.assign(fixtureRoom, saved.snapshot);
+  setScenarioPlaces(saved.scenario);
 }
 export async function requestFixture(path, {method = 'GET',body,headers} = {}) {
   const parts = new URL(path,'http://fixture').pathname.split('/').map(decodeURIComponent);
@@ -122,12 +123,21 @@ export function emitFixture(name, data) {
 }
 import scenarios from '../fixtures/scenarios.json' with {type:'json'};
 export {scenarios};
+
+export const getFixtureScenario = () => fixtureScenario;
+
+function setScenarioPlaces(key) {
+  fixtureScenario = key;
+  resetFixturePlaces();
+  scenarios[key].places?.forEach(details => fixturePlaces.set(details.place.id, structuredClone(details)));
+}
+
 export function replayScenario(key) {
   const next = scenarios[key];
   const seq = fixtureRoom.seq + 1;
   Object.assign(fixtureRoom,structuredClone(next.snapshot),{seq});
-  resetFixturePlaces();
-  next.places?.forEach(details => fixturePlaces.set(details.place.id,structuredClone(details)));
+  setScenarioPlaces(key);
+  persistFixture();
   emitFixture('onRoomUpdated',{room_id:fixtureRoom.room_id,seq,changed:['fixture_scenario']});
   return structuredClone(fixtureRoom);
 }

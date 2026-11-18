@@ -52,3 +52,17 @@ test('an incompatible fixture record requires a fresh fixture login', async () =
   await assert.rejects(next.requestFixture('/api/auth/me'), {status:401});
   assert.deepEqual(removed,['trip-fixture-session-v1','trip-fixture-room']);
 });
+
+test('the saved fixture scenario also restores its place variants', async () => {
+  let stored;
+  globalThis.sessionStorage = {setItem: (_,value) => stored = value,getItem: () => stored};
+  const {replayScenario} = await import('../src/fixture-api.js');
+  const {resetFixturePlaces} = await import('../src/fixture-places.js');
+  await requestFixture('/api/auth/login', {method:'POST'});
+  replayScenario('no-menu');
+  resetFixturePlaces();
+  const next = await import('../src/fixture-api.js?no-menu');
+  const place = await next.requestFixture('/api/rooms/room-fixture/places/fixture%3Aplace-a');
+  assert.equal(place.menus.length,0);
+  assert.equal(next.getFixtureScenario(),'no-menu');
+});
