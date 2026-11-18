@@ -7,3 +7,13 @@ export async function submitRoom(endpoint, body) {
   saveRoomId(snapshot.room_id);
   navigate('/');
 }
+
+export function chooseRoomAction(actions, selected) {
+  for (const action of actions) {
+    const open = action === selected;
+    const form = document.getElementById(action.getAttribute('aria-controls'));
+    action.setAttribute('aria-expanded', String(open));
+    form.hidden = !open;
+    if (open) form.querySelector('input').focus();
+  }
+}
