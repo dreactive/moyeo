@@ -66,3 +66,11 @@ test('unanimous votes wait for the official snapshot of the same target', () => 
   room.confirmed_plan = room.current_plan;
   assert.match(renderConsensus(room),/4\/4.*공식 확정/);
 });
+
+test('the consensus marks each traveler by their vote on the displayed plan', () => {
+  const room = structuredClone(fixture);
+  room.confirmations = [{user_id:'u1',stance:'confirm',target:room.current_plan.confirmation_target}];
+  const output = renderConsensus(room);
+  assert.match(output,/참가자1 · 동의/);
+  assert.match(output,/참가자2 · 아직/);
+});
