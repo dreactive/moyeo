@@ -1,4 +1,5 @@
 from backend.db import serialized
+from backend.services.extraction import select_extraction_messages
 from backend.services.agent_apply import apply_agent_result
 from backend.services.events import publish_event
 from backend.services.observations import get_observations
@@ -10,9 +11,11 @@ from uuid import uuid4
 import asyncio
 
 
-def make_task(room, run_id, goal, observations, selection, processed_id=None):
+def make_task(room, run_id, goal, observations, selection, processed_id=None, failures=None):
     task = {key:room[key] for key in ('room_id','members','config','constraints','items','questions','current_plan')}
-    task.update(run_id=run_id, base_versions=room['versions'], goal=goal, recent_messages=unprocessed_messages(room['messages'], processed_id), observations=observations, user_selection=selection)
+    task.update(run_id=run_id, base_versions=room['versions'], goal=goal, recent_messages=select_extraction_messages(room['messages'], processed_id, failures or {}, goal == 'manual_replan'), observations=observations, user_selection=selection)
+    first = next((i for i, m in enumerate(room['messages']) if task['recent_messages'] and m['id'] == task['recent_messages'][0]['id']), len(room['messages']))
+    task['conversation_context'] = room['messages'][:first][-20:]
     return deepcopy(task)
 
 
@@ -25,7 +28,7 @@ class AgentJobs:
 
     async def enqueue(self, room_id, reason, selection=None):
         room = self.db.get('room:' + room_id)
-        task = make_task(room, uuid4().hex, reason, get_observations(self.db, room_id), selection, self.db.get('processed-message:' + room_id))
+        task = make_task(room, uuid4().hex, reason, get_observations(self.db, room_id), selection, self.db.get('processed-message:' + room_id), self.db.get('failed-extraction:' + room_id))
         self.register_task(task)
         await self.queue.put(task)
         self.pending[room_id] += 1
@@ -35,7 +38,7 @@ class AgentJobs:
         room = self.db.get('room:' + task['room_id'])
         if task['user_selection'] and task['base_versions'] != room['versions']:
             raise ValueError('Conflict selection expired')
-        fresh = make_task(room, task['run_id'], task['goal'], get_observations(self.db, task['room_id']), task['user_selection'], self.db.get('processed-message:' + task['room_id']))
+        fresh = make_task(room, task['run_id'], task['goal'], get_observations(self.db, task['room_id']), task['user_selection'], self.db.get('processed-message:' + task['room_id']), self.db.get('failed-extraction:' + task['room_id']))
         self.register_task(fresh)
         return fresh
 
