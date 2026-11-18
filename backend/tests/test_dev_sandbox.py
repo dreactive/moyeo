@@ -226,3 +226,12 @@ def test_lazy_developer_runtime_is_closed_on_shutdown():
         client.portal.call(bridge.start)
         runtime = bridge.runtime
     assert bridge.runtime is None and runtime.model.closed
+
+
+def test_invalid_money_is_a_validation_error(api):
+    from backend.dev_examples import tool_examples
+    api.app.state.dev_token = 'test-dev'
+    body = tool_examples('calculate_costs')['fixture']['value']
+    body['context']['config']['fixed_costs'][0]['unit_price_krw'] = 'unknown'
+    response = api.post('/api/dev/tools/calculate_costs', json=body, headers={'X-Dev-Token': 'test-dev'})
+    assert response.status_code == 422

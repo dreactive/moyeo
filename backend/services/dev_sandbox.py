@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from httpx import HTTPError
 from uuid import uuid4
 from backend.services.traces import sanitize
+from decimal import DecimalException
 
 
 async def execute_tool(body, name, settings):
@@ -16,7 +17,7 @@ async def execute_tool(body, name, settings):
 async def sandbox_errors():
     try:
         yield
-    except (ValueError, KeyError, TypeError, IndexError, AttributeError, OverflowError) as error:
+    except (ValueError, KeyError, TypeError, IndexError, AttributeError, OverflowError, DecimalException) as error:
         raise HTTPException(422, {'error': type(error).__name__, 'message': 'Invalid sandbox arguments or context'}) from None
     except HTTPError:
         raise HTTPException(502, 'Provider request failed; check server configuration and connectivity') from None
