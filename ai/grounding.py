@@ -64,3 +64,11 @@ def validate_assessments(batch, task):
     ids = [assessment.message_id for assessment in batch.message_assessments]
     if len(ids) != len(set(ids)) or set(ids) != {m['id'] for m in task['recent_messages']}:
         raise ValueError('Message assessment coverage mismatch')
+
+
+def project_support(proposal, task):
+    from ai.extraction import validate_support
+    message = source_message(proposal['evidence'], task)
+    item = next((item for item in task['items'] if item['id'] == proposal['item_id']), None)
+    claim = dict({k: v for k, v in proposal.items() if k != 'evidence'}, source_message_id=proposal['evidence']['message_id'])
+    return validate_support(claim, message, item)[0]

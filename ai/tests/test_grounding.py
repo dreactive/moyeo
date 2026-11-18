@@ -52,3 +52,13 @@ def test_assessments_cannot_skip_or_duplicate_new_messages():
     empty = dict(message_assessments=[], item_proposals=[], constraint_proposals=[], support_observations=[])
     with pytest.raises(ValueError, match='assessment'):
         validate_assessments(ExtractionBatch.model_validate(empty), value)
+
+def test_support_keeps_explicit_author_and_item_version():
+    from ai.grounding import project_support
+    value = task()
+    message = next(m for m in value['recent_messages'] if m['id'] == 'm3')
+    proposal = dict(item_id='item-b', item_version=1, author_id='u3', stance='support',
+                    evidence=dict(message_id='m3', quote=message['text']))
+    assert project_support(proposal, value)['source_message_id'] == 'm3'
+    proposal['item_version'] = 99
+    assert project_support(proposal, value) is None
