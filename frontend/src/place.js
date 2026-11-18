@@ -31,11 +31,14 @@ export async function selectPlace(roomId,ref) {
   const requestSequence = ++detailRequestSequence;
   const target = structuredClone(displayPlan(getSnapshot() ?? {})?.confirmation_target ?? null);
   setSelectedPlace(ref);
-  const details = await requestJson('/api/rooms/' + encodeURIComponent(roomId) + '/places/' + encodeURIComponent(ref));
+  const result = await requestJson('/api/rooms/' + encodeURIComponent(roomId) + '/places/' + encodeURIComponent(ref))
+    .then(details => ({details}),error => ({error}));
   if (requestSequence !== detailRequestSequence) return;
   if (getSnapshot()?.room_id !== roomId || getSelectedPlace() !== ref) return;
   const currentTarget = displayPlan(getSnapshot() ?? {})?.confirmation_target ?? null;
   if (target !== currentTarget && !sameTarget(target,currentTarget)) return;
+  if ('error' in result) throw result.error;
+  const {details} = result;
   if (!details) throw new Error('장소 조회 결과가 없습니다.');
   renderPlace(details); renderPlaceMap(details.place);
 }

@@ -93,3 +93,13 @@ test('the place card shows address and hours before the source disclosure', asyn
   await pending;
   assert.match(output.place,/<dt>주소<\/dt><dd>계약 예시용 주소[^]*<dt>영업시간<\/dt><dd>[^]*<summary>장소 정보 출처/);
 });
+
+test('an obsolete place failure does not interrupt the newest selection', async () => {
+  const {requests} = prepare();
+  const older = selectPlace(room.room_id,place.place.id);
+  const newer = selectPlace(room.room_id,place.place.id);
+  requests[1].resolve(Response.json(place));
+  await newer;
+  requests[0].reject(new Error('Earlier detail failed'));
+  await assert.doesNotReject(older);
+});
