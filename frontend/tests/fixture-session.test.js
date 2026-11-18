@@ -150,3 +150,8 @@ async function assertRejectedFixtureSnapshot(documentName, change) {
 test('a saved trip with missing configuration needs a fresh fixture login', async () => {
   await assertRejectedFixtureSnapshot('invalid-config', snapshot => snapshot.config = {fixed_costs:[]});
 });
+
+test('a malformed member record cannot enter fixture workspace rendering', async () => {
+  await assertRejectedFixtureSnapshot('null-member', snapshot => snapshot.members = [null]);
+  await assertRejectedFixtureSnapshot('invalid-member', snapshot => snapshot.members[0].name = 42);
+});

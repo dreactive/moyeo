@@ -19,8 +19,12 @@ function persistFixture() {
   lastFixtureRecord = saveFixtureSession({authenticated:fixtureAuthenticated,userId:fixtureUser.id,snapshot:fixtureRoom,scenario:fixtureScenario});
 }
 
+function isRecordList(rows) {
+  return Array.isArray(rows) && rows.every(row => row && typeof row === 'object' && !Array.isArray(row));
+}
+
 function isSavedTrip(config) {
-  return Array.isArray(config?.fixed_costs)
+  return isRecordList(config?.fixed_costs)
     && Object.entries(initial.config).every(([key, value]) => typeof config[key] === typeof value)
     && [config.start_date,config.end_date].every(date => Number.isFinite(Date.parse(date)));
 }
@@ -32,7 +36,8 @@ function isSavedFixture(saved) {
     && Object.keys(scenarios).includes(saved.scenario)
     && isSavedTrip(snapshot.config)
     && Object.entries(initial).every(([key, value]) => Object.hasOwn(snapshot, key)
-      && (!Array.isArray(value) || Array.isArray(snapshot[key])));
+      && (!Array.isArray(value) || isRecordList(snapshot[key])))
+    && snapshot.members.every(member => typeof member.name === 'string' && typeof member.user_id === 'string');
 }
 
 function hydrateFixture() {
