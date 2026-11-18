@@ -11,3 +11,8 @@ test('chat bubbles escape names and message content', () => {
   assert.match(text ?? '',/&lt;script&gt;/);
   assert.match(text ?? '',/is-own/);
 });
+test('chat dates group Korean days rather than browser timezone', () => {
+  const rows = chat.chatRows?.([{id:'a',created_at:'2026-11-18T14:59:00Z'},{id:'b',created_at:'2026-11-18T15:01:00Z'}]);
+  assert.equal(rows?.length,4);
+  assert.equal(rows?.[2].id,'day-11월 19일 목요일');
+});
