@@ -29,19 +29,33 @@ test('a failed room session lookup leaves choices hidden and offers retry', asyn
   assert.deepEqual([retry.hidden,elements['room-actions'].hidden], [false,true]);
 });
 
-test('the invite form sends the case-sensitive code', async () => {
+test('a pending create blocks join until the room entry can be retried', async () => {
+  const trip = [];
   const join = [['invite_code',' AbC ']];
-  const form = {querySelector: () => ({})};
-  join.querySelector = form.querySelector;
+  const createButton = {};
+  const joinButton = {};
+  const choice = {};
+  trip.querySelector = () => createButton;
+  join.querySelector = () => joinButton;
   globalThis.FormData = Map;
-  globalThis.document = {getElementById: () => ({})};
+  globalThis.document = {getElementById: () => ({}),querySelectorAll: () => []};
+  const create = Promise.withResolvers();
   let sent;
   globalThis.fetch = async (path, options) => {
+    if (path === '/api/rooms') return create.promise;
     sent = [path, JSON.parse(options.body)];
     return new Response('', {status:404});
   };
-  rooms.bindRoomForms(form,join);
-  await join.onsubmit({preventDefault() {}});
+  rooms.bindRoomForms(trip,join,[choice]);
+  const submit = {preventDefault() {}};
+  const pending = trip.onsubmit(submit);
+  await join.onsubmit(submit);
+  assert.equal(sent,undefined);
+  assert.equal(choice.disabled,true);
+  create.resolve(new Response('', {status:503}));
+  await pending;
+  assert.equal(choice.disabled,false);
+  await join.onsubmit(submit);
   assert.deepEqual(sent, ['/api/rooms/join',{invite_code:'AbC'}]);
 });
 

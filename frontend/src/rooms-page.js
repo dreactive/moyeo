@@ -38,10 +38,12 @@ export async function checkRoomsPage(retry) {
   }
 }
 
-export function bindRoomForms(trip, join) {
-  bindEntryForm(trip, () => submitRoom('/api/rooms', readTripForm(trip)));
+export function bindRoomForms(trip, join, switches = []) {
+  const submit = 'button[type=submit]';
+  const controls = [trip.querySelector(submit),join.querySelector(submit),...switches];
+  bindEntryForm(trip, () => submitRoom('/api/rooms', readTripForm(trip)), showError, controls);
   bindEntryForm(join, () => submitRoom('/api/rooms/join', {invite_code:new FormData(join).get('invite_code').trim()}),
-    error => showError(error.status === 404 ? new Error('초대 코드를 확인해 주세요.') : error));
+    error => showError(error.status === 404 ? new Error('초대 코드를 확인해 주세요.') : error), controls);
 }
 
 export function startRoomsPage() {
@@ -50,9 +52,10 @@ export function startRoomsPage() {
   for (const action of actions) {
     action.onclick = () => chooseRoomAction(actions, action);
   }
-  bindRoomForms(document.getElementById('trip'), document.getElementById('join'));
+  const logout = document.getElementById('logout');
+  bindRoomForms(document.getElementById('trip'), document.getElementById('join'), [...actions,logout]);
   bindFixedCostControls();
-  document.getElementById('logout').onclick = () => run(signOut);
+  logout.onclick = () => run(signOut);
   document.getElementById('fixture-invite').hidden = getDataMode() !== 'fixture';
   const retry = document.getElementById('retry');
   retry.onclick = () => checkRoomsPage(retry);
