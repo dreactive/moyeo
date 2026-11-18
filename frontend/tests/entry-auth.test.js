@@ -23,3 +23,13 @@ test('an unavailable session lookup enables retry and keeps the form protected',
   await auth.checkAuthPage(submit,retry);
   assert.deepEqual([retry.hidden,submit.disabled], [false,true]);
 });
+
+test('auth forms become available after the anonymous session check', async () => {
+  const button = {disabled:true};
+  const form = {querySelector: () => button};
+  globalThis.document = {getElementById: () => ({}),querySelectorAll: () => []};
+  globalThis.fetch = async () => new Response('', {status:401});
+  await auth.startAuthPage(form);
+  assert.equal(button.disabled,false);
+  assert.equal(typeof form.onsubmit,'function');
+});

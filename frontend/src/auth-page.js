@@ -1,5 +1,5 @@
 import {requestJson} from './api.js';
-import {navigate} from './session.js';
+import {bindEntryForm,navigate,preparePage} from './session.js';
 import {showError} from './ui.js';
 
 export async function submitAuth(action, data) {
@@ -27,3 +27,15 @@ export async function checkAuthPage(submit, retry) {
     }
   }
 }
+
+export function startAuthPage(form) {
+  preparePage();
+  const submit = form.querySelector('button[type=submit]');
+  const retry = document.getElementById('retry');
+  bindEntryForm(form, () => submitAuth(form.dataset.action, Object.fromEntries(new FormData(form))));
+  retry.onclick = () => checkAuthPage(submit, retry);
+  return retry.onclick();
+}
+
+const authForm = globalThis.document?.getElementById('auth');
+if (authForm) startAuthPage(authForm);
