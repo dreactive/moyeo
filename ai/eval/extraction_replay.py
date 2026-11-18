@@ -23,4 +23,14 @@ def check_case(case, result):
         issues.append('conditions')
     if result['extraction_report']['status'] == 'failed':
         issues.append('schema_failed')
-    return issues
+    if "support" in case and {p["stance"] for p in result["support_observations"]} != ({case["support"]} if case["support"] else set()):
+        issues.append("support")
+    return issues + provenance_issues(case, result)
+
+
+def provenance_issues(case, result):
+    for key in ('item_proposals', 'constraint_proposals'):
+        for proposal in result[key]:
+            if proposal['source_message_ids'] != [case['id']] or proposal.get('owner_id', 'u1') != 'u1':
+                return ['provenance']
+    return []
