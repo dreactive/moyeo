@@ -38,7 +38,7 @@ test('sign-out clears room selection after the server accepts it', async () => {
 
 test('fixture pages label test data and decorate app links', () => {
   const banner = {};
-  const link = {dataset:{appLink:'/signup.html'}};
+  const link = {dataset:{appLink:''},getAttribute: () => '/signup.html'};
   globalThis.location = {search:'?mode=fixture'};
   globalThis.document = {getElementById: () => banner,querySelectorAll: () => [link]};
   session.preparePage();

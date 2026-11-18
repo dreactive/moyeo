@@ -47,6 +47,6 @@ export function preparePage() {
     ? '개발용 fixture · 실제 계정/여행 데이터 아님'
     : 'LIVE · Backend 연결';
   for (const link of document.querySelectorAll('[data-app-link]')) {
-    link.href = pageUrl(link.dataset.appLink);
+    link.href = pageUrl(link.dataset.appLink || link.getAttribute('href'));
   }
 }
