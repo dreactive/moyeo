@@ -3,6 +3,8 @@ import re
 
 
 def condition_value(key, text):
+    if re.search(r'아니야|아니고|아닌|아니에|말고|만약|이면|라면|어때|[?？]|전체|총예산|공동|라고|했대|말했|보다|정도|쯤|안\s*(?:해|하|돼|되)|필요\s*없', text):
+        return None
     if key in ('budget', 'budget_krw'):
         match = re.search(r'예산.{0,10}?(\d+)\s*(만\s*원|원)', text)
         if match:
