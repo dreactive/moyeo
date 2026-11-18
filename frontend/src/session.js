@@ -35,3 +35,9 @@ export function readRoomId() {
 export function clearRoomId() {
   sessionStorage.removeItem(roomKey());
 }
+
+export async function signOut() {
+  await requestJson('/api/auth/logout', {method:'POST'});
+  clearRoomId();
+  navigate('/login.html');
+}

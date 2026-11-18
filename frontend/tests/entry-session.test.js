@@ -23,3 +23,15 @@ test('fixture navigation uses a separate selected room key', () => {
   globalThis.sessionStorage = {setItem: (key,id) => assert.deepEqual([key,id], ['trip-fixture-room','sample'])};
   session.saveRoomId('sample');
 });
+
+test('sign-out clears room selection after the server accepts it', async () => {
+  const actions = [];
+  globalThis.location = {search:'',assign: url => actions.push(url)};
+  globalThis.sessionStorage = {removeItem: key => actions.push(key)};
+  globalThis.fetch = async (path, options) => {
+    actions.push([path, options.method]);
+    return Response.json({ok:true});
+  };
+  await session.signOut();
+  assert.deepEqual(actions, [['/api/auth/logout','POST'],'trip-room','/login.html']);
+});
