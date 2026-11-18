@@ -4,6 +4,7 @@ export const fixtureRoom = structuredClone(initial);
 let fixtureUser = {id:'u1',name:'참가자1',email:'u1@fixture.test'};
 export const setFixtureUser = id => { fixtureUser = {id,name:'참가자' + id.slice(1),email:id + '@fixture.test'}; return fixtureUser; };
 export const getFixtureUser = () => fixtureUser;
+let fixtureAuthenticated = false;
 export async function requestFixture(path, {method = 'GET',body,headers} = {}) {
   const parts = new URL(path,'http://fixture').pathname.split('/').map(decodeURIComponent);
   if (parts[2] === 'dev') {
@@ -11,7 +12,15 @@ export async function requestFixture(path, {method = 'GET',body,headers} = {}) {
     const runId = new URL(path,'http://fixture').searchParams.get('run_id');
     return {runs:!runId || runId === trace.run_id ? [structuredClone(trace)] : []};
   }
-  if (parts[2] === 'auth') return parts[3] === 'logout' ? {ok:true} : structuredClone(fixtureUser);
+  if (parts[2] === 'auth') {
+    if (method === 'POST' && parts[3] === 'logout') {
+      fixtureAuthenticated = false;
+      return {ok:true};
+    }
+    if (method === 'POST' && ['login','register'].includes(parts[3])) fixtureAuthenticated = true;
+    if (!fixtureAuthenticated) throw Object.assign(new Error('fixture 로그인이 필요합니다.'), {status:401});
+    return structuredClone(fixtureUser);
+  }
   if (parts[4] === 'places') return structuredClone(fixturePlaces.get(parts[5]));
   if (parts.length === 4 && method === 'GET') return structuredClone(fixtureRoom);
   if (parts[2] === 'rooms' && parts[3] === 'join') {
