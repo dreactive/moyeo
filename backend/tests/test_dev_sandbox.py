@@ -76,3 +76,12 @@ def test_cost_endpoint_preserves_unknown_amounts(api):
     result = response.json()['result']
     assert result['known_total_krw'] == 120000
     assert result['total_krw'] is None and result['unknown_line_count'] == 2
+
+
+def test_invalid_place_returns_validation_error(api):
+    from backend.dev_examples import tool_examples
+    api.app.state.dev_token = 'test-dev'
+    body = tool_examples('get_place_details')['fixture']['value']
+    body['arguments']['place_ref'] = 'unknown'
+    response = api.post('/api/dev/tools/get_place_details', json=body, headers={'X-Dev-Token': 'test-dev'})
+    assert response.status_code == 422
