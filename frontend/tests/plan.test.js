@@ -42,3 +42,17 @@ test('a required condition awaiting its owner disables plan confirmation', () =>
   plan.renderPlan(room);
   assert.match(output.plan,/data-plan="confirm" disabled/);
 });
+
+function renderConsensus(room) {
+  const hosts = {plan:{},'confirmed-plan':{}};
+  globalThis.document = {getElementById:id => hosts[id]};
+  plan.renderPlan(room);
+  return hosts.plan.innerHTML;
+}
+
+test('votes stop projecting as current when the room basis changes', () => {
+  const room = structuredClone(fixture);
+  room.confirmations = [{user_id:'u1',stance:'confirm',target:room.current_plan.confirmation_target}];
+  room.versions.constraint_version++;
+  assert.match(renderConsensus(room),/0\/4/);
+});

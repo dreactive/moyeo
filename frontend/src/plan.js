@@ -12,7 +12,9 @@ export function planContent(plan) {
 }
 export function renderPlan(snapshot) {
   const plan = displayPlan(snapshot);
-  const votes = new Map(snapshot.confirmations.filter(vote => sameTarget(vote.target,plan?.confirmation_target)).map(vote => [vote.user_id,vote.stance]));
+  const target = plan?.confirmation_target;
+  const currentVotes = hasCurrentBasis(snapshot,target) ? snapshot.confirmations : [];
+  const votes = new Map(currentVotes.filter(vote => sameTarget(vote.target,target)).map(vote => [vote.user_id,vote.stance]));
   const pendingHard = snapshot.constraints.some(item => item.kind === 'hard' && item.status === 'needs_owner_confirmation');
   html('plan', `<h3>${snapshot.review_plan ? '검토 중인 안' : '최신 초안'}</h3>${planContent(plan)}
   <p>같은 여행안 확인 ${[...votes.values()].filter(stance => stance === 'confirm').length}/${snapshot.members.length} · 전원 확인 및 서버 검증 후 확정</p>
