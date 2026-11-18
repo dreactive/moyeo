@@ -42,3 +42,13 @@ test('every recorded room scenario renders all shared sections with coherent tar
     if (snapshot.active_target) assert.deepEqual(snapshot.active_target,snapshot.review_plan.confirmation_target);
   }
 });
+
+test('the individual plan amount comes from the signed-in traveler', () => {
+  const card = {innerHTML:''};
+  globalThis.document = {getElementById:() => card};
+  const cost = scenarios.ready.snapshot.current_plan.cost;
+  renderCost({...cost,per_person_krw:{u1:null,u2:173400}},'u2');
+  assert.match(card.innerHTML,/내 전체 계획액\s*<strong[^>]*>173,400원/);
+  renderCost({...cost,per_person_krw:{u1:null,u2:173400}},'u1');
+  assert.match(card.innerHTML,/내 전체 계획액\s*<strong[^>]*>미확인/);
+});
