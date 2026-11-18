@@ -11,3 +11,8 @@ test('stale target failures request a refresh without repeating the original act
   await errors.runRoomTask?.(() => { actions++; throw Object.assign(new Error('changed'),{status:409}); },{showError:() => {},stale:async () => { refreshes++; }});
   assert.equal(actions,1); assert.equal(refreshes,1);
 });
+test('only missing access selects another entry page', () => {
+  assert.equal(errors.roomLoadRedirect?.({status:403}),'/rooms.html?reason=room-access');
+  assert.equal(errors.roomLoadRedirect?.({status:404}),'/rooms.html?reason=room-access');
+  assert.equal(errors.roomLoadRedirect?.({status:503}),null);
+});
