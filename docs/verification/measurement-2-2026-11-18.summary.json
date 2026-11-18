@@ -1,0 +1,200 @@
+{
+  "measurement": "2",
+  "started_at_kst": "2026-11-18T16:07:03.858991+09:00",
+  "source_sha": "37a133793dd6e91b0140f9cfdaf2e65f156f5e3c",
+  "source_archive_sha256": "592b239bf4bb4e55c36d34f99f3f6c06033d0dcc78999ce3141fee028bc3806a",
+  "raw_report_sha256": "42c1d46502c1b0bc801d5fc1441f0ebedd7eb00722f1a20b6f53bb00095e5fce",
+  "model_mode": "local_qwen",
+  "provider_mode": "live",
+  "status": "MEASURED_INCOMPLETE_WORKFLOW",
+  "scenario_completed": false,
+  "baseline_recomputed": false,
+  "total_seconds": 31.898365600034595,
+  "model_load_seconds": 6.589797499997076,
+  "phase_wait_sum_seconds": 23.67245739995269,
+  "runtime_sum_seconds": 23.634197900013532,
+  "generate_json_sum_seconds": 23.585986000020057,
+  "actual_generate_sum_seconds": 20.696170799958054,
+  "timing_note": "Nested timings overlap; do not add them.",
+  "phases": [
+    {
+      "label": "initial_replan",
+      "wait_seconds": 9.469396899978165,
+      "runtime_seconds": 9.458743399998639,
+      "completion": "needs_input",
+      "returned_candidate_count": 0,
+      "new_plan_generated": false,
+      "new_observations": 0,
+      "new_conflicts": 0,
+      "inherited_plan_total_krw": 120000,
+      "inherited_plan_validation": "needs_input"
+    },
+    {
+      "label": "u4_utterance",
+      "wait_seconds": 3.723398100002669,
+      "runtime_seconds": 3.7090592000167817,
+      "completion": "done",
+      "returned_candidate_count": 0,
+      "new_plan_generated": false,
+      "new_observations": 0,
+      "new_conflicts": 0,
+      "inherited_plan_total_krw": 120000,
+      "inherited_plan_validation": "needs_input"
+    },
+    {
+      "label": "owner_confirmed_replan",
+      "wait_seconds": 10.479662399971858,
+      "runtime_seconds": 10.466395299998112,
+      "completion": "needs_input",
+      "returned_candidate_count": 0,
+      "new_plan_generated": false,
+      "new_observations": 0,
+      "new_conflicts": 0,
+      "inherited_plan_total_krw": 120000,
+      "inherited_plan_validation": "needs_input"
+    }
+  ],
+  "json_calls": [
+    {
+      "index": 0,
+      "run_id": "a738980570394a15a9b172465f39b699",
+      "phase": "extract",
+      "status": "ok",
+      "model_generate_calls": 0,
+      "seconds": 0.018065700016450137
+    },
+    {
+      "index": 1,
+      "run_id": "a738980570394a15a9b172465f39b699",
+      "phase": "actions",
+      "status": "error",
+      "model_generate_calls": 1,
+      "seconds": 9.42304070002865,
+      "exception_type": "ValueError"
+    },
+    {
+      "index": 2,
+      "run_id": "b1b931e431464605ad75af74fec7dc2e",
+      "phase": "extract",
+      "status": "ok",
+      "model_generate_calls": 1,
+      "seconds": 3.69962020003004
+    },
+    {
+      "index": 3,
+      "run_id": "668285619fb845edb0c1f9397665ea56",
+      "phase": "extract",
+      "status": "ok",
+      "model_generate_calls": 0,
+      "seconds": 0.015738599991891533
+    },
+    {
+      "index": 4,
+      "run_id": "668285619fb845edb0c1f9397665ea56",
+      "phase": "actions",
+      "status": "error",
+      "model_generate_calls": 1,
+      "seconds": 10.429520799953025,
+      "exception_type": "ValueError"
+    }
+  ],
+  "generations": [
+    {
+      "index": 0,
+      "json_call_index": 1,
+      "run_id": "a738980570394a15a9b172465f39b699",
+      "phase": "actions",
+      "input_tokens": 15437,
+      "output_tokens": 256,
+      "eos_reached": true,
+      "max_new_tokens": 1536,
+      "status": "ok",
+      "seconds": 9.33751719997963,
+      "elapsed_seconds": 9.33751719997963
+    },
+    {
+      "index": 1,
+      "json_call_index": 2,
+      "run_id": "b1b931e431464605ad75af74fec7dc2e",
+      "phase": "extract",
+      "input_tokens": 820,
+      "output_tokens": 26,
+      "eos_reached": true,
+      "max_new_tokens": 1536,
+      "status": "ok",
+      "seconds": 0.9700739000109024,
+      "elapsed_seconds": 0.9700739000109024
+    },
+    {
+      "index": 2,
+      "json_call_index": 4,
+      "run_id": "668285619fb845edb0c1f9397665ea56",
+      "phase": "actions",
+      "input_tokens": 15643,
+      "output_tokens": 300,
+      "eos_reached": true,
+      "max_new_tokens": 1536,
+      "status": "ok",
+      "seconds": 10.388579699967522,
+      "elapsed_seconds": 10.388579699967522
+    }
+  ],
+  "input_tokens": 31900,
+  "output_tokens": 582,
+  "generate_json_exceptions": 2,
+  "actual_model_generate_exceptions": 0,
+  "instrumentation_error_types": [],
+  "backend_has_score_candidates": false,
+  "worker_has_score_candidates": false,
+  "actual_tool_call_count": 0,
+  "provider_http_call_count": 0,
+  "condition_confirmation": {
+    "other_status": 403,
+    "owner_status": 200
+  },
+  "time_conflict_generated": false,
+  "initial_confirmation": "NOT_ATTEMPTED: no newly computed 301600-KRW ready plan",
+  "drop_selection": "NOT_REACHED: current runtime generated no time-conflict option",
+  "seed_counts": {
+    "members": 4,
+    "items": 2,
+    "days": 2,
+    "visits": 2,
+    "observations": 2,
+    "route_observations": 0,
+    "route_legs": 0,
+    "answered_menu_questions": 2,
+    "supporters_per_item": [
+      3,
+      3
+    ],
+    "fixed_cost_lines": 2
+  },
+  "expected_totals_krw": {
+    "baseline": 301600,
+    "after_drop_item_b": 241600
+  },
+  "historical_place_details_sha256": "7562dd8ab015d18699910c45518ae2ca5dc801b76f10a5546f133a0b17abb055",
+  "place_details_reused_without_alteration": true,
+  "adapter_sha256": "3e3822a23a7fe781778c3b49d5fdf6cfb8f24245c7120517c6a216efce56a0f8",
+  "environment": {
+    "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+    "packages": {
+      "torch": "2.14.1+cu126",
+      "transformers": "4.57.6",
+      "peft": "0.21.3",
+      "accelerate": "1.16.0",
+      "pydantic": "2.14.3",
+      "numpy": "2.5.5",
+      "lm-format-enforcer": "0.11.3"
+    }
+  },
+  "gpu_before": "NVIDIA GeForce RTX 4070, 4781 MiB, 12282 MiB, 9 %",
+  "cuda_peak_allocated_mib": 4575.09228515625,
+  "cuda_allocated_after_close_mib": 8.125,
+  "runtime_closed": true,
+  "server_thread_stopped": true,
+  "speedup_comparison_valid": false,
+  "comparison_note": "Current candidate-only runtime did not complete the previous G4 workflow; later phases are partial diagnostics after initial-plan failure.",
+  "phase_wait_definition": "After the initiating HTTP response, wait_result entry through Backend queue.join and snapshot GET completion; not full initiating HTTP round-trip latency."
+}
