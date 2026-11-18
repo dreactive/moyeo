@@ -66,3 +66,14 @@ test('the saved fixture scenario also restores its place variants', async () => 
   assert.equal(place.menus.length,0);
   assert.equal(next.getFixtureScenario(),'no-menu');
 });
+
+test('the selected fixture user survives a new document', async () => {
+  let stored;
+  globalThis.sessionStorage = {setItem: (_,value) => stored = value,getItem: () => stored};
+  const {setFixtureUser} = await import('../src/fixture-api.js');
+  await requestFixture('/api/auth/login', {method:'POST'});
+  setFixtureUser('u3');
+  const next = await import('../src/fixture-api.js?selected-user');
+  const user = await next.requestFixture('/api/auth/me');
+  assert.equal(user.id,'u3');
+});

@@ -4,7 +4,11 @@ import {clearFixtureSession,readFixtureSession,saveFixtureSession} from './fixtu
 
 export const fixtureRoom = structuredClone(initial);
 let fixtureUser = {id:'u1',name:'참가자1',email:'u1@fixture.test'};
-export const setFixtureUser = id => { fixtureUser = {id,name:'참가자' + id.slice(1),email:id + '@fixture.test'}; return fixtureUser; };
+export function setFixtureUser(id) {
+  fixtureUser = {id,name:'참가자' + id.slice(1),email:id + '@fixture.test'};
+  persistFixture();
+  return fixtureUser;
+}
 export const getFixtureUser = () => fixtureUser;
 let fixtureAuthenticated = false;
 let fixtureSessionLoaded = false;
@@ -32,6 +36,7 @@ function hydrateFixture() {
     clearFixtureSession();
     return;
   }
+  setFixtureUser(saved.userId);
   fixtureAuthenticated = true;
   Object.assign(fixtureRoom, saved.snapshot);
   setScenarioPlaces(saved.scenario);
