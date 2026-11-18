@@ -3,7 +3,7 @@ import {restoreTripForm,readTripForm,bindFixedCostControls} from './trip-form.js
 import {renderRoutePanel} from './route-view.js';
 import {getSelectedDay,setSelectedDay} from './state.js';
 import {renderOverview,renderAgentBanner,renderChanged,routeKey,placeVisitDay,sharedRenderData} from './workspace-view.js';
-import {renderChat,isSendKey} from './chat.js';
+import {renderChat,isSendKey,sendChatMessage} from './chat.js';
 import {getUser} from './state.js';
 import {requireSession,readRoomId,saveRoomId,clearRoomId,navigate,preparePage,signOut,pageUrl} from './session.js';
 import {html,escapeHtml as e} from './ui.js';
@@ -12,7 +12,7 @@ import {applySnapshot,subscribeState,setUser} from './state.js';
 import {showError} from './ui.js';
 import {getSnapshot,appendMessage,applyRoomResponse} from './state.js';
 import {openRoomEvents} from './events.js';
-import {withPending} from './ui.js';
+import {withPending,runFormAction} from './ui.js';
 import {renderItems,renderConstraints,renderQuestions,renderConflicts,readDecisionValue} from './items.js';
 import {renderPlan,displayPlan} from './plan.js';
 import {renderCost} from './cost.js';
@@ -102,7 +102,7 @@ export function enterRoom(snapshot) {
 function bindForm(id, task) {
   document.getElementById(id).onsubmit = event => {
     event.preventDefault();
-    run(() => withPending(event.submitter,() => task(Object.fromEntries(new FormData(event.target)),event.submitter?.value,event.target)));
+    run(() => runFormAction(event,() => task(Object.fromEntries(new FormData(event.target)),event.submitter?.value,event.target)));
   };
 }
 function showUser(user) { setUser(user); html('session',e(user?.name ?? '로그인 전')); }
@@ -115,15 +115,14 @@ function bindSessionActions() {
   });
   bindForm('message',async (body, action,form) => {
     if (!roomId) throw new Error('먼저 방에 입장하세요.');
-    appendMessage(await requestJson('/api/rooms/' + encodeURIComponent(roomId) + '/messages',{method:'POST',body}));
-    form.reset();
+    appendMessage(await sendChatMessage(form,payload => requestJson('/api/rooms/' + encodeURIComponent(roomId) + '/messages',{method:'POST',body:payload})));
   });
 }
 
 function bindChatKeys() {
   const form = document.getElementById('message');
   form.elements.text.onkeydown = event => {
-    if (isSendKey(event)) { event.preventDefault(); form.requestSubmit(); }
+    if (isSendKey(event)) { event.preventDefault(); form.requestSubmit(form.querySelector('button[type=submit]')); }
   };
   document.getElementById('new-messages').onclick = event => {
     const list = document.getElementById('messages');
@@ -163,7 +162,7 @@ function bindDecisionActions() {
     const form = event.target;
     if (!form.dataset.question && !form.dataset.constraint) return;
     event.preventDefault();
-    run(() => withPending(event.submitter,async () => {
+    run(() => runFormAction(event,async () => {
       await roomAction(form.dataset.question ? 'questions/' + encodeURIComponent(form.dataset.question) + '/answer' : 'constraints/' + encodeURIComponent(form.dataset.constraint),{value:readDecisionValue(form)},form.dataset.question ? 'POST' : 'PATCH');
       if (form.contains(document.activeElement)) document.activeElement.blur();
     }));
