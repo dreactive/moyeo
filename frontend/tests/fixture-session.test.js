@@ -115,3 +115,18 @@ test('a partial fixture snapshot cannot restore the session', async () => {
   const next = await import('../src/fixture-api.js?partial-snapshot');
   await assert.rejects(next.requestFixture('/api/auth/me'), {status:401});
 });
+
+test('fixture logout in one document revokes requests from an older document', async () => {
+  const values = new Map();
+  globalThis.sessionStorage = {
+    getItem: key => values.get(key),
+    setItem: (key,value) => values.set(key,value),
+    removeItem: key => values.delete(key)
+  };
+  const older = await import('../src/fixture-api.js?older');
+  const newer = await import('../src/fixture-api.js?newer');
+  await older.requestFixture('/api/auth/login', {method:'POST'});
+  await newer.requestFixture('/api/auth/logout', {method:'POST'});
+  await assert.rejects(older.requestFixture('/api/rooms', {method:'POST',body:{title:'stale'}}), {status:401});
+  assert.equal(values.size,0);
+});

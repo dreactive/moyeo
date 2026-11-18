@@ -1,6 +1,6 @@
 import initial from '../fixtures/room-snapshot.json' with {type:'json'};
 import {fixturePlaces,resetFixturePlaces} from './fixture-places.js';
-import {clearFixtureSession,readFixtureSession,saveFixtureSession} from './fixture-session.js';
+import {clearFixtureSession,readFixtureSession,readStoredFixtureSession,saveFixtureSession} from './fixture-session.js';
 
 export const fixtureRoom = structuredClone(initial);
 let fixtureUser = {id:'u1',name:'참가자1',email:'u1@fixture.test'};
@@ -11,12 +11,12 @@ export function setFixtureUser(id) {
 }
 export const getFixtureUser = () => fixtureUser;
 let fixtureAuthenticated = false;
-let fixtureSessionLoaded = false;
+let lastFixtureRecord = null;
 let fixtureScenario = 'initial';
 
 function persistFixture() {
   if (!fixtureAuthenticated) return;
-  saveFixtureSession({authenticated:fixtureAuthenticated,userId:fixtureUser.id,snapshot:fixtureRoom,scenario:fixtureScenario});
+  lastFixtureRecord = saveFixtureSession({authenticated:fixtureAuthenticated,userId:fixtureUser.id,snapshot:fixtureRoom,scenario:fixtureScenario});
 }
 
 function isSavedFixture(saved) {
@@ -30,12 +30,19 @@ function isSavedFixture(saved) {
 }
 
 function hydrateFixture() {
-  if (fixtureSessionLoaded) return;
-  fixtureSessionLoaded = true;
-  const saved = readFixtureSession();
-  if (saved === null) return;
+  if (!globalThis.sessionStorage) return;
+  const stored = readStoredFixtureSession();
+  if (stored === lastFixtureRecord) return;
+  lastFixtureRecord = stored;
+  fixtureAuthenticated = false;
+  const saved = readFixtureSession(stored);
+  if (saved === null) {
+    resetFixtureMemory();
+    lastFixtureRecord = readStoredFixtureSession();
+    return;
+  }
   if (!isSavedFixture(saved)) {
-    clearFixtureSession();
+    resetFixtureSession();
     return;
   }
   setFixtureUser(saved.userId);
@@ -43,12 +50,16 @@ function hydrateFixture() {
   Object.assign(fixtureRoom, saved.snapshot);
   setScenarioPlaces(saved.scenario);
 }
-export function resetFixtureSession() {
+function resetFixtureMemory() {
   fixtureAuthenticated = false;
-  fixtureSessionLoaded = true;
   setFixtureUser('u1');
   Object.assign(fixtureRoom, structuredClone(initial));
   setScenarioPlaces('initial');
+}
+
+export function resetFixtureSession() {
+  resetFixtureMemory();
+  lastFixtureRecord = null;
   clearFixtureSession();
 }
 
