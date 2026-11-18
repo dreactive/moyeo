@@ -137,7 +137,7 @@ Secure를 추가한다. `PUBLIC_REQUESTS_PER_MINUTE` 기본 60은 단일 프로�
 60초 POST/PUT/PATCH/DELETE 예산이다. 초과 요청은 handler 실행 전 429와 `Retry-After: 60`으로
 거절한다. GET/SSE는 이 예산을 소비하지 않는다. 0은 제한 해제다.
 공개 PC 서버는 `SERVE_FRONTEND=0`으로 API만 제공하고, 기존 로컬 화면 기본값은 1이다.
-[운영 설정과 인수 확인](../deployment/vercel-cloudflare.md)을 따른다.
+[무료 ngrok 운영 설정과 인수 확인](../deployment/vercel-ngrok.md)을 따른다.
 
 ## 4. SSE
 

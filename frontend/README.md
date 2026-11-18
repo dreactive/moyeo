@@ -4,7 +4,8 @@
 
 Vercel 공개 배포에는 의존성 없는 `node scripts/build.mjs`가 정적 파일과 API 중계 설정을
 생성합니다. Root Directory는 `frontend`, 환경 변수는 `BACKEND_ORIGIN`과 공개 지도 키입니다.
-PC의 공개 API 전용 설정과 Cloudflare 작업은 [배포 가이드](../docs/deployment/vercel-cloudflare.md)를 따릅니다.
+PC의 공개 API 전용 설정과 무료 ngrok 연결은 [배포 가이드](../docs/deployment/vercel-ngrok.md)를 따릅니다.
+API 중계는 ngrok 경고 화면을 건너뛰는 요청 헤더를 Vercel에서 추가하므로 fetch와 SSE에 함께 적용됩니다.
 
 ```powershell
 cd frontend
