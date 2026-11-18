@@ -51,3 +51,13 @@ def test_health_reports_database_availability_only():
         response = client.get('/api/health')
         assert response.status_code == 503
         assert response.json() == {'status': 'unavailable'}
+
+
+def test_public_server_does_not_serve_local_frontend_files(tmp_path, monkeypatch):
+    (tmp_path / 'index.html').write_text('page')
+    (tmp_path / '.env').write_text('PRIVATE=sentinel')
+    monkeypatch.setenv('SERVE_FRONTEND', '0')
+    with TestClient(create_app(database_path=':memory:', frontend_path=tmp_path)) as client:
+        assert client.get('/.env').status_code == 404
+        assert client.get('/').status_code == 404
+        assert client.get('/api/health').status_code == 200

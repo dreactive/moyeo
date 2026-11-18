@@ -60,7 +60,8 @@ def create_app(agent_port: AgentPort | None = None, *, database_path=None, setti
     app.include_router(places_router)
     from pathlib import Path
     from backend.routes.static import mount_frontend
-    mount_frontend(app, frontend_path or Path(__file__).resolve().parents[1] / 'frontend', settings['public_map_key'])
+    if settings.get('serve_frontend', True):
+        mount_frontend(app, frontend_path or Path(__file__).resolve().parents[1] / 'frontend', settings['public_map_key'])
     return app
 
 
