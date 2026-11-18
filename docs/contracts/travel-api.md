@@ -191,6 +191,8 @@ async def run_agent(
 
 Backend가 AgentResult를 저장 타입으로 변환하고 base_versions를 확인한다. AI는 최종 Confirmation이나 confirmed 상태를 생성할 수 없다. plan_draft에는 Backend가 배정할 version/hash를 넣지 않고 selected_item_ids/days/cost/validation 내용만 담는다. 새 item/constraint ID를 배정하고 참조를 해결한 뒤 item_snapshots와 계획 버전을 만든다.
 
+`codex/candidate-generation-only` 브랜치에서는 계획 실행 결과에 선택 필드 `candidates: dict[]`를 추가한다. 후보는 `{action,reason,tool_name,arguments,source_message_ids,source_refs}`이며 생성·검증 후 그대로 반환한다. 채점·선택·자동 도구 실행은 없고 `plan_draft`는 null, 새 `observations`는 빈 배열, `completion`은 `needs_input`이다. 추출 전용·지원하지 않는 교통수단·오래된 사용자 선택은 기존 조기 종료를 유지하며 `candidates`를 생략한다. Backend는 이 필드로 행동을 자동 실행하지 않는다.
+
 runner는 실제 도구 반환값을 ToolObservation으로 수집해 AgentResult.observations로 전달한다. Backend는 이를 공급자 보관 조건에 맞는 메모리/저장 경계에 적용하고 PlaceDetails·Evidence 참조를 제공하며, 다음 AgentInput.observations에 필요한 결과를 넣는다. trace는 진단용이며 제품 데이터 전달 통로로 사용하지 않는다.
 
 충돌 선택 endpoint는 저장된 ConflictOption.effect를 UserSelection으로 복사해 AgentInput에 넣는다. 사용자가 선택한 ‘제외/순서변경/장소교체’를 자유 문장으로 다시 추측하지 않는다. base_versions와 대상 ID가 맞는 선택을 실행기가 우선 반영한 뒤 경로·일정·경비를 재계산한다.

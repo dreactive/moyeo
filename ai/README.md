@@ -2,7 +2,8 @@
 
 AI owns Python calculations, model inference and provider observations. No server,
 FastAPI, SQLite, frontend or Backend imports are required. All public values are
-JSON dictionaries/lists/scalars. Common API v0.2 remains unchanged.
+JSON dictionaries/lists/scalars. This branch stops planning runs after generating
+and validating action candidates; it does not score, select or execute them.
 
 ## Install and run
 
@@ -47,17 +48,21 @@ the asyncio event loop. Tools restore a separate context for every task/room.
 Closing is idempotent. Backend owns IDs, versions, official confirmations,
 atomic state application and state_applied trace events.
 
-Result contains proposals, calculated plan_draft, new tool observations,
-questions/conflicts, completion and original run_id/room_id/base_versions.
-plan_draft contains only selected_item_ids/days/cost/validation/blocking_conflict_ids.
-Trace is optional diagnostics; observations are the product data boundary.
+Result contains proposals, questions, completion and original run_id/room_id/base_versions.
+Planning runs also return `candidates`, even with tracing disabled. Each candidate
+contains action/reason/tool_name/arguments/source_message_ids/source_refs.
+`plan_draft` stays null, new `observations` stay empty, and `completion` remains
+`needs_input` because no plan has been calculated. Decision traces contain the
+same candidates with `selected_index: null` and `scores: []`.
+Explicit `runtime.execute_tool(...)` remains available to callers.
 
 Backend goal mapping: `new_message` (also `message_created`/`remaining_messages`)
 extracts new proposals; chitchat or repeated support without a new place performs
-no lookup. A new named place can start a first plan. `manual_replan` forces fresh
-derived itinerary/cost calculations while reusing valid source observations.
-`chat`/`messages`/`extract` are extraction-only. An unchanged, ready current plan
-can be reused for other triggers. New hard proposals stay pending until their
+no lookup. A new named place generates search candidates. `manual_replan` and
+other planning triggers produce one candidate batch from valid source observations;
+they do not execute a loop or return a reused plan.
+`chat`/`messages`/`extract` are extraction-only and omit `candidates`.
+New hard proposals stay pending until their
 owner confirms them through Backend. Generic failures end with `needs_input`
 and diagnostic termination, without inventing a domain question target.
 
@@ -75,10 +80,9 @@ and stance. AI creates no proxy votes.
 
 ## Model behavior and provenance
 
-The local backend loads one supplied Qwen base and current judge LoRA.
-Generation disables the adapter; scoring enables the judge and uses the original
-submission.judge.judge_scores with any real candidate count. No TeamPredictor
-choice-0 fallback or forced four-choice service behavior is used.
+The local backend retains the existing supplied Qwen base/adapter loading contract.
+Generation disables the adapter. Service scoring methods and argmax selection
+have been removed; the original submission package remains preserved separately.
 
 Free-form small-model extraction failed the initial real probes. Clear explicit
 budget/return-time/self-support statements therefore also use source-preserving
@@ -87,15 +91,14 @@ pass. Ambiguous targets remain questions and owner constraints are proposals.
 
 Code offers grounded, independently available actions alongside generated model
 actions (for example, first-day travel and the separate second-day return leg).
-The judge's actual finite scores select an action, including asking for input.
-Every result changes the next context/options; no code-selected first-candidate
-fallback runs. Known duplicate queries are omitted. Maximum actual choices: 20.
+All valid alternatives are returned without ranking or choosing a first candidate.
+Known duplicate queries and invalid or already observed tool calls are omitted.
 Prices, participant budgets, route seconds, dates and KRW arithmetic come from
 observations/user inputs and code; mismatching model arguments are rejected.
 Fractional quantities are allowed only when their subtotal is an integer KRW
 amount; sub-won results are rejected instead of silently truncated.
-Base/judge inputs omit map polyline arrays; full geometry remains in returned
-observations. The 24,000-token input guard still ends oversized requests safely.
+Base-model inputs omit map polyline arrays. The 24,000-token input guard still
+ends oversized requests safely.
 
 ## Live providers
 
@@ -134,7 +137,8 @@ Use a separate Backend integration venv with these optional packages or a
 read-only site-packages reference; do not install Backend dependencies into
 the existing ML venv. Only local weight files are loaded; no model downloads.
 
-Real probe: base load ~5.1–5.6s, generation of the short extraction case
+Historical scoring-branch probe (not remeasured for this candidate-only branch):
+base load ~5.1–5.6s, generation of the short extraction case
 0.8–3.0s, judge candidate counts 1/2/5 ~0.5/0.95/2.4s. Peak allocated GPU
 memory ~3584MiB on RTX4070 12GB. Extraction quality and mechanics are separate.
 Full run/provider results and resource shutdown are recorded in
@@ -154,7 +158,9 @@ the short mechanics timings above do not predict full-run latency.
 ./ai/.venv/Scripts/python.exe -m ai.eval.replay --model local_qwen --providers live --cases ai/.artifacts/live-cases.jsonl --output ai/.artifacts/eval-live.json --base-model-path C:/Users/user/Desktop/Competition/2026_AI_Agent_Hackaton/.local/models/Qwen2.5-1.5B-Instruct --adapter-path C:/Users/user/Desktop/Competition/2026_AI_Agent_Hackaton2/submission/weights --env-file C:/Users/user/Desktop/Competition/2026_AI_Agent_Hackaton2/.env
 ```
 
-The fixed 18-case replay is portable. The ignored live case contains previously
+The fixed 18-case replay now checks candidate-only results, with zero automatic
+tool calls and no plan draft. It does not verify end-to-end itinerary completion.
+The ignored historical live case contains previously
 observed restaurant details and explicit synthetic user inputs; it is a component
 test, not a real booking or a full product session. It must be prepared again
 with current source observations and future trip dates on another machine.

@@ -12,5 +12,5 @@ calculate_costs(lines:list,member_ids:list,budget_by_user:object)
 Only use observed PlaceRef IDs or anchor:origin/destination/lodging.
 Use the available_calculations values exactly for calculation tools; numbers come from code and observations.
 Use needed_route for the next route request. Prices, hours, distance, seconds and budgets cannot be invented.
-After each tool result reconsider the next action. Failed/ambiguous searches call for questions or another relevant search.
-Candidate count varies with actual alternatives; never pad to four. Scores are comparative, not probabilities.
+Failed/ambiguous observations call for questions or another relevant search candidate.
+Candidate count varies with actual alternatives; never pad to four. Return candidates only, without scores or a selected action.
