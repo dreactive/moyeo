@@ -20,6 +20,15 @@ def validate_settings(settings):
         raise HTTPException(503, 'Invalid server model/provider configuration')
 
 
+PROVIDER_KEYS = {'search_places': ('KAKAO_REST_API_KEY',), 'get_place_details': ('APIFY_TOKEN',),
+                 'get_car_route': ('KAKAO_MOBILITY_API_KEY', 'KAKAO_REST_API_KEY')}
+
+
+def require_provider_credentials(mode, credentials, name):
+    if mode == 'live' and name in PROVIDER_KEYS and not any(credentials.get(key) for key in PROVIDER_KEYS[name]):
+        raise HTTPException(503, 'Provider credentials unavailable; check server configuration')
+
+
 @asynccontextmanager
 async def sandbox_errors():
     try:
@@ -35,6 +44,7 @@ async def sandbox_errors():
 async def tool_result(body, name, settings):
     from ai.tools.registry import RegisteredTools
     tools = RegisteredTools(body.context.model_dump(), settings.get('provider_mode', 'fixture'), settings)
+    require_provider_credentials(tools.mode, tools.credentials, name)
     if body.arguments is None:
         from ai.planning import itinerary_arguments
         from ai.cost_inputs import build_cost_inputs

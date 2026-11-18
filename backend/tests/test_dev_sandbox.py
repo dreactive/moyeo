@@ -107,6 +107,17 @@ def test_invalid_server_modes_are_unavailable(api, key):
     assert response.status_code == 503
 
 
+def test_missing_live_credentials_are_server_error(api, monkeypatch):
+    from ai.tools import registry
+    from backend.dev_examples import tool_examples
+    monkeypatch.setattr(registry, 'load_settings', lambda config: {})
+    api.app.state.dev_token = 'test-dev'
+    api.app.state.dev_runtime_config['provider_mode'] = 'live'
+    response = api.post('/api/dev/tools/search_places', json=tool_examples('search_places')['fixture']['value'],
+                        headers={'X-Dev-Token': 'test-dev'})
+    assert response.status_code == 503
+
+
 def test_provider_failure_does_not_expose_secrets(api, monkeypatch):
     import httpx
     from ai.tools.registry import RegisteredTools
