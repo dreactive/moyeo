@@ -31,15 +31,21 @@ function conditionInput(condition) {
 }
 const memberName = (snapshot,id) => snapshot.members.find(member => member.user_id === id)?.name ?? id;
 export function renderConstraints(snapshot) {
-  html('constraints', snapshot.constraints.map(item => {
+  const active = [];
+  const history = [];
+  for (const item of snapshot.constraints) {
+    const old = item.status === 'superseded';
     const input = conditionInput(item);
-    return `<div class="card">
+    const row = `<div class="card">
   <strong>${e(constraintLabels[item.key] ?? item.key)} · ${e(conditionValue(item))}</strong>
   <p class="constraint-meta">${e(memberName(snapshot,item.owner_id))} · ${item.kind === 'hard' ? '필수' : '선호'} · ${e(constraintStatuses[item.status] ?? item.status)}</p>
   ${sourceLinks(item.source_message_ids)}
-  ${item.owner_id === getUser()?.id ? `<form data-constraint="${e(item.id)}" data-value-mode="${input ? 'scalar' : 'json'}">${input || `<label>값 (JSON)<input name="value" value="${e(JSON.stringify(item.value))}" required></label>`}<button>수정</button>
+  ${!old && item.owner_id === getUser()?.id ? `<form data-constraint="${e(item.id)}" data-value-mode="${input ? 'scalar' : 'json'}">${input || `<label>값 (JSON)<input name="value" value="${e(JSON.stringify(item.value))}" required></label>`}<button>수정</button>
   ${item.status === 'needs_owner_confirmation' ? `<button type="button" data-constraint-confirm="${e(item.id)}">본인 확인</button>` : ''}</form>` : ''}</div>`;
-  }).join(''));
+    (old ? history : active).push(row);
+  }
+  html('constraints', (active.join('') || '<p>아직 등록된 조건이 없습니다.</p>') +
+    (history.length ? `<details class="card-details"><summary>이전 조건 보기</summary>${history.join('')}</details>` : ''));
 }
 export function renderConflicts(snapshot) {
   html('conflicts', snapshot.conflicts.filter(item => item.status === 'open').map(item => `<div class="card conflict"><h3>! ${e(item.type)} · ${item.blocking ? '확정 차단' : '선호 선택'}</h3><p>${e(item.explanation)}</p>${item.options.map(option => `<p><button data-conflict="${e(item.id)}" data-option="${e(option.id)}" ${option.requires_owner_id && option.requires_owner_id !== getUser()?.id ? 'disabled' : ''}>${e(option.label)}</button> ${e(option.effect_summary)} · ${option.requires_owner_id ? e(option.requires_owner_id) + ' 본인 조건 수정·확인 필요' : '새 초안 생성'}</p>`).join('')}</div>`).join(''));

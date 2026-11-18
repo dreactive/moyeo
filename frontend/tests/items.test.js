@@ -111,3 +111,15 @@ test('condition rows name their owner and reserve verification for a pending own
   assert.match(card.innerHTML,/참가자4 · 필수 · 본인 확인됨/);
   assert.doesNotMatch(card.innerHTML,/data-constraint="return-time"|data-constraint-confirm=/);
 });
+
+test('superseded conditions can be read in history without an edit action', () => {
+  const card = {};
+  globalThis.document = {getElementById:() => card};
+  const room = structuredClone(scenarios.ready.snapshot);
+  room.constraints[0].status = 'superseded';
+  setUser({id:'u1'});
+  decisions.renderConstraints(room);
+  setUser(null);
+  assert.match(card.innerHTML,/<summary>이전 조건 보기<\/summary>[^]*200,000원/);
+  assert.doesNotMatch(card.innerHTML,/data-constraint=/);
+});
