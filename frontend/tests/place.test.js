@@ -85,3 +85,11 @@ test('place details link back to their visit in the displayed plan', async () =>
   await pending;
   assert.match(output.place,/data-route-place="fixture:place-a"/);
 });
+
+test('the place card shows address and hours before the source disclosure', async () => {
+  const {requests,output} = prepare();
+  const pending = selectPlace(room.room_id,place.place.id);
+  requests[0].resolve(Response.json(place));
+  await pending;
+  assert.match(output.place,/<dt>주소<\/dt><dd>계약 예시용 주소[^]*<dt>영업시간<\/dt><dd>[^]*<summary>장소 정보 출처/);
+});
