@@ -15,6 +15,9 @@ class ModelWorker:
     def generate_json(self, request):
         return self.call("generate_json", request)
 
+    def score_candidates(self, context: dict, candidates: list[dict]) -> list[float]:
+        return self.call("score_candidates", context, candidates)
+
     def close(self):
         with self.lock:
             if not self.closed:

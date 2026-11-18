@@ -33,6 +33,31 @@ def recovered_failures(failures, message_ids, processed):
 
 
 def extraction_label(result):
-    status = result.get('extraction_report', {}).get('status')
-    return {'failed': '메시지 형식을 확인하지 못했습니다. 다시 시도해 주세요.',
-            'filtered': '근거를 확인하지 못한 제안은 반영하지 않았습니다.'}.get(status, result['completion'])
+    report = result.get('extraction_report', {})
+    status = report.get('status')
+    issues = set(report.get('issue_codes', []))
+    if status == 'failed':
+        if issues & {'auxiliary_configuration_missing', 'auxiliary_configuration_error', 'missing_credentials'}:
+            return '보조 모델 API 키 또는 연결 설정이 필요합니다.'
+        if 'auxiliary_request_failed' in issues:
+            return '보조 모델 요청에 실패했습니다. 연결 설정을 확인하고 다시 시도해 주세요.'
+        return '메시지 형식을 확인하지 못했습니다. 다시 시도해 주세요.'
+    decision = result.get('decision_report', {})
+    if decision.get('status') == 'stale':
+        return '요청이 변경되어 선택을 보류했습니다. 새 요청을 다시 확인합니다.'
+    if decision.get('status') == 'failed':
+        if decision.get('reason') == 'tool_failed':
+            return '선택한 도구 실행에 실패했습니다. 다시 시도해 주세요.'
+        return 'Qwen 후보 채점에 실패해 실행을 보류했습니다. 다시 시도해 주세요.'
+    if decision.get('action') == 'ask' or decision.get('reason') == 'selection_needs_input':
+        question = next((q['text'] for q in result.get('questions', []) if q.get('text')), None)
+        if question:
+            return question
+    if decision.get('action') in ('direct', 'unsupported') and result.get('response'):
+        return result['response']
+    if result.get('observations') and result['completion'] == 'needs_input':
+        return '도구 실행은 완료됐으며 후속 작업에 필요한 정보 보완이 남았습니다.'
+    if status == 'filtered':
+        return '근거를 확인하지 못한 제안은 반영하지 않았습니다.'
+    return {'done': '처리를 마쳤습니다.', 'needs_input': '작업에 필요한 정보를 확인해 주세요.',
+            'unsupported': '현재 도구로 요청을 수행할 수 없습니다.'}.get(result['completion'], result['completion'])

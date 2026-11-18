@@ -135,11 +135,40 @@ def test_agent_caught_model_failure_is_unavailable(api, monkeypatch):
     from backend.dev_examples import utterance_examples
     def fail(*args):
         raise RuntimeError('secret-model-detail')
-    monkeypatch.setattr(FakeModelBackend, 'generate_json', fail)
+    monkeypatch.setattr(FakeModelBackend, 'score_candidates', fail)
     api.app.state.dev_token = 'test-dev'
     response = api.post('/api/dev/agent/utterance', json=utterance_examples()['extract']['value'],
                         headers={'X-Dev-Token': 'test-dev'})
     assert response.status_code == 503 and 'secret' not in response.text
+
+
+@pytest.mark.parametrize('result,expected', [
+    ({'decision_report': {'status': 'failed', 'reason': 'tool_failed', 'error_code': 'ConnectError'}}, 502),
+    ({'decision_report': {'status': 'failed', 'reason': 'tool_failed', 'error_code': 'ValueError'}}, 422),
+    ({'decision_report': {'status': 'failed', 'reason': 'tool_failed', 'error_code': 'RuntimeError'}}, 503),
+    ({'decision_report': {'status': 'failed', 'reason': 'ValueError'}}, 503),
+    ({'decision_report': {'status': 'failed', 'reason': 'RuntimeError'}}, 503),
+    ({'extraction_report': {'status': 'failed', 'issue_codes': ['auxiliary_configuration_missing']}}, 503),
+    ({'extraction_report': {'status': 'failed', 'issue_codes': ['auxiliary_request_failed']}}, 502),
+    ({'extraction_report': {'status': 'failed', 'issue_codes': ['auxiliary_invalid_output']}}, 502),
+])
+def test_caught_result_failure_maps_to_safe_http_status(result, expected):
+    from backend.services.dev_sandbox import raise_termination_error
+    from fastapi import HTTPException
+    result['response'] = 'secret-provider-detail'
+    with pytest.raises(HTTPException) as error:
+        raise_termination_error([], result)
+    assert error.value.status_code == expected
+    assert 'secret' not in str(error.value.detail)
+
+
+def test_judge_trace_failure_is_unavailable_even_when_cause_is_value_error():
+    from backend.services.dev_sandbox import raise_termination_error
+    from fastapi import HTTPException
+    with pytest.raises(HTTPException) as error:
+        raise_termination_error([{'event': 'decision', 'payload': {
+            'termination': 'judge_failed', 'error_code': 'ValueError'}}])
+    assert error.value.status_code == 503
 
 
 @pytest.mark.integration

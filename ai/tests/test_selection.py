@@ -26,14 +26,23 @@ def test_reorder_replace_and_change_constraint_keep_ownership():
     assert questions[0]["owner_id"] == "u1" and changed["constraints"] == value["constraints"]
 
 
-async def test_selected_drop_changes_route_candidates_without_execution():
+async def test_selected_drop_executes_revised_routes_and_recalculates_selected_visits():
     from ai.runtime import create_runtime
     value = task()
     value["user_selection"] = {"base_versions": value["base_versions"],
         "effect": {"kind": "drop_visit", "item_id": "item-a"}}
     runtime = create_runtime({"model_backend": "fake", "provider_mode": "fixture"})
-    result = await runtime.run(value, None)
-    await runtime.aclose()
-    assert result["plan_draft"] is None and result["observations"] == []
-    route = next(c for c in result["candidates"] if c["tool_name"] == "get_car_route")
-    assert route["arguments"]["to_ref"] == "fixture:place-b"
+    try:
+        result = await runtime.run(value, None)
+    finally:
+        await runtime.aclose()
+    routes = [o for o in result["observations"] if o["tool_name"] == "get_car_route"]
+    assert [o["arguments"] for o in routes] == [
+        dict(from_ref="anchor:origin", to_ref="fixture:place-b", departure_at="2026-11-21T09:00:00+09:00"),
+        dict(from_ref="fixture:place-b", to_ref="anchor:lodging", departure_at="2026-11-21T15:00:00+09:00"),
+        dict(from_ref="anchor:lodging", to_ref="anchor:destination", departure_at="2026-11-22T09:00:00+09:00")]
+    assert [o["tool_name"] for o in result["observations"][-2:]] == ["build_itinerary", "calculate_costs"]
+    assert result["plan_draft"]["selected_item_ids"] == ["item-b"]
+    assert all(v["item_id"] == "item-b" for d in result["plan_draft"]["days"] for v in d["visits"])
+    assert result["completion"] == "needs_input" and result["plan_draft"]["cost"]["total_krw"] is None
+    assert value["current_plan"]["selected_item_ids"] == ["item-a", "item-b"]

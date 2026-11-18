@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "case_id": "auxiliary-qwen-two-places-history-resolution",
+  "format": "semantic_reference_case",
+  "synthetic": true,
+  "not_direct_runtime_payload": true,
+  "description": "현재 요청의 '내가 고른 두 곳'을 관련 과거 발화로 해석하고, 검증된 두 상세 조회 후보를 Qwen에 전달하는 사례",
+  "source_document": "../../agent-architecture-summary.md",
+  "dialogue": {
+    "history": [
+      {
+        "message_id": "m101",
+        "author_id": "u1",
+        "text": "대전시립미술관 말고 한밭수목원하고 엑스포과학공원으로 하자."
+      }
+    ],
+    "current_message": {
+      "message_id": "m102",
+      "author_id": "u1",
+      "text": "아까 내가 고른 두 곳 상세 정보 보여줘."
+    }
+  },
+  "server_seed": {
+    "room_id": "example-room",
+    "state_version": 1,
+    "region": "대전",
+    "open_questions": [],
+    "current_user_selection_in_minimal_state": "absent",
+    "existing_search_observation": {
+      "observation_id": "search-result-1",
+      "room_id": "example-room",
+      "tool_name": "search_places",
+      "places": [
+        { "place_ref": "p1", "name": "한밭수목원" },
+        { "place_ref": "p2", "name": "엑스포과학공원" },
+        { "place_ref": "p3", "name": "대전시립미술관" }
+      ]
+    },
+    "adapter_notes": [
+      "실행 전 이 의미 검증 사례를 대상 작업 공간의 실제 요청·관측·보조 출력 스키마로 매핑한다.",
+      "p1·p2·p3는 합성 장소 참조이며 실제 공급자 ID나 외부 조회 결과가 아니다.",
+      "실제 PlaceRef 등 필수 필드는 대상 테스트의 합성 fixture로 구성하고, 동일 방의 기존 관측으로 사전 주입한다.",
+      "첫 모델 입력에는 사용자별 과거 선택 관계를 넣지 않아 문맥 보완 필요 조건을 유지한다.",
+      "실제 도구 결과는 fixture·캐시·외부 API 중 관찰된 실행 경로를 구분해 기록한다."
+    ]
+  },
+  "expected_stages": {
+    "first_auxiliary": {
+      "input_message_ids": ["m102"],
+      "minimum_room_context": {
+        "region": "대전",
+        "related_places": ["대전시립미술관", "한밭수목원", "엑스포과학공원"],
+        "open_questions": []
+      },
+      "expected_meaning": {
+        "intent": "place_details",
+        "author_id": "u1",
+        "target_expression": "아까 내가 고른 두 곳",
+        "target_status": "unresolved",
+        "missing_field": "target_places",
+        "missing_source": "conversation_history",
+        "evidence_message_id": "m102"
+      },
+      "forbidden": ["과거 선택을 근거 없이 추측", "도구 직접 실행", "현재 발화를 잡담으로 종료"]
+    },
+    "history_retrieval": {
+      "required_message_ids": ["m101"],
+      "scope": "u1의 장소 선택에 관련된 과거 기록만 추가",
+      "expected_count_for_this_fixture": 1
+    },
+    "second_auxiliary": {
+      "input_message_ids": ["m102", "m101"],
+      "reuse_first_pass_facts": true,
+      "expected_meaning": {
+        "intent": "place_details",
+        "author_id": "u1",
+        "source_request_message_id": "m102",
+        "target_status": "resolved",
+        "target_names": ["한밭수목원", "엑스포과학공원"],
+        "historically_excluded_name": "대전시립미술관",
+        "historical_evidence": {
+          "message_id": "m101",
+          "author_id": "u1",
+          "target_quote": "한밭수목원하고 엑스포과학공원으로 하자.",
+          "exclusion_quote": "대전시립미술관 말고"
+        },
+        "missing_information": []
+      },
+      "forbidden": ["과거 발화를 현재의 새로운 찬성·반대로 재등록", "방 전체 합의로 확대", "도구 추천 순위를 Qwen에 전달"]
+    },
+    "candidate_preparation": {
+      "owner": "service_code",
+      "expected_candidates": [
+        {
+          "type": "tool_call",
+          "tool_name": "get_place_details",
+          "arguments": { "place_ref": "p1" }
+        },
+        {
+          "type": "tool_call",
+          "tool_name": "get_place_details",
+          "arguments": { "place_ref": "p2" }
+        }
+      ],
+      "candidate_count": 2,
+      "forbidden_place_refs": ["p3"],
+      "required_checks": ["동일 방의 기존 관측에서 참조 확인", "필수 인자 조립·업무 검증 완료", "동일 상태·기준 버전 사용", "가짜 후보로 4개를 채우지 않음"]
+    },
+    "qwen": {
+      "required_input": ["현재 요청", "두 장소의 참조와 기존 관측 근거", "m101·u1의 원문 근거", "누락 정보 없음", "공유 도구 정의", "완성된 두 후보"],
+      "score_type": "yes_minus_no",
+      "illustrative_result": { "scores": [2.4, 2.1], "selected_index": 0 },
+      "illustrative_result_is_assertion": false,
+      "accepted_first_place_refs": ["p1", "p2"],
+      "required_checks": ["후보 수와 유한 원시 점수 수 일치", "선택 인덱스가 후보 범위 안", "최종 비교에서만 Qwen 사용", "보조 모델의 정답·추천 순위 없음", "확률 또는 임의 0점 기준으로 해석하지 않음"]
+    },
+    "execution_and_state": {
+      "execution_owner": "existing_executor",
+      "selected_calls_executed_per_round": 1,
+      "scored_and_executed_arguments_must_match": true,
+      "unselected_request_must_remain_pending": true,
+      "historical_preference_must_not_be_duplicated": true,
+      "continue_after_result_in_next_decision_round": true,
+      "hold_on": ["상태 버전 변경", "채점 실패·비유한 점수", "부적격 선택·실행 검증 실패"]
+    }
+  },
+  "verification_modes": [
+    {
+      "mode": "contract_and_integration",
+      "auxiliary": "synthetic_structured_outputs",
+      "qwen": "actual_base_model_and_lora",
+      "tools": "existing_executor_with_fixture_provider",
+      "claim_scope": "문맥 보완 분기·후보 구성·실제 Qwen 선택·기존 실행기·요청별 상태 통합 검증",
+      "does_not_prove": "실제 외부 보조 API의 추출 품질 또는 실제 외부 장소 API 성공"
+    },
+    {
+      "mode": "live_auxiliary",
+      "prerequisite": "대상 작업의 외부 보조 API 설정·키 사용 가능",
+      "auxiliary": "actual_configured_external_model",
+      "qwen": "actual_base_model_and_lora",
+      "claim_scope": "실제 1차·2차 보조 API의 해석·근거 보완까지 검증",
+      "model_label_note": "문서의 gpt-luna-6 표기는 설명용 요청 명칭이며, 실행은 대상 작업의 실제 설정 모델명을 기록한다."
+    }
+  ],
+  "required_evidence": [
+    "실제 호출한 모델명·백엔드·1차/2차 호출 횟수",
+    "추가 조회한 메시지 ID·작성자·인용 근거",
+    "Qwen이 본 실제 후보 내용·수·점수·선택 인덱스",
+    "Qwen 선택 호출과 실행 호출의 도구명·인자 일치",
+    "실제 도구 결과·실행 경로·실행 전후 요청별 상태",
+    "수행한 검증 명령과 통과·실패·미실행 항목을 구분한 결과"
+  ]
+}

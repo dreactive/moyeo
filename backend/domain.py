@@ -43,7 +43,7 @@ def apply_item_proposals(room, proposals):
     return refs
 
 
-REF_FIELDS = {'item_id','target_ref','selected_item_ids','related_item_ids','affected_item_ids','ordered_item_ids'}
+REF_FIELDS = {'item_id','target_ref','selected_item_ids','related_item_ids','affected_item_ids','ordered_item_ids','pending_item_ids'}
 
 
 def resolve_refs(value, refs, field=None):

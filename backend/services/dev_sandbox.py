@@ -87,15 +87,41 @@ async def run_utterance(request, body):
                 require_provider_credentials('live', load_settings(settings), event['payload']['tool_name'])
         bridge = await start_agent(request)
         result = await bridge.run(task, capture)
-        raise_termination_error(trace)
+        raise_termination_error(trace, result)
         settings = request.app.state.dev_runtime_config
         return dict(model_backend=settings.get('model_backend', 'fake'),
                     provider_mode=settings.get('provider_mode', 'fixture'), result=result, trace=trace)
 
 
-def raise_termination_error(trace):
+def raise_tool_failure(error_code):
+    error_type = getattr(httpx, error_code, None) if isinstance(error_code, str) else None
+    if isinstance(error_type, type) and issubclass(error_type, HTTPError):
+        raise HTTPException(502, 'Agent provider request failed')
+    if error_code in ('ValueError', 'KeyError', 'TypeError', 'IndexError', 'AttributeError', 'OverflowError', 'DecimalException'):
+        raise HTTPException(422, 'Agent could not process sandbox arguments or context')
+    raise HTTPException(503, 'Agent tool runtime unavailable')
+
+
+def raise_termination_error(trace, result=None):
+    result = result or {}
+    extraction = result.get('extraction_report', {})
+    if extraction.get('status') == 'failed':
+        issues = set(extraction.get('issue_codes', []))
+        if issues & {'auxiliary_request_failed', 'auxiliary_invalid_output'}:
+            raise HTTPException(502, 'Agent auxiliary request failed')
+        raise HTTPException(503, 'Agent auxiliary runtime unavailable; check server configuration')
+    decision = result.get('decision_report', {})
+    if decision.get('status') == 'failed':
+        if decision.get('reason') == 'tool_failed':
+            raise_tool_failure(decision.get('error_code'))
+        raise HTTPException(503, 'Agent judge runtime unavailable')
     for event in trace:
-        reason = event.get('payload', {}).get('termination', '')
+        payload = event.get('payload', {})
+        if event.get('event') == 'tool_result' and payload.get('failed'):
+            raise_tool_failure(payload.get('error_code'))
+        reason = payload.get('termination', '')
+        if reason == 'judge_failed':
+            raise HTTPException(503, 'Agent judge runtime unavailable')
         error_type = getattr(httpx, reason, None)
         if isinstance(error_type, type) and issubclass(error_type, HTTPError):
             raise HTTPException(502, 'Agent provider request failed')

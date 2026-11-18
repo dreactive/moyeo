@@ -5,6 +5,12 @@ import re
 class FakeModelBackend:
     mode = "fake"
 
+    def score_candidates(self, context: dict, candidates: list[dict]) -> list[float]:
+        if not 1 <= len(candidates) <= 4:
+            raise ValueError("Fixture scoring requires between one and four real candidates")
+        priorities = {"tool": 3., "ask": 2., "unsupported": 1., "direct": 0.}
+        return [priorities[candidate["action"]] for candidate in candidates]
+
     def generate_json(self, request):
         context = request["context"]
         if request["phase"] == "actions":

@@ -1,6 +1,96 @@
 import asyncio
 import time
 
+import pytest
+
+
+async def test_worker_serializes_judge_generation_and_close():
+    from threading import Event
+    from ai.models.worker import ModelWorker
+    entered, release = Event(), Event()
+    events = []
+    class Backend:
+        def score_candidates(self, context, candidates):
+            events.append("scoring")
+            entered.set()
+            assert release.wait(5)
+            events.append("scored")
+            return [4.]
+        def generate_json(self, request):
+            events.append("generated")
+            return request
+        def close(self):
+            events.append("closed")
+    worker = ModelWorker(Backend())
+    scoring = asyncio.create_task(asyncio.to_thread(worker.score_candidates, {}, [{}]))
+    assert await asyncio.to_thread(entered.wait, 5)
+    generating = asyncio.create_task(asyncio.to_thread(worker.generate_json, {"ok": True}))
+    closing = asyncio.create_task(asyncio.to_thread(worker.close))
+    await asyncio.sleep(.02)
+    assert events == ["scoring"]
+    release.set()
+    assert await scoring == [4.]
+    results = await asyncio.gather(generating, closing, return_exceptions=True)
+    assert events.index("scored") < events.index("closed")
+    if isinstance(results[0], RuntimeError):
+        assert events == ["scoring", "scored", "closed"]
+    else:
+        assert results[0] == {"ok": True}
+        assert events == ["scoring", "scored", "generated", "closed"]
+    worker.close()
+    with pytest.raises(RuntimeError, match="closed"):
+        worker.score_candidates({}, [{}])
+
+
+def test_worker_propagates_scoring_exception_and_releases_lock():
+    from ai.models.worker import ModelWorker
+    class Backend:
+        fail = True
+        def score_candidates(self, context, candidates):
+            if self.fail:
+                raise ValueError("failed scoring")
+            return [2.]
+    backend = Backend()
+    worker = ModelWorker(backend)
+    with pytest.raises(ValueError, match="failed scoring"):
+        worker.score_candidates({}, [{}])
+    backend.fail = False
+    assert worker.score_candidates({}, [{}]) == [2.]
+
+
+@pytest.mark.parametrize("cuda,expected", [(True, "bf16"), (False, "fp32")])
+def test_loader_matches_supplied_judge_dtype_without_downloads(monkeypatch, tmp_path, cuda, expected):
+    import sys
+    from types import SimpleNamespace
+    from ai.models.qwen_loader import load_components
+    base, adapter = tmp_path / "base", tmp_path / "adapter"
+    base.mkdir()
+    adapter.mkdir()
+    (base / "config.json").touch()
+    (adapter / "adapter_model.safetensors").touch()
+    loaded = []
+    class Model:
+        def to(self, device):
+            self.device = device
+            return self
+        def eval(self):
+            return self
+    model, tokenizer = Model(), object()
+    def load_model(path, **kwargs):
+        loaded.append(kwargs)
+        return model
+    monkeypatch.setitem(sys.modules, "torch", SimpleNamespace(cuda=SimpleNamespace(is_available=lambda: cuda),
+                        bfloat16="bf16", float16="fp16", float32="fp32"))
+    monkeypatch.setitem(sys.modules, "transformers", SimpleNamespace(
+        AutoModelForCausalLM=SimpleNamespace(from_pretrained=load_model),
+        AutoTokenizer=SimpleNamespace(from_pretrained=lambda *args, **kwargs: tokenizer)))
+    monkeypatch.setitem(sys.modules, "peft", SimpleNamespace(PeftModel=SimpleNamespace(
+        from_pretrained=lambda *args, **kwargs: model)))
+    assert load_components(base, adapter) == (model, tokenizer)
+    assert loaded[0]["torch_dtype"] == expected
+    assert loaded[0]["local_files_only"] is True
+    assert model.device == ("cuda" if cuda else "cpu")
+
 
 async def test_worker_serializes_and_closes_once():
     from ai.models.worker import ModelWorker

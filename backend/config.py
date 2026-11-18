@@ -21,6 +21,11 @@ def read_settings(env_file=None):
         'serve_frontend':values.get('SERVE_FRONTEND','1') == '1',
         'runtime_config':{
             'model_backend':values.get('MODEL_BACKEND','fake'),
+            'auxiliary_backend':values.get('AUXILIARY_BACKEND', 'external' if values.get('MODEL_BACKEND') == 'local_qwen' else 'fixture'),
+            'aux_model':values.get('AUX_MODEL','gpt-6-luna'),
+            'aux_reasoning_effort':values.get('AUX_REASONING_EFFORT','none'),
+            'aux_api_key':values.get('OPENAI_API_KEY'),
+            'aux_base_url':values.get('AUX_BASE_URL'),
             'provider_mode':values.get('PROVIDER_MODE','fixture'),
             'base_model_path':values.get('BASE_MODEL_PATH'),
             'adapter_path':values.get('ADAPTER_PATH'),

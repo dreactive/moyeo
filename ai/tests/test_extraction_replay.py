@@ -17,13 +17,21 @@ def test_replay_rejects_wrong_source_or_owner():
     result = dict(item_proposals=[],constraint_proposals=[dict(owner_id='u2',source_message_ids=['old'])],support_observations=[])
     assert provenance_issues(case,result) == ['provenance']
 
-async def test_fake_replay_never_executes_provider_tools():
+async def test_fake_extraction_replay_reports_actual_selected_fixture_calls():
     from ai.eval.extraction_replay import replay_case
     from ai.runtime import create_runtime
     runtime = create_runtime(dict(model_backend='fake',provider_mode='fixture'))
-    row = await replay_case(runtime,dict(id='island',group='place',text='오동도 가자',places=['오동도'],conditions={}))
-    await runtime.aclose()
-    assert row['passed'] and not row['tool_calls']
+    try:
+        row = await replay_case(runtime,dict(id='island',group='place',text='오동도 가자',places=['오동도'],conditions={}))
+    finally:
+        await runtime.aclose()
+    assert row['passed'] and row['tool_calls'] == 3
+    observations = row['result']['observations']
+    assert [o['tool_name'] for o in observations] == ['search_places', 'get_car_route', 'get_car_route']
+    assert observations[0]['arguments'] == dict(query='오동도', region='여수', category=None)
+    assert observations[0]['result']['places'] == []
+    assert row['result']['plan_draft'] is None and row['result']['completion'] == 'needs_input'
+
 
 def test_replay_summary_keeps_quality_failures_visible():
     from ai.eval.extraction_replay import summarize

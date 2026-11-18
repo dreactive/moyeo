@@ -26,33 +26,50 @@ async def test_fake_fixture_runtime_without_torch_or_backend():
     await runtime.aclose()
 
 
-async def test_runtime_reuses_model_and_chat_never_calls_tools():
+async def test_runtime_reuses_model_and_chat_executes_judged_trip_work():
     from ai.runtime import create_runtime
-    runtime = create_runtime({"model_backend": "fake", "provider_mode": "fixture"})
+    runtime = create_runtime({"model_backend": "fake", "provider_mode": "fixture", "max_decision_rounds": 1})
     task = json.loads(Path("ai/fixtures/agent-task.json").read_text(encoding="utf-8"))
     task["goal"] = "chat"
     model = runtime.model
     result = await runtime.run(task, None)
     assert result["constraint_proposals"][0]["owner_id"] == "u1"
-    assert result["observations"] == [] and runtime.model is model
+    assert runtime.model is model
+    assert len(result["observations"]) == 1
+    assert result["observations"][0]["tool_name"] == "get_car_route"
+    assert result["observations"][0]["arguments"] == dict(from_ref="anchor:origin", to_ref="fixture:place-a",
+        departure_at="2026-11-21T09:00:00+09:00")
+    assert result["completion"] == "needs_input" and result["plan_draft"] is None
     await runtime.aclose()
     await runtime.aclose()
     assert model.closed
 
 
-async def test_fake_fixture_runtime_produces_unscored_candidates_and_mode_trace():
+async def test_fake_fixture_runtime_traces_actual_scores_and_matching_selected_calls():
     from ai.runtime import create_runtime
     runtime = create_runtime({"model_backend": "fake", "provider_mode": "fixture"})
     task = json.loads(Path("ai/fixtures/agent-task.json").read_text(encoding="utf-8"))
     events = []
     async def sink(event):
         events.append(event)
-    result = await runtime.run(task, sink)
-    await runtime.aclose()
-    assert result["plan_draft"] is None and result["observations"] == []
-    assert result["candidates"][0]["tool_name"] == "get_car_route"
-    assert result["completion"] == "needs_input"
-    assert {e["payload"]["model_mode"] for e in events if e["event"] == "decision"} == {"fake"}
+    try:
+        result = await runtime.run(task, sink)
+    finally:
+        await runtime.aclose()
+    selected = [e for e in events if e["event"] == "decision" and e["payload"]["selected_index"] is not None]
+    calls = [e for e in events if e["event"] == "tool_call"]
+    assert len(selected) == len(calls) == len(result["observations"]) == 6
+    for decision, call, observation in zip(selected, calls, result["observations"]):
+        payload = decision["payload"]
+        assert payload["model_mode"] == "fake" and payload["selection_origin"] == "fixture_judge"
+        assert payload["candidate_count"] == len(payload["candidates"]) == len(payload["scores"])
+        assert 1 <= payload["candidate_count"] <= 3
+        candidate = payload["candidates"][payload["selected_index"]]
+        assert candidate["action"] == "tool"
+        assert candidate["tool_name"] == call["payload"]["tool_name"] == observation["tool_name"]
+        assert candidate["arguments"] == call["payload"]["arguments"] == observation["arguments"]
+    assert result["completion"] == "needs_input" and result["plan_draft"]["cost"]["total_krw"] is None
+    assert result["plan_draft"]["validation"] == "needs_input"
 
 
 def test_local_qwen_runtime_needs_local_weights_without_downloading():

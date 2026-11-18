@@ -28,34 +28,48 @@ async def test_initial_fixture_search_and_details_need_no_prior_room_observation
     assert detail["menus"][0]["price_krw"] == 10000
 
 
-async def test_empty_room_first_mention_generates_initial_search_candidate():
-    from ai.runtime import create_runtime
-    value = task()
-    value.update(items=[], current_plan=None, observations=[], questions=[])
-    value["recent_messages"] = [dict(value["recent_messages"][0], id="new", text="가상 A식당 가자")]
-    value["goal"] = "message_created"
-    value["config"]["day_start_time"] = "10:00"
-    runtime = create_runtime({"model_backend": "fake", "provider_mode": "fixture"})
-    result = await runtime.run(value, None)
-    await runtime.aclose()
-    assert result["plan_draft"] is None and result["observations"] == []
-    assert result["candidates"][0]["tool_name"] == "search_places"
-    assert result["candidates"][0]["arguments"]["query"] == "가상 A식당"
-    assert result["item_proposals"][0]["client_ref"] == "client:new"
-
-
-async def test_repeated_generation_does_not_create_plan_or_observations():
+async def test_empty_room_first_mention_executes_search_and_dependent_calls():
     from ai.runtime import create_runtime
     value = task()
     value.update(items=[], current_plan=None, observations=[], questions=[], goal="message_created")
-    value["recent_messages"] = [dict(value["recent_messages"][0], id="new", text="가상 A식당 가자")]
+    value["recent_messages"] = [dict(value["recent_messages"][0], id="new", text="A식당 가자")]
     value["config"]["day_start_time"] = "10:00"
-    value["config"]["fixed_costs"].append(dict(value["config"]["fixed_costs"][0],
-        id="car-input", category="car", description="유류·주차 포함 차량비", unit_price_krw=10000, paid=False))
     runtime = create_runtime({"model_backend": "fake", "provider_mode": "fixture"})
-    first = await runtime.run(value, None)
-    assert first["completion"] == "needs_input"
-    second = await runtime.run(value, None)
-    await runtime.aclose()
-    assert second["candidates"] == first["candidates"]
-    assert second["plan_draft"] is None and second["observations"] == []
+    try:
+        result = await runtime.run(value, None)
+    finally:
+        await runtime.aclose()
+    assert [o["tool_name"] for o in result["observations"]] == [
+        "search_places", "get_place_details", "get_car_route", "get_car_route", "get_car_route", "build_itinerary"]
+    assert result["observations"][0]["arguments"] == dict(query="A식당", region="여수", category=None)
+    assert result["observations"][1]["arguments"] == {"place_ref": "fixture:place-a"}
+    assert result["observations"][2]["arguments"]["departure_at"] == "2026-11-21T10:00:00+09:00"
+    assert result["item_proposals"][0]["source_message_ids"] == ["new"]
+    assert result["item_proposals"][0]["title"] == "A식당"
+    assert result["completion"] == "needs_input" and result["plan_draft"] is None
+    assert result["decision_report"]["reason"] == "round_limit"
+
+
+async def test_repeated_runs_preserve_input_and_repeat_only_the_unapplied_selected_work():
+    from copy import deepcopy
+    from ai.runtime import create_runtime
+    value = task()
+    value.update(items=[], current_plan=None, observations=[], questions=[], goal="message_created")
+    value["recent_messages"] = [dict(value["recent_messages"][0], id="new", text="A식당 가자")]
+    value["config"]["day_start_time"] = "10:00"
+    before = deepcopy(value)
+    runtime = create_runtime({"model_backend": "fake", "provider_mode": "fixture", "max_decision_rounds": 1})
+    try:
+        first = await runtime.run(value, None)
+        second = await runtime.run(value, None)
+    finally:
+        await runtime.aclose()
+    assert value == before
+    assert first["candidates"] == second["candidates"]
+    assert first["item_proposals"] == second["item_proposals"]
+    assert len(first["observations"]) == len(second["observations"]) == 1
+    assert first["observations"][0]["arguments"] == second["observations"][0]["arguments"] == dict(
+        query="A식당", region="여수", category=None)
+    assert first["observations"][0]["tool_name"] == second["observations"][0]["tool_name"] == "search_places"
+    assert first["completion"] == second["completion"] == "needs_input"
+    assert first["plan_draft"] is second["plan_draft"] is None

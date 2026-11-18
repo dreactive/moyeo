@@ -54,10 +54,19 @@ async def test_same_run_new_hard_proposal_cannot_be_ready_before_owner_confirmat
     value["config"]["fixed_costs"].append(dict(value["config"]["fixed_costs"][0],
         id="car", category="car", description="유류·주차 포함", unit_price_krw=10000, paid=False))
     runtime = create_runtime({"model_backend": "fake", "provider_mode": "fixture"})
-    control = await runtime.run(value, None)
-    assert control["completion"] == "needs_input" and control["candidates"]
-    value["recent_messages"] = [dict(id="new", author_id="u1", text="내 예산은 1만원")]
-    result = await runtime.run(value, None)
-    await runtime.aclose()
-    assert result["completion"] == "needs_input" and result["plan_draft"] is None
+    try:
+        control = await runtime.run(value, None)
+        value["recent_messages"] = [dict(id="new", author_id="u1", text="내 예산은 1만원")]
+        result = await runtime.run(value, None)
+    finally:
+        await runtime.aclose()
+    assert control["completion"] == "done" and control["plan_draft"]["validation"] == "ready"
+    assert control["plan_draft"]["cost"]["total_krw"] == 130000 and not control["questions"]
+    assert result["completion"] == "needs_input" and result["plan_draft"]["validation"] == "needs_input"
     assert result["constraint_proposals"][0]["value"] == 10000
+    proposal = result["constraint_proposals"][0]
+    assert proposal["owner_id"] == "u1" and proposal["source_message_ids"] == ["new"] and proposal["kind"] == "hard"
+    assert all(not (q.get("target_ref") or "").startswith("pending:") for q in result["questions"])
+    costs = next(o for o in result["observations"] if o["tool_name"] == "calculate_costs")
+    assert costs["arguments"]["budget_by_user"]["u1"] == 200000
+    assert result["plan_draft"]["cost"]["total_krw"] == 130000

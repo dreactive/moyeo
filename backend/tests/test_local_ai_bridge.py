@@ -58,3 +58,23 @@ def test_failed_live_runtime_is_not_fixture_success(monkeypatch):
     with pytest.raises(RuntimeError, match='Live runtime unavailable'):
         with TestClient(create_app(LocalAIBridge({'provider_mode':'live'}), database_path=':memory:')):
             pass
+
+
+def test_bridge_forwards_current_snapshot_callback_without_changing_legacy_run(monkeypatch):
+    from backend.adapters.local_ai import LocalAIBridge
+    checks = []
+    class Runtime:
+        async def run(self, task, emit, **kwargs):
+            checks.append(kwargs)
+            return {'current': kwargs['is_current']()} if kwargs else task
+    module = types.ModuleType('ai.runtime')
+    module.create_runtime = lambda config: Runtime()
+    monkeypatch.setitem(sys.modules, 'ai.runtime', module)
+    bridge = LocalAIBridge({})
+    async def scenario():
+        await bridge.start()
+        guard = lambda: False
+        assert await bridge.run_current({'room_id': 'r'}, None, guard) == {'current': False}
+        assert await bridge.run({'room_id': 'r'}, None) == {'room_id': 'r'}
+        assert checks == [{'is_current': guard}, {}]
+    asyncio.run(scenario())

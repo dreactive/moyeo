@@ -64,7 +64,8 @@ async def replay_case(case, model_mode, provider_mode, config=None, runtime=None
             seconds=round(time.perf_counter() - started, 4))
         report["passed"] = bool(report["assertions"]) and all(a["passed"] for a in report["assertions"])
         report["limitations"] = ["Standalone AI boundary only; no official confirmation",
-                                 "rule-assisted extraction", "fixture values are not live proof" if provider_mode == "fixture" else "Live tool observations must be checked separately"]
+                                 "Auxiliary: " + result.get('extraction_report', {}).get('backend', 'unknown'),
+                                 "fixture values are not live proof" if provider_mode == "fixture" else "Live tool observations must be checked separately"]
     except (ValueError, RuntimeError, OSError, KeyError, TypeError) as error:
         report["limitations"].append("Execution unavailable: " + type(error).__name__)
     finally:

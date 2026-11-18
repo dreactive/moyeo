@@ -38,6 +38,7 @@ class AgentResult(TypedDict):
 
 class ModelBackend(Protocol):
     def generate_json(self, request: dict) -> dict: ...
+    def score_candidates(self, context: dict, candidates: list[dict]) -> list[float]: ...
 
 
 class ToolExecutor(Protocol):

@@ -25,7 +25,19 @@ class RegisteredTools:
 
     async def execute(self, name, arguments):
         validate_arguments(name, arguments, self.context)
+        self.last_execution_source = 'local_calculation' if name in ('calculate_costs', 'build_itinerary') else 'fixture'
         if self.mode == "live" and name in ("search_places", "get_place_details", "get_car_route"):
+            self.last_execution_source = 'http'
+            if name == 'get_place_details':
+                cached = self.context['details'].get(arguments['place_ref'])
+                if cached and cached.get('evidence') and all(e['mode'] == 'live' for e in cached['evidence']):
+                    self.last_execution_source = 'cache'
+            if name == 'get_car_route':
+                try:
+                    if observed_route(self.context, arguments)['evidence_id'].startswith('kakao:route:'):
+                        self.last_execution_source = 'cache'
+                except ValueError:
+                    pass
             from ai.providers.live import execute
             return await execute(name, arguments, self.context, self.credentials)
         if name == "calculate_costs":

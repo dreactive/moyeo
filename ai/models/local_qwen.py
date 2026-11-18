@@ -16,6 +16,10 @@ class LocalQwenBackend:
                 return generate_extraction(self.model, self.tokenizer, request)
             return generate_object(self.model, self.tokenizer, dict(request, context=model_context(request.get("context", {}))))
 
+    def score_candidates(self, context: dict, candidates: list[dict]) -> list[float]:
+        from ai.models.qwen_judge import score_candidates
+        return score_candidates(self.model, self.tokenizer, context, candidates)
+
     def close(self):
         self.model, self.tokenizer = None, None
         import gc

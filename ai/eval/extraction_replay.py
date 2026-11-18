@@ -1,4 +1,4 @@
-"""Independent extraction replay; no automatic provider tools or user room access."""
+"""Isolated extraction quality replay including selected fixture tools; no user DB."""
 import json
 from pathlib import Path
 
@@ -118,17 +118,24 @@ def main():
     parser.add_argument('--model-backend', choices=['fake','local_qwen'], default='fake')
     parser.add_argument('--base-model-path')
     parser.add_argument('--adapter-path')
+    parser.add_argument('--env-file')
+    parser.add_argument('--auxiliary-backend', choices=['fixture', 'external'])
     parser.add_argument('--compare-unconstrained', action='store_true')
     parser.add_argument('--output', required=True)
     args = parser.parse_args()
+    if args.compare_unconstrained:
+        parser.error('Qwen extraction comparison is historical; the current runtime uses structured auxiliary facts and Qwen judging.')
     cases = [json.loads(line) for line in Path(__file__).with_name('extraction_cases.jsonl').read_text(encoding='utf-8').splitlines()]
-    config = dict(model_backend=args.model_backend,provider_mode='fixture',base_model_path=args.base_model_path,adapter_path=args.adapter_path)
-    modes = ['constrained','unconstrained'] if args.compare_unconstrained else ['constrained']
+    config = dict(model_backend=args.model_backend,provider_mode='fixture',base_model_path=args.base_model_path,
+                  adapter_path=args.adapter_path, env_file=args.env_file)
+    if args.auxiliary_backend:
+        config['auxiliary_backend'] = args.auxiliary_backend
+    modes = ['structured_auxiliary']
     reports = asyncio.run(evaluate(config,cases,modes))
     Path(args.output).write_text(json.dumps(dict(model_backend=args.model_backend,reports=reports),ensure_ascii=False,indent=2),encoding='utf-8')
     print(json.dumps({mode: data['summary'] for mode,data in reports.items()},ensure_ascii=False),flush=True)
-    summary = reports['constrained']['summary']
-    return 0 if summary['critical_passed'] and not any(summary[key] for key in ('schema_failures','unexpected_conditions','provenance_errors','tool_calls')) else 1
+    summary = reports['structured_auxiliary']['summary']
+    return 0 if summary['critical_passed'] and not any(summary[key] for key in ('schema_failures','unexpected_conditions','provenance_errors')) else 1
 
 
 if __name__ == '__main__':

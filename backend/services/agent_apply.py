@@ -64,7 +64,24 @@ def apply_plan(room, draft, old_observations, observations):
 def prepare_result(room, result, old_observations):
     updated = deepcopy(room)
     mapped = apply_proposals(updated, result)
+    if 'pending_item_ids' in mapped:
+        pending = mapped['pending_item_ids']
+        if not isinstance(pending, list) or any(ref not in {i['id'] for i in updated['items']} for ref in pending):
+            raise ValueError('Unknown pending item reference')
+        updated['agent_pending_item_ids'] = list(dict.fromkeys(pending))
     observations = merge_observations(old_observations, mapped['observations'])
+    if 'request_states' in mapped:
+        messages = {m['id']: m for m in updated['messages']}
+        places = known_place_ids(observations)
+        for request in mapped['request_states']:
+            message = messages.get(request.get('source_message_id'))
+            if (not message or request.get('owner_id') != message['author_id']
+                    or not set(request.get('target_refs', []) + request.get('excluded_refs', [])) <= places):
+                raise ValueError('Invalid scoped request source or targets')
+        existing = {r['request_id']: r for r in updated.get('agent_requests', [])
+                    if r.get('status') not in ('completed', 'superseded', 'cancelled')}
+        existing.update({r['request_id']: deepcopy(r) for r in mapped['request_states']})
+        updated['agent_requests'] = list(existing.values())
     validate_questions(updated, mapped['questions'])
     apply_questions(updated, mapped['questions'])
     apply_plan(updated, mapped['plan_draft'], old_observations, observations)

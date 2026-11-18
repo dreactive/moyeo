@@ -11,11 +11,28 @@ from uuid import uuid4
 import asyncio
 
 
+DECISION_FIELDS = ('room_id', 'versions', 'members', 'config', 'constraints', 'items', 'questions',
+                   'messages', 'current_plan', 'review_plan', 'confirmed_plan', 'active_target',
+                   'confirmations', 'conflicts', 'agent_pending_item_ids', 'agent_requests')
+
+
+@serialized
+def decision_snapshot(db, room_id):
+    room = db.get('room:' + room_id)
+    if room is None:
+        return None
+    return deepcopy(dict(room={key: room.get(key) for key in DECISION_FIELDS},
+                         observations=get_observations(db, room_id)))
+
+
 def make_task(room, run_id, goal, observations, selection, processed_id=None, failures=None):
     task = {key:room[key] for key in ('room_id','members','config','constraints','items','questions','current_plan')}
     task.update(run_id=run_id, base_versions=room['versions'], goal=goal, recent_messages=select_extraction_messages(room['messages'], processed_id, failures or {}, goal == 'manual_replan'), observations=observations, user_selection=selection)
     first = next((i for i, m in enumerate(room['messages']) if task['recent_messages'] and m['id'] == task['recent_messages'][0]['id']), len(room['messages']))
     task['conversation_context'] = room['messages'][:first][-20:]
+    task['pending_item_ids'] = list(room.get('agent_pending_item_ids', []))
+    task['pending_requests'] = [r for r in room.get('agent_requests', [])
+                                if r.get('status') not in ('completed', 'superseded', 'cancelled')]
     return deepcopy(task)
 
 
@@ -51,29 +68,43 @@ class AgentJobs:
         while True:
             task = await self.queue.get()
             self.pending[task['room_id']] -= 1
+            is_current = None
             try:
-                task = self.refresh_task(task)
+                with self.db.lock:
+                    task = self.refresh_task(task)
+                    snapshot = decision_snapshot(self.db, task['room_id'])
+                def is_current(room_id=task['room_id'], expected=snapshot):
+                    return decision_snapshot(self.db, room_id) == expected
                 if task['goal'] in ('new_message', 'message_created', 'remaining_messages') and not task['recent_messages']:
                     continue
                 self.active_run_id = task['run_id']
                 set_status(self.db, task['room_id'], task['run_id'], 'running', 'Working')
-                result = await self.port.run(task, self.emit_trace)
+                if not is_current():
+                    if self.pending[task['room_id']] == 0:
+                        await self.enqueue(task['room_id'], 'state_changed')
+                    continue
+                run_current = getattr(self.port, 'run_current', None)
+                result = await run_current(task, self.emit_trace, is_current) if run_current else await self.port.run(task, self.emit_trace)
                 if (result.get('run_id'), result.get('room_id')) != (task['run_id'], task['room_id']):
                     raise ValueError('Agent result identity does not match the active request')
-                applied = apply_agent_result(self.db, result)
+                with self.db.lock:
+                    current = is_current()
+                    applied = apply_agent_result(self.db, result) if current else False
                 processed = result.get('last_processed_message_id')
                 room = self.db.get('room:' + task['room_id'])
                 advanced = processed in [message['id'] for message in task['recent_messages']]
                 if applied and advanced and select_extraction_messages(room['messages'], self.db.get('processed-message:' + task['room_id']), self.db.get('failed-extraction:' + task['room_id']) or {}) and self.pending[task['room_id']] == 0:
                     await self.enqueue(task['room_id'], 'remaining_messages')
-                if not applied and result.get('extraction_report', {}).get('status') != 'failed' and self.pending[task['room_id']] == 0 and self.db.get('room:' + task['room_id'])['versions'] != task['base_versions']:
+                if not current and self.pending[task['room_id']] == 0:
                     await self.enqueue(task['room_id'], 'state_changed')
                 step = max((event['step'] for event in self.db.traces.get(task['run_id'], {}).get('events', [])), default=0) + 1
-                await self.emit_trace(dict(run_id=task['run_id'], step=step, event='state_applied', call_id=None, created_at=datetime.now(timezone.utc).isoformat(), payload={'applied':applied, 'summary':'Applied' if applied else 'Extraction failed' if result.get('extraction_report', {}).get('status') == 'failed' else 'Stale result', 'versions':self.db.get('room:' + task['room_id'])['versions']}))
+                await self.emit_trace(dict(run_id=task['run_id'], step=step, event='state_applied', call_id=None, created_at=datetime.now(timezone.utc).isoformat(), payload={'applied':applied, 'summary':'Applied' if applied else 'Stale result' if not current else 'Extraction failed' if result.get('extraction_report', {}).get('status') == 'failed' else 'Stale result', 'versions':self.db.get('room:' + task['room_id'])['versions']}))
                 state = 'done' if applied and result['completion'] == 'done' else 'needs_input'
-                set_status(self.db, task['room_id'], task['run_id'], state, extraction_label(result))
+                set_status(self.db, task['room_id'], task['run_id'], state, extraction_label(result) if current else 'State changed; new decision queued')
             except Exception:
                 set_status(self.db, task['room_id'], task['run_id'], 'needs_input', 'Agent run failed')
+                if is_current and not is_current() and self.pending[task['room_id']] == 0:
+                    await self.enqueue(task['room_id'], 'state_changed')
             finally:
                 self.queue.task_done()
 

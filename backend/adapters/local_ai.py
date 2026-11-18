@@ -14,6 +14,9 @@ class LocalAIBridge:
     async def run(self, task, emit_trace):
         return await self.runtime.run(task, emit_trace)
 
+    async def run_current(self, task, emit_trace, is_current):
+        return await self.runtime.run(task, emit_trace, is_current=is_current)
+
     async def execute_tool(self, name, arguments, context):
         return await self.runtime.execute_tool(name, arguments, context)
 
