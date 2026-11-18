@@ -1,3 +1,13 @@
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def fixture_runtime(api):
+    config = {'model_backend': 'fake', 'provider_mode': 'fixture'}
+    api.app.state.dev_runtime_config = config
+    api.app.state.dev_agent.config = config
+
+
 def test_developer_auth_is_available_in_swagger(api):
     schema = api.get('/openapi.json').json()
     operation = schema['paths']['/api/dev/rooms/{room_id}/traces']['get']
@@ -159,3 +169,15 @@ def test_missing_runtime_dependency_returns_safe_unavailable(api, monkeypatch):
     response = api.post('/api/dev/agent/utterance', json=utterance_examples()['extract']['value'],
                         headers={'X-Dev-Token': 'test-dev'})
     assert response.status_code == 503 and 'secret' not in response.text
+
+
+@pytest.mark.parametrize('suffix', ['tools/search_places', 'tools/get_place_details', 'tools/get_car_route',
+                                   'tools/build_itinerary', 'tools/calculate_costs', 'agent/utterance'])
+def test_all_sandbox_operations_require_login_and_token(api, suffix):
+    path = '/api/dev/' + suffix
+    api.app.state.dev_token = 'test-dev'
+    assert api.post(path, json={}).status_code == 403
+    assert api.post(path, json={}, headers={'X-Dev-Token': 'wrong'}).status_code == 403
+    api.cookies.clear()
+    assert api.post(path, json={}, headers={'X-Dev-Token': 'test-dev'}).status_code == 401
+    assert api.app.state.dev_agent.runtime is None
