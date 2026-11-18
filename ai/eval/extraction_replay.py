@@ -10,3 +10,17 @@ def case_task(case):
     if case['group'] != 'support':
         task['items'] = []
     return task
+
+
+def check_case(case, result):
+    from ai.grounding import normalized
+    issues = []
+    names = {normalized(item['title']) for item in result['item_proposals']}
+    if names != {normalized(name) for name in case['places']}:
+        issues.append('places')
+    values = {('budget_krw' if p['key'] == 'budget' else p['key']): p['value'] for p in result['constraint_proposals']}
+    if values != case['conditions']:
+        issues.append('conditions')
+    if result['extraction_report']['status'] == 'failed':
+        issues.append('schema_failed')
+    return issues
