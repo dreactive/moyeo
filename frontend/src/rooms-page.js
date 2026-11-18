@@ -29,6 +29,9 @@ export async function checkRoomsPage(retry) {
     document.getElementById('session').textContent = user.name;
     document.getElementById('room-actions').hidden = false;
     document.getElementById('logout').disabled = false;
+    if (new URLSearchParams(location.search).get('reason') === 'room-access') {
+      showError(new Error('방에 접근할 수 없습니다.'));
+    }
   } catch (error) {
     showError(error);
     retry.hidden = false;

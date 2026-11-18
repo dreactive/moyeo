@@ -54,3 +54,12 @@ test('room page startup opens choices for the signed-in user', async () => {
   assert.equal(elements.session.textContent,'여행자');
   assert.equal(elements['room-actions'].hidden,false);
 });
+
+test('room selection reports an inaccessible previously selected room', async () => {
+  globalThis.location = {search:'?reason=room-access'};
+  const elements = {error:{},session:{},'room-actions':{},logout:{}};
+  globalThis.document = {getElementById: id => elements[id]};
+  globalThis.fetch = async () => Response.json({name:'여행자'});
+  await rooms.checkRoomsPage({});
+  assert.match(elements.error.textContent,/방에 접근할 수 없습니다/);
+});
