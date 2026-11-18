@@ -2,7 +2,7 @@ import {runRoomTask,roomLoadRedirect} from './room-errors.js';
 import {restoreTripForm,readTripForm,bindFixedCostControls} from './trip-form.js';
 import {renderRoutePanel} from './route-view.js';
 import {getSelectedDay,setSelectedDay} from './state.js';
-import {renderOverview,renderAgentBanner,renderChanged,routeKey,placeVisitDay} from './workspace-view.js';
+import {renderOverview,renderAgentBanner,renderChanged,routeKey,placeVisitDay,sharedRenderData} from './workspace-view.js';
 import {renderChat,isSendKey} from './chat.js';
 import {getUser} from './state.js';
 import {requireSession,readRoomId,saveRoomId,clearRoomId,navigate,preparePage,signOut,pageUrl} from './session.js';
@@ -31,16 +31,17 @@ function expireRoomSession() {
   html('error',`세션이 만료되었습니다. <a href="${e(pageUrl('/login.html'))}">다시 로그인해 주세요.</a>`);
 }
 function renderDecisionRegions(snapshot) {
-  const {messages,agent_status,...shared} = snapshot;
+  const shared = sharedRenderData(snapshot);
   renderChanged('decisions',[shared,getUser()?.id],() => {
     if (document.activeElement?.closest('#constraints form,#questions form')) return false;
     renderItems(snapshot); renderConstraints(snapshot); renderQuestions(snapshot); renderConflicts(snapshot);
   });
 }
 export function renderRoom(snapshot) {
-  const {messages,agent_status,...shared} = snapshot;
+  const shared = sharedRenderData(snapshot);
   renderDecisionRegions(snapshot);
-  renderChanged('plan',[shared,getUser()?.id],() => { renderPlan(snapshot); renderCost(displayPlan(snapshot)?.cost,getUser()?.id,snapshot.members); });
+  renderChanged('plan',[shared,getUser()?.id],() => renderPlan(snapshot));
+  renderChanged('cost',[snapshot.room_id,displayPlan(snapshot)?.cost,snapshot.members,getUser()?.id],() => renderCost(displayPlan(snapshot)?.cost,getUser()?.id,snapshot.members));
   renderChanged('route-panel',[displayPlan(snapshot),getSelectedDay()],() => renderRoutePanel(snapshot,getSelectedDay()));
   run(() => renderMaps(snapshot));
   renderChanged('chat',[snapshot.room_id,snapshot.messages,snapshot.members,getUser()?.id],() => renderChat(snapshot,getUser()?.id));

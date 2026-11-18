@@ -20,3 +20,8 @@ test('a repeated place keeps the currently selected visit day', () => {
   const plan={days:[{date:'a',visits:[{place_ref:'p'}]},{date:'b',visits:[{place_ref:'p'}]}]};
   assert.equal(view.placeVisitDay?.(plan,'p','b')?.date,'b');
 });
+test('message sequence changes do not invalidate shared card data', () => {
+  const before={room_id:'r',seq:1,messages:[],agent_status:{state:'idle'},constraints:[]};
+  const after={...before,seq:2,messages:[{id:'m'}],agent_status:{state:'running'}};
+  assert.deepEqual(view.sharedRenderData?.(before) ?? before,view.sharedRenderData?.(after) ?? after);
+});

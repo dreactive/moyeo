@@ -27,3 +27,4 @@ export function placeVisitDay(plan,ref,selected) {
   const contains = day => day.visits.some(visit => visit.place_ref === ref);
   return plan?.days.find(day => day.date === selected && contains(day)) ?? plan?.days.find(contains);
 }
+export function sharedRenderData({messages,agent_status,seq,...shared}) { return shared; }
