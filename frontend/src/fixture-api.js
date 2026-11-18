@@ -16,6 +16,7 @@ let fixtureScenario = 'initial';
 
 function persistFixture() {
   if (!fixtureAuthenticated) return;
+  if (globalThis.sessionStorage && readStoredFixtureSession() !== lastFixtureRecord) return;
   lastFixtureRecord = saveFixtureSession({authenticated:fixtureAuthenticated,userId:fixtureUser.id,snapshot:fixtureRoom,scenario:fixtureScenario});
 }
 

@@ -128,6 +128,8 @@ test('fixture logout in one document revokes requests from an older document', a
   const newer = await import('../src/fixture-api.js?newer');
   await older.requestFixture('/api/auth/login', {method:'POST'});
   await newer.requestFixture('/api/auth/logout', {method:'POST'});
+  older.replayScenario('ready');
+  assert.equal(values.size,0);
   await assert.rejects(older.requestFixture('/api/rooms', {method:'POST',body:{title:'stale'}}), {status:401});
   assert.equal(values.size,0);
 });
