@@ -133,11 +133,16 @@ Vercel에서 저장소를 Import하고 다음 설정을 사용한다.
 | 항목 | 값 |
 | --- | --- |
 | Root Directory | `frontend` |
+| Production Branch | 현재 준비 코드가 있는 `develop` |
 | Framework Preset | `Other` (`framework: null`) |
 | Node.js Version | `24.x` |
 | Build Command | 저장소 설정 `node scripts/build.mjs` 유지 |
 | Output Directory | **Override를 끈다** |
 | Install Command | 별도 의존성 설치 설정 불필요 |
+
+이번 변경은 `develop`에 push되어 있으며 `master` 대상 PR은 아직 merge하지 않았다.
+바로 배포할 때는 Production Branch/브랜치 추적을 `develop`으로 설정하고 해당 브랜치를
+배포한다. 나중에 PR을 merge하고 운영 기준을 `master`로 옮길 때 이 설정도 맞춘다.
 
 build는 `.vercel/output/static`과 `.vercel/output/config.json`을 만드는 Build Output API 방식이다.
 Output Directory를 `dist`, `frontend` 또는 `.vercel/output/static`으로 덮어쓰지 않는다.
