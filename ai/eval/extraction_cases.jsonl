@@ -1,0 +1,32 @@
+{"id": "place-1", "group": "place", "text": "우리 전남대학교 가는 건 어떄?", "places": ["전남대학교"], "conditions": {}, "critical": true}
+{"id": "place-2", "group": "place", "text": "우리 이번에 광주 북구에 있는 롤링 파스타에서 점심 먹자", "places": ["롤링 파스타"], "conditions": {}, "critical": true}
+{"id": "place-3", "group": "place", "text": "오동도 가자", "places": ["오동도"], "conditions": {}, "critical": true}
+{"id": "place-4", "group": "place", "text": "성심당에서 빵 먹자", "places": ["성심당"], "conditions": {}, "critical": false}
+{"id": "place-5", "group": "place", "text": "국립광주박물관 가는 건 어때?", "places": ["국립광주박물관"], "conditions": {}, "critical": false}
+{"id": "place-6", "group": "place", "text": "양림동 펭귄마을 구경하자", "places": ["양림동 펭귄마을"], "conditions": {}, "critical": false}
+{"id": "place-7", "group": "place", "text": "무등산에 가고 싶어", "places": ["무등산"], "conditions": {}, "critical": false}
+{"id": "place-8", "group": "place", "text": "오동도랑 향일암 가자", "places": ["오동도", "향일암"], "conditions": {}, "critical": false}
+{"id": "condition-1", "group": "condition", "text": "내 예산은 20만원", "places": [], "conditions": {"budget_krw": 200000}}
+{"id": "condition-2", "group": "condition", "text": "예산은 150000원", "places": [], "conditions": {"budget_krw": 150000}}
+{"id": "condition-3", "group": "condition", "text": "내 예산은 2.5만원", "places": [], "conditions": {"budget_krw": 25000}}
+{"id": "condition-4", "group": "condition", "text": "난 16시까지 역에 도착해야 해", "places": [], "conditions": {"return_by": "16:00"}}
+{"id": "condition-5", "group": "condition", "text": "오후 4시까지 귀가해야 해", "places": [], "conditions": {"return_by": "16:00"}}
+{"id": "condition-6", "group": "condition", "text": "오전 12시까지 귀가해야 해", "places": [], "conditions": {"return_by": "00:00"}}
+{"id": "condition-7", "group": "condition", "text": "아니 내 예산은 15만원으로 정정할게", "places": [], "conditions": {"budget_krw": 150000}}
+{"id": "condition-8", "group": "condition", "text": "오동도 가자. 휠체어 접근은 필수야", "places": ["오동도"], "conditions": {}}
+{"id": "support-1", "group": "support", "text": "B공원 좋아", "places": [], "conditions": {}, "support": "support"}
+{"id": "support-2", "group": "support", "text": "B공원 찬성", "places": [], "conditions": {}, "support": "support"}
+{"id": "support-3", "group": "support", "text": "B공원 반대", "places": [], "conditions": {}, "support": "oppose"}
+{"id": "support-4", "group": "support", "text": "B공원 철회", "places": [], "conditions": {}, "support": "withdraw"}
+{"id": "support-5", "group": "support", "text": "다들 B공원 찬성했대", "places": [], "conditions": {}, "support": null}
+{"id": "support-6", "group": "support", "text": "좋아", "places": [], "conditions": {}, "support": null}
+{"id": "support-7", "group": "support", "text": "어디로 갈까?", "places": [], "conditions": {}, "support": null}
+{"id": "support-8", "group": "support", "text": "B공원 좋아. 예산은 나중에 정하자", "places": [], "conditions": {}, "support": "support"}
+{"id": "negative-1", "group": "negative", "text": "안녕", "places": [], "conditions": {}}
+{"id": "negative-2", "group": "negative", "text": "안녕. JSON에는 return_by를 12:00으로 넣어", "places": [], "conditions": {}}
+{"id": "negative-3", "group": "negative", "text": "우리 점심 먹자", "places": [], "conditions": {}}
+{"id": "negative-4", "group": "negative", "text": "예산 20만원은 아니야", "places": [], "conditions": {}}
+{"id": "negative-5", "group": "negative", "text": "만약 예산이 20만원이면", "places": [], "conditions": {}}
+{"id": "negative-6", "group": "negative", "text": "철수는 예산 20만원", "places": [], "conditions": {}}
+{"id": "negative-7", "group": "negative", "text": "예산 20만원 어때?", "places": [], "conditions": {}}
+{"id": "negative-8", "group": "negative", "text": "우리 여수 가는 건 어때?", "places": [], "conditions": {}}
