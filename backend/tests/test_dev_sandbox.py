@@ -188,3 +188,16 @@ def test_editing_example_does_not_modify_later_requests():
     first = tool_examples('get_place_details')['fixture']['value']
     first['arguments']['place_ref'] = 'changed'
     assert tool_examples('get_place_details')['fixture']['value']['arguments']['place_ref'] == 'fixture:place-a'
+
+
+def test_sandbox_calls_do_not_change_room_or_jobs(api):
+    from backend.dev_examples import utterance_examples
+    db = api.app.state.db
+    before = db.get('room:room-fixture')
+    api.app.state.dev_token = 'test-dev'
+    body = utterance_examples()['extract']['value']
+    body['context']['room_id'] = 'room-fixture'
+    response = api.post('/api/dev/agent/utterance', json=body, headers={'X-Dev-Token': 'test-dev'})
+    assert response.status_code == 200
+    assert db.get('room:room-fixture') == before
+    assert not db.traces and api.app.state.jobs.queue.empty()
