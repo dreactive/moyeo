@@ -13,3 +13,10 @@ test('route map only displays the selected day', () => {
   assert.match(route.innerHTML,/2026-11-22/);
   assert.doesNotMatch(route.innerHTML,/fixture:place-a|서버 polyline/);
 });
+
+test('route map shows lodging between the trip start and return', () => {
+  renderRouteMap(plan,new Map(),config,'2026-11-22');
+  assert.match(route.innerHTML,/예시 숙소/);
+  assert.match(route.innerHTML,/예시 귀가 지점/);
+  assert.doesNotMatch(route.innerHTML,/예시 출발지/);
+});
