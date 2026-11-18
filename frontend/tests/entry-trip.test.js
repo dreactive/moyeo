@@ -8,3 +8,11 @@ test('creation payload includes title and the existing trip config', () => {
   const payload = trip.readTripForm([['title','여수'],['per_person_budget_krw','150000']]);
   assert.deepEqual([payload.title,payload.per_person_budget_krw,payload.origin], ['여수',150000,null]);
 });
+
+test('restoring the trip pre-fills title and scalar settings', () => {
+  const form = [];
+  form.elements = {title:{}, region:{}};
+  globalThis.document.getElementById = () => form;
+  trip.restoreTripForm({title:'주말 여행', config:{region:'여수'}});
+  assert.deepEqual(form.elements, {title:{value:'주말 여행'},region:{value:'여수'}});
+});
