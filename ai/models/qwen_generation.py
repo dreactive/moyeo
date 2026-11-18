@@ -29,3 +29,11 @@ def parse_object(text):
     if not isinstance(value, dict):
         raise ValueError("Model output must be one JSON object")
     return value
+
+
+def extraction_options(request, tokenizer):
+    if request['phase'] != 'extract':
+        return {}
+    from ai.extraction_schema import ExtractionBatch
+    from ai.models.structured_generation import build_extraction_prefix
+    return dict(prefix_allowed_tokens_fn=build_extraction_prefix(tokenizer, ExtractionBatch.model_json_schema()))

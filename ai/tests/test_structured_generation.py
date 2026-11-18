@@ -15,3 +15,11 @@ def test_tokenizer_vocabulary_is_reused(monkeypatch):
     monkeypatch.setattr(module, 'build_token_enforcer_tokenizer_data', lambda tokenizer: object())
     tokenizer = object()
     assert module.tokenizer_data(tokenizer) is module.tokenizer_data(tokenizer)
+
+def test_extract_generation_options_restrict_json_schema(monkeypatch):
+    import ai.models.qwen_generation as module
+    import ai.models.structured_generation as decoding
+    monkeypatch.setattr(decoding, 'build_extraction_prefix', lambda tokenizer, schema: schema)
+    options = module.extraction_options({'phase': 'extract'}, None)
+    assert options['prefix_allowed_tokens_fn']['additionalProperties'] is False
+    assert module.extraction_options({'phase': 'actions'}, None) == {}
