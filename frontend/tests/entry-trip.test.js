@@ -36,3 +36,12 @@ test('restoring a snapshot replaces fixed cost rows', () => {
   trip.restoreTripForm({config:{fixed_costs:[{id:'lodging'}]}});
   assert.match(rows.innerHTML,/^<div .*data-cost-id="lodging"/);
 });
+
+test('cost controls add a row to the trip form', () => {
+  let added = '';
+  const elements = {'add-cost':{},'fixed-costs':{insertAdjacentHTML: (_,markup) => added = markup}};
+  globalThis.document.getElementById = id => elements[id];
+  trip.bindFixedCostControls();
+  elements['add-cost'].onclick();
+  assert.match(added, /data-cost-id/);
+});

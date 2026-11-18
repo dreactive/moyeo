@@ -25,3 +25,10 @@ export function restoreTripForm(snapshot) {
   const {title,...baseline} = readTripForm(form);
   return baseline;
 }
+
+export function bindFixedCostControls() {
+  document.getElementById('add-cost').onclick = () => appendCost();
+  document.getElementById('fixed-costs').onclick = event => {
+    event.target.closest('[data-remove-cost]')?.closest('[data-cost-id]').remove();
+  };
+}
