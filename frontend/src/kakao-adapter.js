@@ -1,3 +1,5 @@
+const layersByHost = new WeakMap();
+
 export async function loadKakao(appKey) {
   if (!appKey) return null;
   if (!globalThis.kakao?.maps) await new Promise((resolve,reject) => {
@@ -11,6 +13,8 @@ export async function loadKakao(appKey) {
   return kakao.maps;
 }
 export function clearKakao(element) {
+  for (const layer of layersByHost.get(element) ?? []) layer.setMap?.(null);
+  layersByHost.delete(element);
   element.classList?.remove?.('sdk');
 }
 export function drawKakao(maps,element,points,lines = []) {
@@ -20,13 +24,17 @@ export function drawKakao(maps,element,points,lines = []) {
   element.classList.add('sdk');
   const latLng = point => new maps.LatLng(point.latitude,point.longitude);
   const map = new maps.Map(element,{center:latLng(points[0]),level:6});
+  const layers = [];
+  layersByHost.set(element,layers);
   const bounds = new maps.LatLngBounds();
   points.forEach(point => {
     const position = latLng(point);
-    new maps.Marker({map,position,title:point.name ?? point.label});
+    layers.push(new maps.Marker({map,position,title:point.name ?? point.label}));
     bounds.extend(position);
   });
-  lines.forEach((line,index) => new maps.Polyline({map,path:line.map(latLng),strokeWeight:4,strokeColor:['#24745b','#b97720'][index % 2]}));
+  lines.forEach((line,index) => {
+    layers.push(new maps.Polyline({map,path:line.map(latLng),strokeWeight:4,strokeColor:['#24745b','#b97720'][index % 2]}));
+  });
   map.setBounds(bounds);
   return {map,latLng};
 }
