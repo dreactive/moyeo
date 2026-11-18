@@ -3,7 +3,10 @@ let selectedPlace = null;
 export const getSnapshot = () => snapshot;
 export const getSelectedPlace = () => selectedPlace;
 export function applySnapshot(next) {
+  const sameRoom = snapshot?.room_id === next?.room_id;
   snapshot = next;
+  const days = (next?.review_plan ?? next?.current_plan)?.days ?? [];
+  if (!sameRoom || !days.some(day => day.date === selectedDay)) selectedDay = days[0]?.date ?? null;
   if (!(next?.review_plan ?? next?.current_plan)?.item_snapshots.some(item => item.place_ref === selectedPlace)) selectedPlace = null;
   listeners.forEach(listener => listener(snapshot));
 }
@@ -29,3 +32,7 @@ export function applyRoomResponse(next,expectedRoom) {
   if (next.room_id !== expectedRoom || snapshot?.room_id !== expectedRoom || next.seq < snapshot.seq) return;
   applySnapshot(next);
 }
+
+let selectedDay = null;
+export const getSelectedDay = () => selectedDay;
+export const setSelectedDay = value => { selectedDay = value; };
