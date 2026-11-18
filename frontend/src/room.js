@@ -55,7 +55,7 @@ export async function startRoomApp() {
   if (!savedRoom) return navigate('/rooms.html');
   if (!roomUiBound) {
     initMaps({routeElement:document.getElementById('route-map'),placeElement:document.getElementById('place-map'),appKey:document.querySelector('meta[name="kakao-map-app-key"]').content});
-    bindSessionActions(); bindChatKeys(); bindFixtureControls(); bindPlanActions(); bindDecisionActions(); bindTripInput(); bindSettingsDialog(); bindRoomLifecycle(); bindHistory();
+    bindSessionActions(); bindChatKeys(); bindFixtureControls(); bindPlanActions(); bindDecisionActions(); bindTripInput(); bindSettingsDialog(); bindInviteCopy(); bindRoomLifecycle(); bindHistory();
     subscribeState(snapshot => snapshot && renderRoom(snapshot));
     roomUiBound = true;
   }
@@ -164,6 +164,15 @@ function bindDecisionActions() {
     if (!button) return;
     run(() => button.dataset.conflict ? roomAction('conflicts/' + encodeURIComponent(button.dataset.conflict) + '/select',{option_id:button.dataset.option}) : roomAction('constraints/' + encodeURIComponent(button.dataset.constraintConfirm) + '/confirm'));
   });
+}
+
+function bindInviteCopy() {
+  const button = document.getElementById('copy-invite');
+  button.onclick = () => run(() => withPending(button,async () => {
+    try { await navigator.clipboard.writeText(getSnapshot().invite_code); }
+    catch { throw new Error('초대 코드를 직접 선택해 복사해 주세요.'); }
+    button.textContent = '복사됨';
+  }));
 }
 
 function bindRoomLifecycle() {
