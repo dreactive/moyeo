@@ -76,3 +76,11 @@ test('an unsupported provider URL is shown as evidence without a navigable link'
   renderPlace(place);
   assert.doesNotMatch(card.innerHTML,/href="(?:javascript:|")/);
 });
+
+test('room cost details identify subtotals separately from traveler totals', () => {
+  const card = {};
+  globalThis.document = {getElementById:() => card};
+  renderCost(scenarios.ready.snapshot.current_plan.cost,'u4');
+  assert.match(card.innerHTML,/<summary>방 전체 비용 내역<\/summary>[^]*방 전체 소계 320,000원/);
+  assert.match(card.innerHTML,/<summary>참가자별 경비<\/summary>[^]*u1/);
+});

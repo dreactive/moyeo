@@ -10,7 +10,11 @@ export function renderCost(cost,userId) {
   </dl>` : '';
   html('cost', `${personal}${budget}<p>방 전체 계획액 <strong>${money(cost.total_krw)}</strong> · 알려진 소계 ${money(cost.known_total_krw)} · 전체 기지출 ${money(cost.paid_krw)}</p>
   <p>미확인 ${cost.unknown_line_count}건 · 추정 ${cost.estimated_line_count}건</p>
-  <table><thead><tr><th>참가자</th>${Object.values(userColumns).map(label => `<th>${label}</th>`).join('')}</tr></thead><tbody>
-  ${Object.keys(cost.per_person_krw).map(id => `<tr><th>${e(id)}</th>${Object.keys(userColumns).map(key => `<td>${money(cost[key][id])}</td>`).join('')}</tr>`).join('')}</tbody></table>
-  ${cost.lines.map(line => `<div class="card"><strong>${e(line.description)}</strong><p>${e(line.category)} / ${e(line.scope)} / ${e(line.owner_id ?? '전체')} · ${line.paid ? '기지출' : '예정'}</p><p>단가 ${money(line.unit_price_krw)} × 수량 ${e(line.quantity)} · 방 전체 소계 ${money(line.subtotal_krw)}</p><p>가정: ${e(line.assumption ?? '없음')} · 근거 ${e(line.evidence_id ?? '사용자 입력/미확인')}</p></div>`).join('')}`);
+  <details class="card-details"><summary>참가자별 경비</summary>
+  ${Object.keys(cost.per_person_krw).map(id => `<p><strong>${e(id)}</strong></p>
+    <dl class="card-facts">${Object.entries(userColumns).map(([key,label]) => `<dt>${label}</dt><dd>${money(cost[key][id])}</dd>`).join('')}</dl>`).join('')}
+  </details>
+  <details class="card-details"><summary>방 전체 비용 내역</summary>
+  ${cost.lines.map(line => `<div class="card"><strong>${e(line.description)}</strong><p>${e(line.category)} / ${e(line.scope)} / ${e(line.owner_id ?? '전체')} · ${line.paid ? '기지출' : '예정'}</p><p>단가 ${money(line.unit_price_krw)} × 수량 ${e(line.quantity)} · 방 전체 소계 ${money(line.subtotal_krw)}</p><p>가정: ${e(line.assumption ?? '없음')} · 근거 ${e(line.evidence_id ?? '사용자 입력/미확인')}</p></div>`).join('') || '<p>등록된 비용이 없습니다.</p>'}
+  </details>`);
 }
