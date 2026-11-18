@@ -58,3 +58,9 @@ def ground_extraction(batch, task):
     rejected = list(dict.fromkeys(item_errors + condition_errors))
     return GroundedExtraction(dict(item_proposals=items, constraint_proposals=conditions,
         support_observations=[], questions=[]), ['ungrounded_proposal'] if rejected else [], rejected)
+
+
+def validate_assessments(batch, task):
+    ids = [assessment.message_id for assessment in batch.message_assessments]
+    if len(ids) != len(set(ids)) or set(ids) != {m['id'] for m in task['recent_messages']}:
+        raise ValueError('Message assessment coverage mismatch')

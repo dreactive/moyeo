@@ -43,3 +43,12 @@ def test_batch_keeps_valid_place_and_reports_rejected_condition():
     assert len(output.proposals['item_proposals']) == 1
     assert output.proposals['constraint_proposals'] == []
     assert output.rejected_message_ids == ['new']
+
+def test_assessments_cannot_skip_or_duplicate_new_messages():
+    import pytest
+    from ai.grounding import validate_assessments
+    from ai.extraction_schema import ExtractionBatch
+    value = task()
+    empty = dict(message_assessments=[], item_proposals=[], constraint_proposals=[], support_observations=[])
+    with pytest.raises(ValueError, match='assessment'):
+        validate_assessments(ExtractionBatch.model_validate(empty), value)
