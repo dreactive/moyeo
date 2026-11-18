@@ -38,3 +38,9 @@ def test_failed_extraction_persists_only_registered_message_receipts(room, agent
     failures = db.get('failed-extraction:' + room['room_id'])
     assert set(failures) == {'m4'}
     assert failures['m4']['status'] == 'retry_required'
+
+def test_manual_recovery_cannot_move_cursor_backwards():
+    from backend.services.extraction import latest_processed
+    messages = [dict(id=str(index)) for index in range(25)]
+    assert latest_processed(messages,'24','3') == '24'
+    assert latest_processed(messages,'3','24') == '24'

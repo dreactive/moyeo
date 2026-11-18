@@ -18,3 +18,8 @@ def record_extraction_failure(db, result):
         failures[message_id] = dict(issue_codes=report['issue_codes'], attempts=report['attempts'], run_id=result['run_id'], status='retry_required')
     run['extraction_report'] = report
     db.put_many({'failed-extraction:' + room_id: failures, 'run:' + result['run_id']: run})
+
+
+def latest_processed(messages, current, proposed):
+    positions = {message['id']: index for index, message in enumerate(messages)}
+    return max((current, proposed), key=lambda message_id: positions.get(message_id, -1))
