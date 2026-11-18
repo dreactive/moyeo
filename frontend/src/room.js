@@ -197,7 +197,9 @@ function bindSettingsDialog() {
     restoreTrip(getSnapshot());
     dialog.showModal();
   };
-  dialog.querySelector('[data-close-settings]').onclick = () => dialog.close();
+  for (const button of dialog.querySelectorAll('[data-close-settings]')) {
+    button.onclick = () => dialog.close();
+  }
 }
 
 function bindTripInput() {
