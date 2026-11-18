@@ -51,7 +51,7 @@ async def run_agent(task, model, tools, emit_trace):
             tools.restore(task)
         message_only = task["goal"] in ("new_message", "message_created", "remaining_messages") and not result["item_proposals"]
         if task["goal"] in ("chat", "messages", "extract") or message_only:
-            result["completion"] = "needs_input" if result["questions"] else "done"
+            result["completion"] = "needs_input" if result["questions"] or result["extraction_report"]["status"] != "ok" else "done"
         else:
             await run_steps(task, model, tools, emit_trace, result)
     except (ValueError, KeyError, TypeError, RuntimeError, OSError, HTTPError) as error:
