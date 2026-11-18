@@ -144,3 +144,16 @@ test('blocking conflicts name the authorized owner and disable their action for 
   assert.match(card.innerHTML,/data-option="relax" disabled/);
   assert.match(card.innerHTML,/참가자4 본인/);
 });
+
+test('the condition change marker appears after a same-room update', () => {
+  const card = {};
+  globalThis.document = {getElementById:() => card};
+  const room = {...scenarios.ready.snapshot,room_id:'change-marker-test'};
+  decisions.renderConstraints(room);
+  assert.doesNotMatch(card.innerHTML,/최근 변경/);
+  const updated = {...room,constraints:[{...room.constraints[0],value:222000}]};
+  decisions.renderConstraints(updated);
+  assert.match(card.innerHTML,/최근 변경/);
+  decisions.renderConstraints({...updated,room_id:'change-marker-other'});
+  assert.doesNotMatch(card.innerHTML,/최근 변경/);
+});

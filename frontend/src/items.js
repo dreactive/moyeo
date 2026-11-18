@@ -30,14 +30,22 @@ function conditionInput(condition) {
   return `<label>${constraintLabels[condition.key]}<input name="value" type="${type}" value="${e(condition.value)}" required></label>`;
 }
 const memberName = (snapshot,id) => snapshot.members.find(member => member.user_id === id)?.name ?? id;
+let lastConditionRoom;
+let lastConditionValues;
 export function renderConstraints(snapshot) {
+  const previous = snapshot.room_id === lastConditionRoom ? lastConditionValues : null;
+  const current = new Map();
   const active = [];
   const history = [];
   for (const item of snapshot.constraints) {
     const old = item.status === 'superseded';
+    const value = JSON.stringify(item);
+    current.set(item.id,value);
+    const changed = !old && previous && previous.get(item.id) !== value;
     const input = conditionInput(item);
     const row = `<div class="card">
   <strong>${e(constraintLabels[item.key] ?? item.key)} · ${e(conditionValue(item))}</strong>
+  ${changed ? '<span class="badge condition-change">최근 변경</span>' : ''}
   <p class="constraint-meta">${e(memberName(snapshot,item.owner_id))} · ${item.kind === 'hard' ? '필수' : '선호'} · ${e(constraintStatuses[item.status] ?? item.status)}</p>
   ${sourceLinks(item.source_message_ids)}
   ${!old && item.owner_id === getUser()?.id ? `<form data-constraint="${e(item.id)}" data-value-mode="${input ? 'scalar' : 'json'}">${input || `<label>값 (JSON)<input name="value" value="${e(JSON.stringify(item.value))}" required></label>`}<button>수정</button>
@@ -46,6 +54,8 @@ export function renderConstraints(snapshot) {
   }
   html('constraints', (active.join('') || '<p>아직 등록된 조건이 없습니다.</p>') +
     (history.length ? `<details class="card-details"><summary>이전 조건 보기</summary>${history.join('')}</details>` : ''));
+  lastConditionRoom = snapshot.room_id;
+  lastConditionValues = current;
 }
 const conflictLabels = {time:'시간',budget:'예산',opening_hours:'영업시간',personal_constraint:'개인 조건',preference:'선호'};
 export function renderConflicts(snapshot) {
