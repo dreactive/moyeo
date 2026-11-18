@@ -53,10 +53,12 @@ export async function startRoomApp() {
   if (!user) return;
   const savedRoom = readRoomId();
   if (!savedRoom) return navigate('/rooms.html');
-  initMaps({routeElement:document.getElementById('route-map'),placeElement:document.getElementById('place-map'),appKey:document.querySelector('meta[name="kakao-map-app-key"]').content});
-  bindSessionActions(); bindChatKeys(); bindFixtureControls(); bindPlanActions(); bindDecisionActions(); bindTripInput(); bindSettingsDialog(); bindHistory();
-  html('mode', getDataMode() === 'fixture' ? '개발용 fixture · 실제 API 조회 아님' : 'LIVE · Backend 연결');
-  subscribeState(snapshot => snapshot && renderRoom(snapshot));
+  if (!roomUiBound) {
+    initMaps({routeElement:document.getElementById('route-map'),placeElement:document.getElementById('place-map'),appKey:document.querySelector('meta[name="kakao-map-app-key"]').content});
+    bindSessionActions(); bindChatKeys(); bindFixtureControls(); bindPlanActions(); bindDecisionActions(); bindTripInput(); bindSettingsDialog(); bindHistory();
+    subscribeState(snapshot => snapshot && renderRoom(snapshot));
+    roomUiBound = true;
+  }
   setUser(user);
   html('session', e(user.name));
   await openSavedRoom(savedRoom);
@@ -71,6 +73,7 @@ async function openSavedRoom(id) {
   }
 }
 run(startRoomApp);
+let roomUiBound = false;
 let closeEvents = () => {};
 let roomId = null;
 let tripBaseline = {};
