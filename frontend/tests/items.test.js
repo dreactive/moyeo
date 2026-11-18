@@ -94,3 +94,9 @@ test('condition questions offer a numeric field for a budget target', () => {
   decisions.renderQuestions(scenarios.questions.snapshot);
   assert.match(card.innerHTML,/data-question="q5" data-value-mode="fields">[^]*name="value" type="number"/);
 });
+
+test('editing a return deadline passes a scalar time to the existing condition route', () => {
+  const form = {dataset:{valueMode:'scalar'},elements:{value:{type:'time',value:'16:00'}}};
+  assert.doesNotThrow(() => decisions.readDecisionValue(form));
+  assert.equal(decisions.readDecisionValue(form),'16:00');
+});

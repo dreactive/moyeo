@@ -30,21 +30,25 @@ function conditionInput(condition) {
   return `<label>${constraintLabels[condition.key]}<input name="value" type="${type}" value="${e(condition.value)}" required></label>`;
 }
 export function renderConstraints(snapshot) {
-  html('constraints', snapshot.constraints.map(item => `<div class="card">
+  html('constraints', snapshot.constraints.map(item => {
+    const input = conditionInput(item);
+    return `<div class="card">
   <strong>${e(constraintLabels[item.key] ?? item.key)} · ${e(conditionValue(item))}</strong>
   <p class="constraint-meta">${e(item.owner_id)} · ${item.kind === 'hard' ? '필수' : '선호'} · ${e(constraintStatuses[item.status] ?? item.status)}</p>
   ${sourceLinks(item.source_message_ids)}
-  ${item.owner_id === getUser()?.id ? `<form data-constraint="${e(item.id)}"><label>값 (JSON)<input name="value" value="${e(JSON.stringify(item.value))}" required></label><button>수정</button><button type="button" data-constraint-confirm="${e(item.id)}">본인 확인</button></form>` : '<p>소유자만 수정·확인할 수 있습니다.</p>'}</div>`).join(''));
+  ${item.owner_id === getUser()?.id ? `<form data-constraint="${e(item.id)}" data-value-mode="${input ? 'scalar' : 'json'}">${input || `<label>값 (JSON)<input name="value" value="${e(JSON.stringify(item.value))}" required></label>`}<button>수정</button><button type="button" data-constraint-confirm="${e(item.id)}">본인 확인</button></form>` : '<p>소유자만 수정·확인할 수 있습니다.</p>'}</div>`;
+  }).join(''));
 }
 export function renderConflicts(snapshot) {
   html('conflicts', snapshot.conflicts.filter(item => item.status === 'open').map(item => `<div class="card conflict"><h3>! ${e(item.type)} · ${item.blocking ? '확정 차단' : '선호 선택'}</h3><p>${e(item.explanation)}</p>${item.options.map(option => `<p><button data-conflict="${e(item.id)}" data-option="${e(option.id)}" ${option.requires_owner_id && option.requires_owner_id !== getUser()?.id ? 'disabled' : ''}>${e(option.label)}</button> ${e(option.effect_summary)} · ${option.requires_owner_id ? e(option.requires_owner_id) + ' 본인 조건 수정·확인 필요' : '새 초안 생성'}</p>`).join('')}</div>`).join(''));
 }
+const fieldValue = field => field.type === 'number' ? field.valueAsNumber : field.value.trim();
 export function readDecisionValue(form) {
-  if (form.dataset.valueMode !== 'fields') return JSON.parse(form.elements.value.value);
+  const mode = form.dataset.valueMode;
+  if (mode === 'scalar') return fieldValue(form.elements.value);
+  if (mode !== 'fields') return JSON.parse(form.elements.value.value);
   const fields = Array.from(form.elements).filter(field => field.name);
-  return Object.fromEntries(fields.map(field => [
-    field.name, field.type === 'number' ? field.valueAsNumber : field.value.trim()
-  ]));
+  return Object.fromEntries(fields.map(field => [field.name,fieldValue(field)]));
 }
 const anchorFields = `<label>이름<input name="label" required></label>
   <label>위도<input name="latitude" type="number" min="-90" max="90" step="any" required></label>
