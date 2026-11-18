@@ -1,3 +1,4 @@
+import {renderOverview} from './workspace-view.js';
 import {renderChat,isSendKey} from './chat.js';
 import {getUser} from './state.js';
 import {requireSession,readRoomId,saveRoomId,clearRoomId,navigate,preparePage,signOut} from './session.js';
@@ -8,7 +9,7 @@ import {showError} from './ui.js';
 import {getSnapshot,appendMessage,applyRoomResponse} from './state.js';
 import {openRoomEvents} from './events.js';
 import {run} from './ui.js';
-import {renderItems,renderConstraints,renderQuestions,renderConflicts} from './items.js';
+import {renderItems,renderConstraints,renderQuestions,renderConflicts,readDecisionValue} from './items.js';
 import {renderPlan,displayPlan} from './plan.js';
 import {renderCost} from './cost.js';
 import {scenarios,replayScenario,setFixtureUser,emitFixture} from './fixture-api.js';
@@ -19,10 +20,9 @@ import {selectPlace,renderPlace} from './place.js';
 import {getSelectedPlace} from './state.js';
 export function renderRoom(snapshot) {
   renderItems(snapshot); renderConstraints(snapshot); renderQuestions(snapshot); renderConflicts(snapshot);
-  renderPlan(snapshot); renderCost(displayPlan(snapshot)?.cost); run(() => renderMaps(snapshot));
+  renderPlan(snapshot); renderCost(displayPlan(snapshot)?.cost,getUser()?.id); run(() => renderMaps(snapshot));
   renderChat(snapshot,getUser()?.id);
-  html('room-heading', e(snapshot.title) + ' · 초대 ' + e(snapshot.invite_code));
-  html('members', snapshot.members.map(member => e(member.name)).join(' · '));
+  renderOverview(snapshot);
   html('agent', e(snapshot.agent_status.label) + ' / ' + e(snapshot.agent_status.state) + ' / ' + e(snapshot.agent_status.run_id));
 }
 export async function startRoomApp() {
@@ -111,7 +111,7 @@ function bindDecisionActions() {
     const form = event.target;
     if (!form.dataset.question && !form.dataset.constraint) return;
     event.preventDefault();
-    run(() => roomAction(form.dataset.question ? 'questions/' + encodeURIComponent(form.dataset.question) + '/answer' : 'constraints/' + encodeURIComponent(form.dataset.constraint),{value:JSON.parse(new FormData(form).get('value'))},form.dataset.question ? 'POST' : 'PATCH'));
+    run(() => roomAction(form.dataset.question ? 'questions/' + encodeURIComponent(form.dataset.question) + '/answer' : 'constraints/' + encodeURIComponent(form.dataset.constraint),{value:readDecisionValue(form)},form.dataset.question ? 'POST' : 'PATCH'));
   });
   document.addEventListener('click',event => {
     const button = event.target.closest('[data-conflict],[data-constraint-confirm]');
