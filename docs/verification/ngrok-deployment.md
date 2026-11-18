@@ -42,4 +42,7 @@ Vercel에서 실제 BACKEND_ORIGIN 설정 후 Redeploy하고, 공개 health JSON
 ## 전달
 
 설계/계획은 `afa3fd2`, Vercel 설정은 `89727bc`의 작은 설정 커밋으로 기록했다.
-최종 검토와 develop push·기존 master 대상 PR 갱신 결과를 마감 시 추가한다.
+운영 안내는 `2ace0e8`에 기록했다. develop push가 성공했고 기존
+[master ← develop PR #1](https://github.com/SEMI-CNU/trip-agent/pull/1)의 배포 설명을
+ngrok 최종 구성으로 갱신했다. 이전 MVP·개발자 도구 설명은 보존했고 자동 merge하지 않았다.
+실제 ngrok/Vercel 계정 설정과 공개 배포는 위 인수 확인 단계에 남아 있다.

@@ -36,4 +36,4 @@ docs/verification/ngrok-deployment.md
 - [x] 설치·로컬 인증·주소 확인·Vercel 설정·Kakao·인수 확인·무료 한도를 문서화.
 - [x] 기본 안내를 ngrok로 연결하고 Cloudflare는 소유 도메인용 대안으로 표시.
 - [x] 독립 검토, diff와 비밀값/개인 설정 미포함 확인 후 문서 커밋.
-- [ ] develop push, 기존 master 대상 PR 갱신 및 전달 결과 기록.
+- [x] develop push, 기존 master 대상 PR 갱신 및 전달 결과 기록.
