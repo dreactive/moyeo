@@ -191,14 +191,19 @@ let routeRenderStamp = null;
 export async function renderMaps(snapshot) {
   const date = getSelectedDay();
   const key = routeKey(snapshot,date);
-  if (key === routeRenderStamp || routeKey(getSnapshot() ?? {},date) !== key) return;
+  if (key === routeRenderStamp?.key || routeKey(getSnapshot() ?? {},date) !== key) return;
   const plan = displayPlan(snapshot);
   renderRouteMap(plan,new Map(),snapshot.config,date);
   const refs = [...new Set(plan?.days.filter(day => day.date === date).flatMap(day => day.visits.map(visit => visit.place_ref)) ?? [])];
-  const details = await Promise.all(refs.map(ref => requestJson('/api/rooms/' + encodeURIComponent(snapshot.room_id) + '/places/' + encodeURIComponent(ref))));
-  if (routeKey(getSnapshot() ?? {},getSelectedDay()) !== key) return;
+  const stamp = {key};
+  routeRenderStamp = stamp;
+  const details = await Promise.all(refs.map(ref => requestJson('/api/rooms/' + encodeURIComponent(snapshot.room_id) + '/places/' + encodeURIComponent(ref)))).catch(error => {
+    if (routeRenderStamp !== stamp) return [];
+    routeRenderStamp = null;
+    throw error;
+  });
+  if (routeRenderStamp !== stamp || routeKey(getSnapshot() ?? {},getSelectedDay()) !== key) return;
   if (details.some(Boolean)) renderRouteMap(plan,new Map(details.filter(Boolean).map(detail => [detail.place.id,detail.place])),snapshot.config,date);
-  routeRenderStamp = key;
   if (getSelectedPlace()) await selectPlace(snapshot.room_id,getSelectedPlace());
   else { renderPlace(null); renderPlaceMap(null); }
 }

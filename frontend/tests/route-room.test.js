@@ -36,3 +36,16 @@ test('a new date updates the route before its place requests finish', async () =
     await pending;
   }
 });
+
+test('chat-only renders share one in-flight route lookup', async () => {
+  const room = {...snapshot,room_id:'room-dedupe'};
+  applySnapshot(room);
+  const load = Promise.withResolvers();
+  const paths = [];
+  globalThis.fetch = async path => { paths.push(path); await load.promise; return Response.json(null); };
+  const first = renderMaps(room);
+  const chatUpdate = renderMaps({...room,messages:[]});
+  load.resolve();
+  await Promise.all([first,chatUpdate]);
+  assert.equal(paths.length,2);
+});
