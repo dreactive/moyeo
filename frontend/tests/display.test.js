@@ -67,3 +67,12 @@ test('personal place provenance remains accessible in a collapsible section', ()
   renderPlace(scenarios.market.places[0]);
   assert.match(card.innerHTML,/<details[^>]*><summary>장소 정보 출처<\/summary>[^]*공급자 기준일 미확인/);
 });
+
+test('an unsupported provider URL is shown as evidence without a navigable link', () => {
+  const card = {};
+  globalThis.document = {getElementById:() => card};
+  const place = structuredClone(scenarios.market.places[0]);
+  place.evidence[0].source_url = 'javascript:alert(1)';
+  renderPlace(place);
+  assert.doesNotMatch(card.innerHTML,/href="(?:javascript:|")/);
+});
