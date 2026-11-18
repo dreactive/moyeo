@@ -16,14 +16,19 @@ export function clearKakao(element) {
   for (const layer of layersByHost.get(element) ?? []) layer.setMap?.(null);
   layersByHost.delete(element);
   element.classList?.remove?.('sdk');
+  element.innerHTML = '';
 }
 export function drawKakao(maps,element,points,lines = []) {
   clearKakao(element);
   if (!points.length) { element.textContent = '표시할 좌표가 없습니다.'; return; }
-  element.innerHTML = '';
   element.classList.add('sdk');
+  const viewport = element.ownerDocument?.createElement('div') ?? element;
+  if (viewport !== element) {
+    viewport.style.cssText = 'width:100%;height:100%';
+    element.append(viewport);
+  }
   const latLng = point => new maps.LatLng(point.latitude,point.longitude);
-  const map = new maps.Map(element,{center:latLng(points[0]),level:6});
+  const map = new maps.Map(viewport,{center:latLng(points[0]),level:6});
   const layers = [];
   layersByHost.set(element,layers);
   const bounds = new maps.LatLngBounds();
