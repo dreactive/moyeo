@@ -61,3 +61,10 @@ test('a complete build publishes routes and only the public environment key', as
   await buildFrontend(root, {BACKEND_ORIGIN: 'https://api.example.com'});
   await assert.rejects(readFile(join(output, 'static/stale.txt')), {code: 'ENOENT'});
 });
+test('static deployment includes every sign-in entry and workspace stylesheet', async t => {
+  const output=await temporary(t);
+  await copyStatic(fileURLToPath(new URL('../',import.meta.url)),output);
+  for (const name of ['login.html','signup.html','rooms.html','workspace.css']) {
+    assert.ok((await readFile(join(output,name),'utf8')).length > 0);
+  }
+});

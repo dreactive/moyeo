@@ -3,7 +3,7 @@ import {join} from 'node:path';
 
 export async function copyStatic(root, output) {
   await mkdir(output, {recursive: true});
-  for (const name of ['index.html', 'dev.html', 'styles.css', 'src', 'fixtures']) {
+  for (const name of ['index.html', 'login.html', 'signup.html', 'rooms.html', 'dev.html', 'styles.css', 'workspace.css', 'src', 'fixtures']) {
     await cp(join(root, name), join(output, name), {recursive: true});
   }
 }
