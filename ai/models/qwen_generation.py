@@ -39,4 +39,4 @@ def extraction_options(request, tokenizer):
         return {}
     from ai.extraction_schema import MessageFacts
     from ai.models.structured_generation import build_extraction_prefix
-    return dict(prefix_allowed_tokens_fn=build_extraction_prefix(tokenizer, MessageFacts.model_json_schema()))
+    return dict(prefix_allowed_tokens_fn=build_extraction_prefix(tokenizer, MessageFacts.model_json_schema(), json.dumps(request.get("context", {}), ensure_ascii=False)))
