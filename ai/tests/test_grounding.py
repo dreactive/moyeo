@@ -114,3 +114,10 @@ def test_legacy_validation_also_rejects_greeting_deadline():
     value['recent_messages'] = [dict(id='greeting',author_id='u1',text='안녕')]
     proposal = dict(owner_id='u1',key='return_by',value='12:00',kind='hard',source_message_ids=['greeting'],replaces_constraint_id=None)
     assert validate_extraction(dict(constraint_proposals=[proposal]),value)['constraint_proposals'] == []
+
+def test_existing_place_mention_does_not_create_duplicate_support_target():
+    from ai.extraction_projection import facts_to_batch
+    value = task()
+    message = dict(id='new',author_id='u1',text='B공원 좋아')
+    batch = facts_to_batch(dict(places=['B공원'],conditions=[],intents=['support']),message,value)
+    assert batch['item_proposals'] == []
