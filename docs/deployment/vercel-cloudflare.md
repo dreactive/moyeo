@@ -1,5 +1,12 @@
 # Vercel + Windows PC + Cloudflare Tunnel 운영 가이드
 
+현재 기본 배포 방식은 도메인 구매가 필요 없는 [무료 ngrok](./vercel-ngrok.md)이다.
+이 문서는 네임서버를 Cloudflare로 바꿀 수 있는 소유 도메인이 있을 때의 대안이다.
+DuckDNS에서 받은 `semi-trip.duckdns.org`는 IP 갱신용 DDNS 주소이며, 일반 DuckDNS
+계정에 Cloudflare로 네임서버를 위임하는 관리 기능이 제공된다고 안내할 근거가 없다.
+따라서 DuckDNS 주소를 아래의 소유 도메인 대신 입력하는 절차로 진행하지 않는다.
+[DuckDNS 제공 기능](https://www.duckdns.org/spec.jsp), [Cloudflare nameserver 조건](https://developers.cloudflare.com/dns/zone-setups/full-setup/setup/)
+
 Vercel은 정적 화면과 `/api/*` 중계를, Windows PC는 FastAPI·SQLite·GPU/Qwen을 맡는다.
 연결은 `브라우저 → Vercel /api → 고정 Cloudflare Tunnel → 127.0.0.1:8000`이다.
 PC의 outbound 연결을 사용하므로 공인 IP와 공유기 포트포워딩은 필요 없다.

@@ -21,7 +21,10 @@ export function deploymentConfig(value) {
       {
         src: '/api/(.*)',
         dest: `${origin}/api/$1`,
-        headers: {'Cache-Control': 'no-store', 'x-vercel-enable-rewrite-caching': '0'}
+        headers: {'Cache-Control': 'no-store', 'x-vercel-enable-rewrite-caching': '0'},
+        transforms: [
+          {type: 'request.headers', op: 'set', target: {key: 'ngrok-skip-browser-warning'}, args: '1'}
+        ]
       },
       {src: '/dev', dest: '/dev.html'},
       {src: '/', dest: '/index.html'},
