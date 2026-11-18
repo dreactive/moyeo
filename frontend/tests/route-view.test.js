@@ -19,3 +19,9 @@ test('only the selected review day offers places from the frozen itinerary', () 
   renderRoutePanel({...snapshot,review_plan:review}, '2026-11-22');
   assert.doesNotMatch(output['route-summary'].innerHTML, /data-place=/);
 });
+
+test('route summary shows the plan revision and scheduled times', () => {
+  renderRoutePanel(snapshot, '2026-11-21');
+  assert.match(output['route-summary'].innerHTML, /여행안 v1/);
+  assert.match(output['route-summary'].innerHTML, /11:30–12:30 · 체류 60분/);
+});
