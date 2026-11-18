@@ -1,4 +1,4 @@
-import {html,escapeHtml as e} from './ui.js';
+import {html,escapeHtml as e,money} from './ui.js';
 import {displayPlan,sameTarget,hasCurrentBasis} from './plan.js';
 import {getUser} from './state.js';
 const labels = {mentioned:'언급됨',supported:'다수 지지',confirmed:'확정',pending:'새 안 · 미확정'};
@@ -18,9 +18,16 @@ export function renderItems(snapshot) {
     <p>지지 ${item.supporter_ids.length}명 / 기준 ${item.support_threshold}명 · v${item.item_version}</p>${sourceLinks(item.source_message_ids)}</div>`;
   }).join('') || '<p>아직 공동 항목이 없습니다.</p>');
 }
+const constraintLabels = {budget:'1인 예산',budget_krw:'1인 예산',return_by:'귀가지 도착 제한',allergy:'알레르기',diet:'식이 조건'};
+const constraintStatuses = {needs_owner_confirmation:'본인 확인 필요',confirmed:'본인 확인됨',superseded:'이전 조건'};
+function conditionValue({key,value}) {
+  if (constraintLabels[key] === '1인 예산' && typeof value === 'number') return money(value);
+  return value && typeof value === 'object' ? JSON.stringify(value) : value ?? '미확인';
+}
 export function renderConstraints(snapshot) {
   html('constraints', snapshot.constraints.map(item => `<div class="card">
-  <strong>${e(item.owner_id)} · ${e(item.kind)} · ${e(item.key)}</strong><p>${e(JSON.stringify(item.value))} · ${e(item.status)}</p>
+  <strong>${e(constraintLabels[item.key] ?? item.key)} · ${e(conditionValue(item))}</strong>
+  <p class="constraint-meta">${e(item.owner_id)} · ${item.kind === 'hard' ? '필수' : '선호'} · ${e(constraintStatuses[item.status] ?? item.status)}</p>
   ${sourceLinks(item.source_message_ids)}
   ${item.owner_id === getUser()?.id ? `<form data-constraint="${e(item.id)}"><label>값 (JSON)<input name="value" value="${e(JSON.stringify(item.value))}" required></label><button>수정</button><button type="button" data-constraint-confirm="${e(item.id)}">본인 확인</button></form>` : '<p>소유자만 수정·확인할 수 있습니다.</p>'}</div>`).join(''));
 }

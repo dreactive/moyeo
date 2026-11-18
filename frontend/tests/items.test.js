@@ -78,3 +78,12 @@ test('target questions offer only the items attached to the question', () => {
   assert.match(card.innerHTML,/<select name="item_id"[^>]*>[\s\S]*<option value="item-a">가상 A식당/);
   assert.doesNotMatch(card.innerHTML,/<option value="item-b">/);
 });
+
+test('required budgets use a human label, won, and an owner verification status', () => {
+  const card = {};
+  globalThis.document = {getElementById:() => card};
+  decisions.renderConstraints(scenarios.ready.snapshot);
+  assert.match(card.innerHTML,/1인 예산/);
+  assert.match(card.innerHTML,/200,000원/);
+  assert.match(card.innerHTML,/필수 · 본인 확인됨/);
+});
