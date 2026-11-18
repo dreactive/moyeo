@@ -30,7 +30,7 @@ function renderDecisionRegions(snapshot) {
 export function renderRoom(snapshot) {
   const {messages,agent_status,...shared} = snapshot;
   renderDecisionRegions(snapshot);
-  renderChanged('plan',[shared,getUser()?.id],() => { renderPlan(snapshot); renderCost(displayPlan(snapshot)?.cost,getUser()?.id); });
+  renderChanged('plan',[shared,getUser()?.id],() => { renderPlan(snapshot); renderCost(displayPlan(snapshot)?.cost,getUser()?.id,snapshot.members); });
   renderChanged('route-panel',[displayPlan(snapshot),getSelectedDay()],() => renderRoutePanel(snapshot,getSelectedDay()));
   run(() => renderMaps(snapshot));
   renderChanged('chat',[snapshot.room_id,snapshot.messages,snapshot.members,getUser()?.id],() => renderChat(snapshot,getUser()?.id));
@@ -193,6 +193,8 @@ async function renderMaps(snapshot) {
 }
 
 document.addEventListener('click',event => {
+  const day = event.target.closest('[data-day]');
+  if (day) { setSelectedDay(day.dataset.day); renderRoom(getSnapshot()); }
   const button = event.target.closest('[data-place]');
   if (button) run(() => selectPlace(roomId,button.dataset.place));
 });
