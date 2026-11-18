@@ -39,3 +39,8 @@ function captureChatPosition(list) {
   return {top:list.scrollTop,height:list.scrollHeight,viewport:list.clientHeight,
     first:list.querySelector('.chat-message')?.id,count:list.querySelectorAll('.chat-message').length};
 }
+function restoreChatPosition(list,before,messages) {
+  const prepended = messages.findIndex(message => 'message-' + message.id === before.first) > 0;
+  list.scrollTop = chatScroll(before,list.scrollHeight,prepended);
+  document.getElementById('new-messages').hidden = prepended || messages.length <= before.count || before.height - before.top - before.viewport < 64;
+}
