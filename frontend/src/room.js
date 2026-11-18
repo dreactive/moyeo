@@ -1,4 +1,6 @@
-import {renderOverview,renderAgentBanner,renderChanged} from './workspace-view.js';
+import {renderRoutePanel} from './route-view.js';
+import {getSelectedDay,setSelectedDay} from './state.js';
+import {renderOverview,renderAgentBanner,renderChanged,routeKey} from './workspace-view.js';
 import {renderChat,isSendKey} from './chat.js';
 import {getUser} from './state.js';
 import {requireSession,readRoomId,saveRoomId,clearRoomId,navigate,preparePage,signOut} from './session.js';
@@ -29,6 +31,7 @@ export function renderRoom(snapshot) {
   const {messages,agent_status,...shared} = snapshot;
   renderDecisionRegions(snapshot);
   renderChanged('plan',[shared,getUser()?.id],() => { renderPlan(snapshot); renderCost(displayPlan(snapshot)?.cost,getUser()?.id); });
+  renderChanged('route-panel',[displayPlan(snapshot),getSelectedDay()],() => renderRoutePanel(snapshot,getSelectedDay()));
   run(() => renderMaps(snapshot));
   renderChanged('chat',[snapshot.room_id,snapshot.messages,snapshot.members,getUser()?.id],() => renderChat(snapshot,getUser()?.id));
   renderOverview(snapshot);
@@ -168,12 +171,17 @@ function bindHistory() {
   });
 }
 
+let routeRenderStamp = null;
 async function renderMaps(snapshot) {
+  const date = getSelectedDay();
+  const key = routeKey(snapshot,date);
+  if (key === routeRenderStamp) return;
   const plan = displayPlan(snapshot);
-  const refs = [...new Set(plan?.days.flatMap(day => day.visits.map(visit => visit.place_ref)) ?? [])];
+  const refs = [...new Set(plan?.days.filter(day => day.date === date).flatMap(day => day.visits.map(visit => visit.place_ref)) ?? [])];
   const details = await Promise.all(refs.map(ref => requestJson('/api/rooms/' + encodeURIComponent(snapshot.room_id) + '/places/' + encodeURIComponent(ref))));
-  if (displayPlan(getSnapshot()) !== plan) return;
-  renderRouteMap(plan,new Map(details.filter(Boolean).map(detail => [detail.place.id,detail.place])),snapshot.config);
+  if (routeKey(getSnapshot() ?? {},getSelectedDay()) !== key) return;
+  renderRouteMap(plan,new Map(details.filter(Boolean).map(detail => [detail.place.id,detail.place])),snapshot.config,date);
+  routeRenderStamp = key;
   if (getSelectedPlace()) await selectPlace(snapshot.room_id,getSelectedPlace());
   else { renderPlace(null); renderPlaceMap(null); }
 }
