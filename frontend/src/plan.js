@@ -13,9 +13,10 @@ export function planContent(plan) {
 export function renderPlan(snapshot) {
   const plan = displayPlan(snapshot);
   const votes = new Map(snapshot.confirmations.filter(vote => sameTarget(vote.target,plan?.confirmation_target)).map(vote => [vote.user_id,vote.stance]));
+  const pendingHard = snapshot.constraints.some(item => item.kind === 'hard' && item.status === 'needs_owner_confirmation');
   html('plan', `<h3>${snapshot.review_plan ? '검토 중인 안' : '최신 초안'}</h3>${planContent(plan)}
   <p>같은 여행안 확인 ${[...votes.values()].filter(stance => stance === 'confirm').length}/${snapshot.members.length} · 전원 확인 및 서버 검증 후 확정</p>
-  <button data-plan="confirm" ${!plan || !hasCurrentBasis(snapshot,plan.confirmation_target) || plan.validation !== 'ready' || plan.blocking_conflict_ids.length ? 'disabled' : ''}>전체 여행안 확인</button>
+  <button data-plan="confirm" ${!plan || !hasCurrentBasis(snapshot,plan.confirmation_target) || plan.validation !== 'ready' || plan.blocking_conflict_ids.length || pendingHard ? 'disabled' : ''}>전체 여행안 확인</button>
   <button data-plan="withdraw" ${!plan ? 'disabled' : ''}>내 확인 철회</button>
   ${snapshot.review_plan && !sameTarget(snapshot.current_plan?.confirmation_target,plan?.confirmation_target) ? '<button data-plan="activate">새 안으로 전환</button>' : ''}`);
   html('confirmed-plan', '<h3>이전/현재 확정 스냅샷</h3>' + planContent(snapshot.confirmed_plan));

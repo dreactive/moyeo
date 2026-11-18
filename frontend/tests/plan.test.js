@@ -32,3 +32,13 @@ test('a newer draft revision keeps the unchanged pinned review confirmable', () 
   plan.renderPlan(room);
   assert.doesNotMatch(output.plan.match(/<button data-plan="confirm"[^>]*>/)[0],/disabled/);
 });
+
+test('a required condition awaiting its owner disables plan confirmation', () => {
+  const room = structuredClone(fixture);
+  room.current_plan.validation = 'ready';
+  room.constraints[0].status = 'needs_owner_confirmation';
+  const output = {};
+  globalThis.document = {getElementById:id => ({set innerHTML(value) { output[id] = value; }})};
+  plan.renderPlan(room);
+  assert.match(output.plan,/data-plan="confirm" disabled/);
+});
