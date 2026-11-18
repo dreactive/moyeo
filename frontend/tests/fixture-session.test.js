@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {requestFixture} from '../src/fixture-api.js';
+import {requestFixture,resetFixtureSession} from '../src/fixture-api.js';
 
-test('fixture auth requires explicit login before session lookup', async () => {
+test('fixture auth and room data require explicit login', async () => {
+  resetFixtureSession();
   await assert.rejects(requestFixture('/api/auth/me'), {status:401});
+  await assert.rejects(requestFixture('/api/rooms/room-fixture'), {status:401});
   await requestFixture('/api/auth/login', {method:'POST'});
   assert.equal((await requestFixture('/api/auth/me')).id,'u1');
 });

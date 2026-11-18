@@ -1,6 +1,11 @@
-import test from 'node:test';
+import test, {beforeEach} from 'node:test';
 import assert from 'node:assert/strict';
-import {requestFixture,replayScenario,setFixtureUser} from '../src/fixture-api.js';
+import {requestFixture,replayScenario,setFixtureUser,resetFixtureSession} from '../src/fixture-api.js';
+
+beforeEach(async () => {
+  resetFixtureSession();
+  await requestFixture('/api/auth/login', {method:'POST'});
+});
 test('fixture confirmation preserves activated target and rejects stale targets', async () => {
   const room = replayScenario('activated');
   setFixtureUser('u1');

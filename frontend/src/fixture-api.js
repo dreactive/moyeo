@@ -50,6 +50,10 @@ export function resetFixtureSession() {
   clearFixtureSession();
 }
 
+function requireFixtureLogin() {
+  if (!fixtureAuthenticated) throw Object.assign(new Error('fixture 로그인이 필요합니다.'), {status:401});
+}
+
 export async function requestFixture(path, {method = 'GET',body,headers} = {}) {
   const parts = new URL(path,'http://fixture').pathname.split('/').map(decodeURIComponent);
   if (parts[2] === 'dev') {
@@ -67,9 +71,10 @@ export async function requestFixture(path, {method = 'GET',body,headers} = {}) {
       fixtureAuthenticated = true;
       persistFixture();
     }
-    if (!fixtureAuthenticated) throw Object.assign(new Error('fixture 로그인이 필요합니다.'), {status:401});
+    requireFixtureLogin();
     return structuredClone(fixtureUser);
   }
+  if (parts[2] === 'rooms') requireFixtureLogin();
   if (parts[4] === 'places') return structuredClone(fixturePlaces.get(parts[5]));
   if (parts.length === 4 && method === 'GET') return structuredClone(fixtureRoom);
   if (parts[2] === 'rooms' && parts[3] === 'join') {
