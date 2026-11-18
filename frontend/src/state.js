@@ -21,16 +21,20 @@ export const getUser = () => user;
 export const setUser = value => { user = value; };
 
 
+const byMessageSeq = (left,right) => left.seq - right.seq;
+
 export function appendMessage(message,eventSeq) {
   if (snapshot?.room_id !== message.room_id) return;
   const exists = snapshot.messages.some(old => old.id === message.id);
-  snapshot = {...snapshot,seq:Math.max(snapshot.seq ?? 0,eventSeq ?? 0),messages:exists ? snapshot.messages : [...snapshot.messages,message].sort((a,b) => a.seq - b.seq)};
+  snapshot = {...snapshot,seq:Math.max(snapshot.seq ?? 0,eventSeq ?? 0),messages:exists ? snapshot.messages : [...snapshot.messages,message].sort(byMessageSeq)};
   listeners.forEach(listener => listener(snapshot));
 }
 
 export function applyRoomResponse(next,expectedRoom) {
   if (next.room_id !== expectedRoom || snapshot?.room_id !== expectedRoom || next.seq < snapshot.seq) return;
-  applySnapshot(next);
+  const messages = new Map((snapshot.messages ?? []).map(message => [message.id,message]));
+  for (const message of next.messages ?? []) messages.set(message.id,message);
+  applySnapshot({...next,messages:[...messages.values()].sort(byMessageSeq)});
 }
 
 let selectedDay = null;

@@ -54,3 +54,12 @@ test('duplicate SSE delivery still advances the room sequence', () => {
   assert.equal(state.getSnapshot().seq,3);
   assert.equal(state.getSnapshot().messages.length,1);
 });
+
+test('same-room refresh retains older loaded messages and deduplicates later deliveries', () => {
+  const messages = Array.from({length:61}, (_, index) => ({id:'m' + index,seq:index + 1,room_id:'r'}));
+  state.applySnapshot({room_id:'r',seq:60,messages:messages.slice(0,60)});
+  state.applyRoomResponse({room_id:'r',seq:61,messages:messages.slice(-50)},'r');
+  state.appendMessage(messages.at(-1));
+  state.appendMessage(messages.at(-1),61);
+  assert.deepEqual(state.getSnapshot().messages,messages);
+});
