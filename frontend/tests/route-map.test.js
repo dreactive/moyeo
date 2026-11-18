@@ -25,3 +25,9 @@ test('coordinate fallback presents anchor names and readable coordinates', () =>
   renderRouteMap(plan,new Map(),config,'2026-11-21');
   assert.match(route.innerHTML,/예시 출발지 · 34[.]76, 127[.]66/);
 });
+
+test('server route geometry stays folded under travel information', () => {
+  renderRouteMap(plan,new Map(),config,'2026-11-21');
+  assert.match(route.innerHTML,/900초/);
+  assert.match(route.innerHTML,/<details><summary>서버 polyline<[/]summary>/);
+});

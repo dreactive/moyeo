@@ -13,7 +13,11 @@ export function renderRouteMap(plan, placesById, config, date) {
 
   <ul>${anchorKeys.map(key => `<li>${e(config[key]?.label ?? anchorLabels[key])} · ${coordinates(config[key])}</li>`).join('')}</ul>
   ${visibleDays.map(day => `<h3>${e(day.date)}</h3><ol>${day.visits.map(visit => `<li>${e(placesById.get(visit.place_ref)?.name ?? visit.place_ref)} · ${coordinates(placesById.get(visit.place_ref))}</li>`).join('')}</ol>
-  ${day.route_legs.map(leg => `<p>${e(leg.from_ref)} → ${e(leg.to_ref)} · ${leg.distance_m}m · ${leg.duration_seconds}초 · 통행료 ${money(leg.toll_krw)} · 근거 ${e(leg.evidence_id)}</p><pre>서버 polyline ${e(JSON.stringify(leg.polyline))}</pre>`).join('')}`).join('') ?? ''}`;
+  ${day.route_legs.map(routeLegMarkup).join('')}`).join('')}`;
+}
+function routeLegMarkup(leg) {
+  return `<p>${e(leg.from_ref)} → ${e(leg.to_ref)} · ${e(leg.distance_m)}m · ${e(leg.duration_seconds)}초 · 통행료 ${money(leg.toll_krw)}</p>
+    <details><summary>서버 polyline</summary><p>근거 ${e(leg.evidence_id)}</p><pre>${e(JSON.stringify(leg.polyline))}</pre></details>`;
 }
 function coordinates(point) {
   if (point?.latitude == null || point.longitude == null) return '좌표 미확인';
