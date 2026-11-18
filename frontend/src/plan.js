@@ -6,10 +6,7 @@ import {getUser} from './state.js';
 export function planContent(plan) {
   if (!plan) return '<p>여행안이 아직 없습니다.</p>';
   const titles = new Map(plan.item_snapshots.map(item => [item.id,item.title]));
-  return `<p>revision ${e(plan.plan_revision)} · 검증 ${e(plan.validation)}</p>
-  <p>차단 충돌: ${e(plan.blocking_conflict_ids.join(', ') || '없음')}</p>
-  <p class="muted">확인 대상 ${e(JSON.stringify(plan.confirmation_target))}</p>
-  <ul>${plan.item_snapshots.map(item => `<li>${e(item.title)} · v${e(item.item_version)}</li>`).join('')}</ul>
+  return `<ul>${plan.item_snapshots.map(item => `<li>${e(item.title)} · v${e(item.item_version)}</li>`).join('')}</ul>
   ${plan.days.map(day => `<h3>${e(day.date)}</h3><ol>${day.visits.map(visit => `<li>${e(titles.get(visit.item_id) ?? visit.place_ref)} ${e(visit.start_at)} ~ ${e(visit.end_at)} · ${visit.stay_minutes}분 · ${e(visit.assumptions.join(' / '))}</li>`).join('')}</ol>`).join('')}`;
 }
 function confirmationNote(plan,currentBasis,pendingHard) {
@@ -47,7 +44,9 @@ export function renderPlan(snapshot) {
     : `<button data-plan="confirm" ${note ? 'disabled' : ''}>나도 동의하기</button>`}
   ${hasNewDraft ? `<button data-plan="activate">새 초안 v${e(draft.plan_revision)}으로 전환</button>` : ''}
   </div>`);
-  html('confirmed-plan', '<h3>이전/현재 확정 스냅샷</h3>' + planContent(snapshot.confirmed_plan));
+  const archive = snapshot.confirmed_plan;
+  html('confirmed-plan', archive ? `<details class="card-details"><summary>${official ? '확정안 보기' : '이전 확정안 보기'} · v${e(archive.plan_revision)}</summary>
+    ${planContent(archive)}</details>` : '');
 }
 const basisKeys = ['participant_version','constraint_version','evidence_version'];
 export const hasCurrentBasis = (snapshot,target) => !!target && basisKeys.every(key => snapshot.versions[key] === target[key]);

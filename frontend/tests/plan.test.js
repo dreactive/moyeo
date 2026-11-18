@@ -102,3 +102,10 @@ test('the consent summary identifies the fixed review revision when a new draft 
   assert.match(output,/검토 중인 안 v1/);
   assert.match(output,/새 초안 v2/);
 });
+
+test('the previous official plan opens independently from the current vote controls', () => {
+  const hosts = {plan:{},'confirmed-plan':{}};
+  globalThis.document = {getElementById:id => hosts[id]};
+  plan.renderPlan({...fixture,confirmed_plan:fixture.current_plan,review_plan:null,current_plan:null});
+  assert.match(hosts['confirmed-plan'].innerHTML,/<details[^>]*><summary>이전 확정안 보기 · v1/);
+});
