@@ -121,3 +121,11 @@ def test_existing_place_mention_does_not_create_duplicate_support_target():
     message = dict(id='new',author_id='u1',text='B공원 좋아')
     batch = facts_to_batch(dict(places=['B공원'],conditions=[],intents=['support']),message,value)
     assert batch['item_proposals'] == []
+
+def test_place_grounding_rejects_generic_activity_and_current_region():
+    from ai.grounding import project_item
+    value = task()
+    for title,text in [('점심','우리 점심 먹자'),('여수','우리 여수 가는 건 어때?')]:
+        value['recent_messages'] = [dict(id='new',author_id='u1',text=text)]
+        proposal = dict(title=title,mention_text=title,existing_item_id=None,evidence=dict(message_id='new',quote=text))
+        assert project_item(proposal,value) is None

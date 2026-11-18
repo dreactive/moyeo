@@ -24,6 +24,8 @@ def normalized(text):
 def project_item(proposal, task):
     message = source_message(proposal['evidence'], task)
     title, mention = normalized(proposal['title']), normalized(proposal['mention_text'])
+    if title in ('점심', '저녁', '아침', '밥', '식사', '식당', '카페', '공원', '역', '여행') or title == normalized(task['config'].get('region', '')):
+        return None
     if not message or title != mention or mention not in normalized(proposal['evidence']['quote']):
         return None
     return dict(client_ref='client:' + message['id'], existing_item_id=proposal['existing_item_id'],
