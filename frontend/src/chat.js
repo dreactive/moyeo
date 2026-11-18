@@ -31,9 +31,11 @@ function createChatNode(row,members,userId) {
   return template.content.firstElementChild;
 }
 export function reconcileChat(list,snapshot,userId) {
-  const nodes = list.dataset.userId === userId ? [...list.children] : [];
+  const members = JSON.stringify(snapshot.members);
+  const nodes = list.dataset.userId === userId && list.dataset.members === members ? [...list.children] : [];
   list.replaceChildren(...reconcileRows(chatRows(snapshot.messages),nodes,row => createChatNode(row,snapshot.members,userId)));
   list.dataset.userId = userId;
+  list.dataset.members = members;
 }
 function captureChatPosition(list) {
   return {top:list.scrollTop,height:list.scrollHeight,viewport:list.clientHeight,
