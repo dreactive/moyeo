@@ -1,6 +1,10 @@
 # Frontend
 
-계약 v0.2, HTML/CSS/ES modules. npm이 없는 환경에서도 Node 직접 실행으로 동작합니다. 의존성 설치와 빌드 과정이 없습니다. Node 24 및 JSON module import를 지원하는 최신 브라우저를 기준으로 합니다.
+계약 v0.2, HTML/CSS/ES modules. npm이 없는 환경에서도 Node 직접 실행으로 동작합니다. 로컬 화면에는 의존성 설치와 빌드 과정이 없습니다. Node 24 및 JSON module import를 지원하는 최신 브라우저를 기준으로 합니다.
+
+Vercel 공개 배포에는 의존성 없는 `node scripts/build.mjs`가 정적 파일과 API 중계 설정을
+생성합니다. Root Directory는 `frontend`, 환경 변수는 `BACKEND_ORIGIN`과 공개 지도 키입니다.
+PC의 공개 API 전용 설정과 Cloudflare 작업은 [배포 가이드](../docs/deployment/vercel-cloudflare.md)를 따릅니다.
 
 ```powershell
 cd frontend

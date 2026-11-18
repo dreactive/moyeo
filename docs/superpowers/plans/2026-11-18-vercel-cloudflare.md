@@ -1,6 +1,6 @@
 # Vercel + Cloudflare Deployment Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 개인 PC 서버를 유지하면서 환경 변수만 입력하면 Vercel 배포를 준비할 수 있게 한다.
 **Architecture:** 정적 Vercel Build Output API → 고정 HTTPS Tunnel → 단일 FastAPI worker.
@@ -28,18 +28,18 @@
 
 **Files:** backend/services/events.py, backend/tests/test_events.py
 **Interfaces:** 기존 `room_event_stream(db, room_id, after_seq)` 유지.
-- [ ] 초기 heartbeat/cursor 테스트를 먼저 실행해 실패를 확인하고 최소 구현 후 검증·커밋.
-- [ ] 주기 heartbeat를 제어된 시간으로 검증하고 구현·커밋.
+- [x] 초기 heartbeat/cursor 테스트를 먼저 실행해 실패를 확인하고 최소 구현 후 검증·커밋.
+- [x] 주기 heartbeat를 제어된 시간으로 검증하고 구현·커밋.
 
 ### Task 2: 공개 HTTP 설정
 
 **Files:** backend/config.py, backend/app.py, backend/routes/auth.py,
 backend/public_http.py, backend/tests/test_public_http.py, backend/.env.example
 **Interfaces:** COOKIE_SECURE, PUBLIC_REQUESTS_PER_MINUTE(60, 0=비활성).
-- [ ] HTTPS cookie·logout 동작 테스트 RED → 설정/호출 GREEN → 커밋.
-- [ ] API 응답과 오류 no-store 테스트 RED → middleware GREEN → 커밋.
-- [ ] 분당 제한·GET 예외·새 window 회복 테스트 RED → 구현 GREEN → 커밋.
-- [ ] `/api/health` JSON과 DB 가용성 테스트 RED → 구현 GREEN → 커밋.
+- [x] HTTPS cookie·logout 동작 테스트 RED → 설정/호출 GREEN → 커밋.
+- [x] API 응답과 오류 no-store 테스트 RED → middleware GREEN → 커밋.
+- [x] 분당 제한·GET 예외·새 window 회복 테스트 RED → 구현 GREEN → 커밋.
+- [x] `/api/health` JSON과 DB 가용성 테스트 RED → 구현 GREEN → 커밋.
 
 ### Task 3: 환경 변수 기반 정적 배포
 
@@ -47,15 +47,15 @@ backend/public_http.py, backend/tests/test_public_http.py, backend/.env.example
 frontend/scripts/build.mjs, frontend/tests/deployment.test.js,
 frontend/.env.example, .gitignore
 **Interfaces:** BACKEND_ORIGIN, KAKAO_JAVASCRIPT_KEY → .vercel/output/config.json + static/.
-- [ ] HTTPS origin 검증 테스트 RED → 구현 GREEN → 커밋.
-- [ ] 출력 경로·캐시 헤더·공개 키 escape 테스트 RED → 구현 GREEN → 커밋.
-- [ ] allowlist 복사와 실제 빌드 테스트 RED → 구현 GREEN → 설정과 커밋.
+- [x] HTTPS origin 검증 테스트 RED → 구현 GREEN → 커밋.
+- [x] 출력 경로·캐시 헤더·공개 키 escape 테스트 RED → 구현 GREEN → 커밋.
+- [x] allowlist 복사와 실제 빌드 테스트 RED → 구현 GREEN → 설정과 커밋.
 
 ### Task 4: 운영 안내·통합 검증·전달
 
 **Files:** docs/deployment/vercel-cloudflare.md, README.md,
 docs/verification/deployment.md
-- [ ] Cloudflare/Windows/Vercel/Kakao 설정과 점검·문제 해결을 문서화.
-- [ ] Backend/FE 회귀와 임시 origin·public key의 실제 build를 실행.
-- [ ] 독립 검토 후 필요한 수정, diff·staged·비밀값 점검, 작은 커밋 마감.
+- [x] Cloudflare/Windows/Vercel/Kakao 설정과 점검·문제 해결을 문서화.
+- [x] Backend/FE 회귀와 임시 origin·public key의 실제 build를 실행.
+- [x] 독립 검토 후 필요한 수정, diff·staged·비밀값 점검, 작은 커밋 마감.
 - [ ] 로컬 규칙에 따라 develop push와 master 대상 기존 PR 갱신/생성 시도.

@@ -109,6 +109,7 @@ current_plan은 최신 초안, review_plan은 active_target에 대응하는 불�
 | POST /api/auth/login | email,password | User + session cookie |
 | POST /api/auth/logout | 없음 | {ok:true} |
 | GET /api/auth/me | - | User |
+| GET /api/health | - | DB 접근 가능 시 {status:"ok"}, 불가 시 503 {status:"unavailable"}. 모델·공급자 준비 상태와 별개 |
 | POST /api/rooms | title + TripConfig 각 필드 | RoomSnapshot + 입장한 참가자 |
 | POST /api/rooms/join | invite_code | RoomSnapshot |
 | GET /api/rooms/{room_id} | - | RoomSnapshot |
@@ -130,9 +131,18 @@ current_plan은 최신 초안, review_plan은 active_target에 대응하는 불�
 
 place_ref는 현재 방의 조회 결과 또는 fixture라고 표시한 데이터에서 나온 값이어야 한다. 이 API는 임의 웹페이지 수집 지시를 받지 않는다. 명시적 재검토나 전체 초안 재생성은 manual_replan으로 요청하고, 일상적인 새 조건 변화는 자동 실행한다.
 
+공개 배포에서는 같은 origin의 Vercel `/api/*`가 PC 서버로 중계한다. API 응답과 오류는
+`Cache-Control: no-store`이며 `COOKIE_SECURE=1`은 host-only HttpOnly SameSite=Lax cookie에
+Secure를 추가한다. `PUBLIC_REQUESTS_PER_MINUTE` 기본 60은 단일 프로세스의 전역 rolling
+60초 POST/PUT/PATCH/DELETE 예산이다. 초과 요청은 handler 실행 전 429와 `Retry-After: 60`으로
+거절한다. GET/SSE는 이 예산을 소비하지 않는다. 0은 제한 해제다.
+공개 PC 서버는 `SERVE_FRONTEND=0`으로 API만 제공하고, 기존 로컬 화면 기본값은 1이다.
+[운영 설정과 인수 확인](../deployment/vercel-cloudflare.md)을 따른다.
+
 ## 4. SSE
 
 방마다 EventSource 연결 하나를 사용한다. 각 이벤트는 id: seq와 JSON data를 포함한다.
+연결 즉시, 이후 15초마다 `: keepalive` comment를 보낸다. comment는 이벤트 ID를 바꾸지 않는다.
 
 | event | data | FE 동작 |
 |---|---|---|
