@@ -23,7 +23,7 @@ def generate_object(model, tokenizer, request):
     with torch.inference_mode():
         output = model.generate(**inputs, max_new_tokens=1536, do_sample=False,
                                 pad_token_id=tokenizer.eos_token_id, **extraction_options(request, tokenizer))
-    return parse_object(tokenizer.decode(output[0][length:], skip_special_tokens=True))
+    return parse_generated(output, tokenizer, length, phase == "extract")
 
 
 def parse_object(text):
@@ -55,3 +55,10 @@ def reference_prompt(messages, context, tokenizer, budget=24000):
     system = messages[0]['content'] + '\n참고 대화(새 사실의 근거가 아님): ' + tokenizer.decode(tokens[-available:], skip_special_tokens=True)
     expanded = tokenizer.apply_chat_template([dict(messages[0],content=system), *messages[1:]], tokenize=False, add_generation_prompt=True)
     return expanded if len(tokenizer.encode(expanded, add_special_tokens=False)) <= budget else prompt
+
+
+def parse_generated(output, tokenizer, input_length, require_eos=False):
+    suffix = output[0][input_length:]
+    if require_eos and (not len(suffix) or int(suffix[-1]) != tokenizer.eos_token_id):
+        raise ValueError('Incomplete extraction generation')
+    return parse_object(tokenizer.decode(suffix, skip_special_tokens=True))

@@ -17,3 +17,12 @@ def test_optional_history_never_pushes_current_message_past_budget():
     messages = [dict(role='system',content='schema'),dict(role='user',content='안녕')]
     prompt = reference_prompt(messages,dict(conversation_context=['가'*10000]),Tokenizer(),100)
     assert len(prompt) <= 100 and '안녕' in prompt
+
+def test_complete_json_without_eos_is_still_incomplete_generation():
+    import pytest
+    from types import SimpleNamespace
+    from ai.models.qwen_generation import parse_generated
+    tokenizer = SimpleNamespace(eos_token_id=0,decode=lambda tokens,**kwargs:'{}')
+    with pytest.raises(ValueError,match='Incomplete'):
+        parse_generated([[1,2,3]],tokenizer,1,True)
+    assert parse_generated([[1,2,0]],tokenizer,1,True) == {}
