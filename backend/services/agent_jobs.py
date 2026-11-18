@@ -66,9 +66,9 @@ class AgentJobs:
                 processed = result.get('last_processed_message_id')
                 room = self.db.get('room:' + task['room_id'])
                 advanced = processed in [message['id'] for message in task['recent_messages']]
-                if applied and advanced and unprocessed_messages(room['messages'], processed) and self.pending[task['room_id']] == 0:
+                if applied and advanced and select_extraction_messages(room['messages'], self.db.get('processed-message:' + task['room_id']), self.db.get('failed-extraction:' + task['room_id']) or {}) and self.pending[task['room_id']] == 0:
                     await self.enqueue(task['room_id'], 'remaining_messages')
-                if not applied and self.pending[task['room_id']] == 0 and self.db.get('room:' + task['room_id'])['versions'] != task['base_versions']:
+                if not applied and result.get('extraction_report', {}).get('status') != 'failed' and self.pending[task['room_id']] == 0 and self.db.get('room:' + task['room_id'])['versions'] != task['base_versions']:
                     await self.enqueue(task['room_id'], 'state_changed')
                 step = max((event['step'] for event in self.db.traces.get(task['run_id'], {}).get('events', [])), default=0) + 1
                 await self.emit_trace(dict(run_id=task['run_id'], step=step, event='state_applied', call_id=None, created_at=datetime.now(timezone.utc).isoformat(), payload={'applied':applied, 'summary':'Applied' if applied else 'Stale result', 'versions':self.db.get('room:' + task['room_id'])['versions']}))
