@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {drawKakao,clearKakao} from '../src/kakao-adapter.js';
+import {initMaps,renderRouteMap} from '../src/map.js';
+import snapshot from '../fixtures/room-snapshot.json' with {type:'json'};
 
 test('clearing a Kakao host detaches its markers and lines', () => {
   const layers = [];
@@ -34,4 +36,20 @@ test('Kakao viewport styles stay out of the fallback host', () => {
   drawKakao(maps,host,[{latitude:34.7,longitude:127.6}]);
   assert.equal(child.style.overflow,'hidden');
   assert.equal(host.style.overflow,undefined);
+});
+
+test('a Kakao drawing failure preserves the selected route data',async t => {
+  globalThis.kakao = {maps:{
+    load:callback => callback(),
+    LatLng:class {},
+    Map:class { constructor() { throw new Error('Map drawing failed'); } }
+  }};
+  t.after(() => delete globalThis.kakao);
+  const classes = new Set();
+  const route = {classList:{add: key => classes.add(key),remove: key => classes.delete(key)}};
+  await initMaps({routeElement:route,placeElement:{},appKey:'test-key'});
+  renderRouteMap(snapshot.current_plan,new Map(),snapshot.config,'2026-11-21');
+  assert.match(route.innerHTML,/지도를 표시할 수 없어요/);
+  assert.match(route.innerHTML,/서버 polyline/);
+  assert.equal(classes.has('sdk'),false);
 });

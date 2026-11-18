@@ -13,8 +13,14 @@ export function renderRouteMap(plan, placesById, config, date) {
   const selected = days.find(day => day.date === date) ?? days[0];
   const visibleDays = date != null && selected ? [selected] : days;
   const anchorKeys = date != null && selected ? dailyAnchors(days,selected) : ['origin','lodging','destination'];
-  if (sdk) return drawKakao(sdk,routeElement,[...anchorKeys.map(key => config[key]),...visibleDays.flatMap(day => day.visits.map(visit => placesById.get(visit.place_ref)))].filter(Boolean),visibleDays.flatMap(day => day.route_legs.map(leg => leg.polyline)));
-  fallback(routeElement,`<strong>${sdkMessage} · 좌표와 서버 경로</strong>
+  if (sdk) {
+    const visits = visibleDays.flatMap(day => day.visits.map(visit => placesById.get(visit.place_ref)));
+    const points = [...anchorKeys.map(key => config[key]),...visits].filter(Boolean);
+    const lines = visibleDays.flatMap(day => day.route_legs.map(leg => leg.polyline));
+    const map = tryDraw(routeElement,points,lines);
+    if (map) return map;
+  }
+  fallback(routeElement,`<strong>${fallbackMessage()} · 좌표와 서버 경로</strong>
 
   <ul>${anchorKeys.map(key => `<li>${e(config[key]?.label ?? anchorLabels[key])} · ${coordinates(config[key])}</li>`).join('')}</ul>
   ${visibleDays.map(day => `<h3>${e(day.date)}</h3><ol>${day.visits.map(visit => `<li>${e(placesById.get(visit.place_ref)?.name ?? visit.place_ref)} · ${coordinates(placesById.get(visit.place_ref))}</li>`).join('')}</ol>
@@ -35,8 +41,19 @@ function dailyAnchors(days,day) {
 }
 export function renderPlaceMap(place) {
   lastPlace = place;
-  if (sdk && place) return drawKakao(sdk,placeElement,[place]);
-  fallback(placeElement,place ? `<strong>${sdkMessage} · ${e(place.name)}</strong><p>${coordinates(place)}</p>` : '<p class="map-placeholder">장소를 선택하세요.</p>');
+  const map = sdk && place && tryDraw(placeElement,[place]);
+  if (map) return map;
+  fallback(placeElement,place ? `<strong>${fallbackMessage()} · ${e(place.name)}</strong><p>${coordinates(place)}</p>` : '<p class="map-placeholder">장소를 선택하세요.</p>');
+}
+function tryDraw(element, points, lines) {
+  try {
+    return drawKakao(sdk,element,points,lines);
+  } catch {
+    return null;
+  }
+}
+function fallbackMessage() {
+  return sdk ? '지도를 표시할 수 없어요' : sdkMessage;
 }
 function fallback(element, markup) {
   clearKakao(element);
