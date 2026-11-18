@@ -2,7 +2,7 @@ export const isSendKey = event => event.key === 'Enter' && !event.shiftKey && !e
 import {escapeHtml as e} from './ui.js';
 export const chatDate = value => new Date(value).toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul',month:'long',day:'numeric',weekday:'long'});
 export function messageMarkup(message,members,userId) {
-  const name = members.find(member => member.user_id === message.author_id)?.name ?? message.author_id;
+  const name = members.find(member => member.user_id === message.author_id)?.name ?? '참가자';
   const time = new Date(message.created_at).toLocaleTimeString('ko-KR',{timeZone:'Asia/Seoul',hour:'numeric',minute:'2-digit'});
   return `<li id="message-${e(message.id)}" class="chat-message ${message.author_id === userId ? 'is-own' : ''}"><span class="chat-avatar">${e(name.slice(0,1))}</span><div class="chat-message-content"><span class="chat-author">${e(name)}</span><p class="chat-bubble">${e(message.text)}</p><time class="chat-time" datetime="${e(message.created_at)}">${e(time)}</time></div></li>`;
 }

@@ -15,10 +15,13 @@ export function renderOverview(snapshot) {
   html('invite-code',e(snapshot.invite_code));
   html('members',snapshot.members.map(member => `<span class="member-avatar" title="${e(member.name)}">${e(member.name.slice(0,1))}</span>`).join('') + `<span class="member-count">${snapshot.members.length}명 참여</span>`);
 }
+const agentLabels = {idle:'여행 이야기를 기다리고 있어요',running:'조건과 동선을 검토하고 있어요',needs_input:'확인이 필요한 내용이 있어요',done:'여행안 검토가 끝났어요'};
 export function renderAgentBanner(snapshot) {
+  const status = snapshot.agent_status;
+  const label = status.label === status.state || status.label === 'Ready' ? agentLabels[status.state] : status.label;
   const questions = snapshot.questions.filter(item => item.status === 'open').length;
   const conflicts = snapshot.conflicts.filter(item => item.status === 'open').length;
-  html('agent',`<strong>${e(snapshot.agent_status.label)}</strong><p>확인 질문 ${questions}개 · 해결할 충돌 ${conflicts}개</p>`);
+  html('agent',`<strong>${e(label)}</strong><p>확인 질문 ${questions}개 · 해결할 충돌 ${conflicts}개</p>`);
   const button = document.getElementById('replan');
   button.disabled = snapshot.agent_status.state === 'running' || button.dataset?.pending === 'true';
 }
