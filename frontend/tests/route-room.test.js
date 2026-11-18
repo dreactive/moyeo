@@ -49,3 +49,13 @@ test('chat-only renders share one in-flight route lookup', async () => {
   await Promise.all([first,chatUpdate]);
   assert.equal(paths.length,2);
 });
+
+test('unavailable coordinates leave the rest of the selected route usable', async () => {
+  const room = {...snapshot,room_id:'room-partial'};
+  applySnapshot(room);
+  const place = {id:'fixture:place-a',latitude:34.761,longitude:127.661};
+  globalThis.fetch = async path => path.endsWith('place-a') ? Response.json({place}) : new Response(null,{status:503});
+  await renderMaps(room);
+  assert.match(route.innerHTML,/가상 A식당 · 34[.]761, 127[.]661/);
+  assert.match(document.getElementById('route-load-status').innerHTML,/일부 장소 좌표/);
+});

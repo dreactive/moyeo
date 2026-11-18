@@ -193,17 +193,19 @@ export async function renderMaps(snapshot) {
   const key = routeKey(snapshot,date);
   if (key === routeRenderStamp?.key || routeKey(getSnapshot() ?? {},date) !== key) return;
   const plan = displayPlan(snapshot);
+  html('route-load-status','');
   renderRouteMap(plan,new Map(),snapshot.config,date);
   const refs = [...new Set(plan?.days.filter(day => day.date === date).flatMap(day => day.visits.map(visit => visit.place_ref)) ?? [])];
   const stamp = {key};
   routeRenderStamp = stamp;
-  const details = await Promise.all(refs.map(ref => requestJson('/api/rooms/' + encodeURIComponent(snapshot.room_id) + '/places/' + encodeURIComponent(ref)))).catch(error => {
-    if (routeRenderStamp !== stamp) return [];
-    routeRenderStamp = null;
-    throw error;
-  });
+  const results = await Promise.allSettled(refs.map(ref => requestJson('/api/rooms/' + encodeURIComponent(snapshot.room_id) + '/places/' + encodeURIComponent(ref))));
   if (routeRenderStamp !== stamp || routeKey(getSnapshot() ?? {},getSelectedDay()) !== key) return;
-  if (details.some(Boolean)) renderRouteMap(plan,new Map(details.filter(Boolean).map(detail => [detail.place.id,detail.place])),snapshot.config,date);
+  const places = results.flatMap(result => result.status === 'fulfilled' && result.value?.place ? [result.value.place] : []);
+  if (places.length) renderRouteMap(plan,new Map(places.map(place => [place.id,place])),snapshot.config,date);
+  if (places.length < refs.length) {
+    const note = places.length ? '일부 장소 좌표를 불러오지 못했어요.' : '장소 좌표를 불러오지 못했어요.';
+    html('route-load-status',`<p>${note}</p>`);
+  }
   if (getSelectedPlace()) await selectPlace(snapshot.room_id,getSelectedPlace());
   else { renderPlace(null); renderPlaceMap(null); }
 }
