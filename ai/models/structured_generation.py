@@ -7,9 +7,11 @@ from lmformatenforcer.integrations.transformers import (
 )
 
 
+@lru_cache(maxsize=2)
 def tokenizer_data(tokenizer):
     return build_token_enforcer_tokenizer_data(tokenizer)
 
 
 def build_extraction_prefix(tokenizer, schema):
     return build_transformers_prefix_allowed_tokens_fn(tokenizer_data(tokenizer), JsonSchemaParser(schema))
+
