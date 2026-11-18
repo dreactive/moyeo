@@ -22,6 +22,7 @@ def test_search_example_is_a_valid_editable_request():
     assert body.arguments.query == 'A식당'
 
 
+@pytest.mark.integration
 def test_direct_tool_execution_uses_the_real_registry(api):
     from backend.dev_examples import tool_examples
     from backend.dev_schemas import SearchTool
@@ -31,6 +32,7 @@ def test_direct_tool_execution_uses_the_real_registry(api):
     assert result['result']['places'][0]['id'] == 'fixture:place-a'
 
 
+@pytest.mark.integration
 def test_search_tool_has_editable_swagger_inputs(api):
     from backend.dev_examples import tool_examples
     api.app.state.dev_token = 'test-dev'
@@ -40,6 +42,7 @@ def test_search_tool_has_editable_swagger_inputs(api):
     assert response.json()['result']['places'][0]['id'] == 'fixture:place-a'
 
 
+@pytest.mark.integration
 def test_place_details_endpoint_returns_observed_prices(api):
     from backend.dev_examples import tool_examples
     api.app.state.dev_token = 'test-dev'
@@ -49,6 +52,7 @@ def test_place_details_endpoint_returns_observed_prices(api):
     assert response.json()['result']['menus'][0]['price_krw'] == 10000
 
 
+@pytest.mark.integration
 def test_car_route_endpoint_preserves_units(api):
     from backend.dev_examples import tool_examples
     api.app.state.dev_token = 'test-dev'
@@ -59,6 +63,7 @@ def test_car_route_endpoint_preserves_units(api):
     assert (result['distance_m'], result['duration_seconds']) == (4000, 600)
 
 
+@pytest.mark.integration
 def test_tool_response_context_can_be_reused(api):
     from backend.dev_examples import tool_examples
     api.app.state.dev_token = 'test-dev'
@@ -68,6 +73,7 @@ def test_tool_response_context_can_be_reused(api):
     assert result['observation']['result'] == result['result']
 
 
+@pytest.mark.integration
 def test_itinerary_endpoint_derives_canonical_arguments(api):
     from backend.dev_examples import tool_examples
     api.app.state.dev_token = 'test-dev'
@@ -77,6 +83,7 @@ def test_itinerary_endpoint_derives_canonical_arguments(api):
     assert response.json()['result']['days'][0]['visits'][0]['start_at'].endswith('11:30:00+09:00')
 
 
+@pytest.mark.integration
 def test_cost_endpoint_preserves_unknown_amounts(api):
     from backend.dev_examples import tool_examples
     api.app.state.dev_token = 'test-dev'
@@ -88,6 +95,7 @@ def test_cost_endpoint_preserves_unknown_amounts(api):
     assert result['total_krw'] is None and result['unknown_line_count'] == 2
 
 
+@pytest.mark.integration
 def test_invalid_place_returns_validation_error(api):
     from backend.dev_examples import tool_examples
     api.app.state.dev_token = 'test-dev'
@@ -107,6 +115,7 @@ def test_invalid_server_modes_are_unavailable(api, key):
     assert response.status_code == 503
 
 
+@pytest.mark.integration
 def test_agent_caught_provider_failure_is_not_http_success(api, monkeypatch):
     import httpx
     from ai.tools.registry import RegisteredTools
@@ -120,6 +129,7 @@ def test_agent_caught_provider_failure_is_not_http_success(api, monkeypatch):
     assert response.status_code == 502 and 'secret' not in response.text
 
 
+@pytest.mark.integration
 def test_agent_caught_model_failure_is_unavailable(api, monkeypatch):
     from ai.models.fake import FakeModelBackend
     from backend.dev_examples import utterance_examples
@@ -132,6 +142,7 @@ def test_agent_caught_model_failure_is_unavailable(api, monkeypatch):
     assert response.status_code == 503 and 'secret' not in response.text
 
 
+@pytest.mark.integration
 def test_utterance_checks_credentials_before_live_tool(api, monkeypatch):
     from ai import settings
     from backend.dev_examples import utterance_examples
@@ -144,6 +155,7 @@ def test_utterance_checks_credentials_before_live_tool(api, monkeypatch):
     assert response.status_code == 503
 
 
+@pytest.mark.integration
 def test_missing_live_credentials_are_server_error(api, monkeypatch):
     from ai.tools import registry
     from backend.dev_examples import tool_examples
@@ -155,6 +167,7 @@ def test_missing_live_credentials_are_server_error(api, monkeypatch):
     assert response.status_code == 503
 
 
+@pytest.mark.integration
 def test_provider_failure_does_not_expose_secrets(api, monkeypatch):
     import httpx
     from ai.tools.registry import RegisteredTools
@@ -197,6 +210,7 @@ def test_utterance_rejects_unknown_author():
     assert error.value.status_code == 422
 
 
+@pytest.mark.integration
 def test_utterance_service_returns_agent_result_and_trace(api):
     from backend.dev_schemas import Utterance
     from backend.dev_examples import tool_examples
@@ -209,6 +223,7 @@ def test_utterance_service_returns_agent_result_and_trace(api):
     assert result['trace'][0]['event'] == 'decision'
 
 
+@pytest.mark.integration
 def test_utterance_endpoint_delivers_text_to_agent(api):
     from backend.dev_examples import utterance_examples
     api.app.state.dev_token = 'test-dev'
@@ -249,6 +264,7 @@ def test_editing_example_does_not_modify_later_requests():
     assert tool_examples('get_place_details')['fixture']['value']['arguments']['place_ref'] == 'fixture:place-a'
 
 
+@pytest.mark.integration
 def test_sandbox_calls_do_not_change_room_or_jobs(api):
     from backend.dev_examples import utterance_examples
     db = api.app.state.db
@@ -263,6 +279,7 @@ def test_sandbox_calls_do_not_change_room_or_jobs(api):
 
 
 @pytest.mark.parametrize('name', ['build_itinerary', 'calculate_costs'])
+@pytest.mark.integration
 def test_calculation_cannot_override_canonical_facts(api, name):
     from backend.dev_examples import tool_examples
     api.app.state.dev_token = 'test-dev'
@@ -276,6 +293,7 @@ def test_calculation_cannot_override_canonical_facts(api, name):
     assert api.post(path, json=body, headers=headers).status_code == 422
 
 
+@pytest.mark.integration
 def test_lazy_developer_runtime_is_closed_on_shutdown():
     from backend.app import create_app
     from fastapi.testclient import TestClient
@@ -287,6 +305,7 @@ def test_lazy_developer_runtime_is_closed_on_shutdown():
     assert bridge.runtime is None and runtime.model.closed
 
 
+@pytest.mark.integration
 def test_invalid_money_is_a_validation_error(api):
     from backend.dev_examples import tool_examples
     api.app.state.dev_token = 'test-dev'
