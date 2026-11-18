@@ -61,3 +61,15 @@ def test_public_server_does_not_serve_local_frontend_files(tmp_path, monkeypatch
         assert client.get('/.env').status_code == 404
         assert client.get('/').status_code == 404
         assert client.get('/api/health').status_code == 200
+
+
+def test_unexpected_api_errors_are_sanitized_and_not_cached(tmp_path):
+    app = create_app(database_path=':memory:', frontend_path=tmp_path)
+    @app.get('/api/broken')
+    def broken():
+        raise RuntimeError('private-sentinel')
+    with TestClient(app, raise_server_exceptions=False) as client:
+        response = client.get('/api/broken')
+        assert response.status_code == 500
+        assert response.headers['cache-control'] == 'no-store'
+        assert 'private-sentinel' not in response.text

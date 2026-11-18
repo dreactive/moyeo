@@ -22,6 +22,10 @@ class RequestBudget:
 
 def configure_public_http(app, settings):
     budget = RequestBudget(settings.get('public_requests_per_minute', 60))
+    @app.exception_handler(Exception)
+    async def unexpected_error(request, error):
+        return JSONResponse({'detail': 'Internal server error'}, status_code=500, headers={'Cache-Control': 'no-store'})
+
     @app.middleware('http')
     async def public_http(request, call_next):
         is_api = request.url.path == '/api' or request.url.path.startswith('/api/')
