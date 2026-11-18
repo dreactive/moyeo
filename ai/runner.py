@@ -86,6 +86,20 @@ async def run_steps(task, model, tools, emit_trace, result):
         await terminate(emit_trace, task, 20, model, "action_limit")
 
 
+async def generate_candidates(context, model, emit_trace, step):
+    context = build_tool_context(context)
+    context["needed_route"] = next_route(context)
+    context["available_calculations"] = dict(build_itinerary=itinerary_arguments(context),
+                                             calculate_costs=build_cost_inputs(context)[0])
+    generated = await asyncio.to_thread(model.generate_json, {"phase": "actions", "context": context})
+    context["generated_candidates"] = generated.get("candidates", [])
+    candidates = valid_options(context, build_candidates(context) + grounded_options(context))
+    await emit(emit_trace, context, step, "decision", None,
+               dict(goal=context["goal"], candidates=candidates, selected_index=None, scores=[],
+                    model_mode=getattr(model, "mode", "unknown"), base_versions=context["base_versions"]))
+    return candidates
+
+
 async def choose_action(context, model, emit_trace, step):
     context = build_tool_context(context)
     context["needed_route"] = next_route(context)
