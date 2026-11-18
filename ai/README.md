@@ -173,3 +173,23 @@ PlaceRef does not identify cafes reliably; select 40 minutes through the
 `visit_duration` answer for cafes. Region-only conversation without a named place
 does not automatically discover a complete itinerary. Arbitrary hard conditions
 outside supported budget/return rules require owner input and block readiness.
+
+## 스키마·근거 기반 추출 (로컬 Qwen)
+
+`local_qwen`은 메시지별 `MessageFacts`를 Pydantic JSON Schema와 LM Format Enforcer로 생성한다. 모델이 장소명/조건 값을 추출하고, 코드는 발화자·메시지 ID·원문 근거를 붙여 `ExtractionBatch`로 검증한다. 현재 베이스/adapter 로딩과 생성 시 adapter 비활성 정책을 유지한다. 후보 생성 이후 자동 도구 실행·채점·일정 생성은 하지 않는다.
+
+- 추출용 출력은 EOS로 완결되어야 한다. 형식 오류는 검증 오류 코드와 함께 1회만 재시도하며, 추론 오류는 반복 호출하지 않는다.
+- 장소는 원문 이름과 Unicode/공백 정규화만 허용한다. 실제 장소 조회나 주소·좌표 확인은 별도다. 같은 이름을 여러 참가자가 말하면 근거를 합치고 지지는 각 작성자로 남긴다.
+- 개인 예산/귀가 마감은 완전한 자기 조건 문장과 값을 검증한다. 명시적 숫자·오전/오후 변환의 규칙 보조는 `condition_rule_assisted`로 구분한다. 가정·타인 발언·모호한 복합 금액·미지원 조건은 hard 조건으로 추측하지 않는다.
+- 과거 대화는 최대20개, 추가 토큰은 최대2000개로 제한하며 현재 메시지를 우선한다. 새 사실의 근거는 `recent_messages`만 허용한다.
+- 구조 실패 메시지는 Backend `failed-extraction:<room_id>` 기록에 남는다. 새 메시지는 계속 처리하며 기존 수동 재계획 버튼으로 실패분을 재시도한다. `filtered`는 제안별 거절이고 `failed`는 배치 반영 실패다.
+
+선택 의존성은 `requirements-local-qwen.txt`에 포함된다. 핵심 fake/fixture 경로에는 torch/LMFE가 필요하지 않다. Pydantic2.14.3/LMFE0.11.3, Transformers4.57.6/Torch2.14.1+cu126/PEFT0.21.3 조합에서 실제 검증했다.
+
+전용 재생은 저장소 루트에서 실행한다. 공급자는 fixture이고 도구를 자동 호출하지 않는다.
+
+```powershell
+python -m ai.eval.extraction_replay --model-backend local_qwen --base-model-path C:/path/to/Qwen2.5-1.5B-Instruct --adapter-path submission/weights --compare-unconstrained --output .planning/extraction-report.json
+```
+
+32개 입력을 제한/자유 생성으로 각각 실행하고 입력별 결과, 근거·소유권 오류, 출력 토큰·재시도·지연을 기록한다. 정상 생성의 형식 성공과 내용 정확도를 구분하고, fake 결과를 실모델 품질로 집계하지 않는다. 자세한 범위와 결과는 `docs/verification/grounded-qwen-extraction.md`를 따른다. 실제 API·영업시간·가격 검증은 이 평가에 포함하지 않는다.

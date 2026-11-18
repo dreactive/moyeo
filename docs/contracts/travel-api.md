@@ -235,3 +235,15 @@ TraceEvent 필드는 `run_id,step,event,call_id:null|string,created_at,payload`�
 - 시간 충돌: blocking=true, 항목의 conflict_ids에 연결. 노랑을 초록으로 간주할 수 없음.
 - 계획 변경: plan_revision 증가, 새 대상의 확인을 다시 받음. 기존 confirmed_plan은 보존.
 - 개발 fixture가 같은 DTO를 반환해도 mode=fixture이므로 실제 API 검증 통과는 아님.
+
+## 스키마 추출의 선택 필드와 실패 처리
+
+기존 필수 제안/상태 enum은 유지한다. AgentInput에 선택 필드 `conversation_context: dict[]`를 추가한다. 최대20개 과거 메시지이며 미처리 `recent_messages`와 구분한다. 과거 맥락은 새 제안의 source_message_ids로 사용할 수 없다.
+
+AgentResult의 선택 필드 `extraction_report`는 `{status:"ok"|"filtered"|"failed",issue_codes:string[],rejected_message_ids:string[],attempts:1|2}`다. 필드가 없는 기존 fixture/AgentPort 계약은 유지한다.
+
+- `ok`: 구조·근거 검증 완료. 정상 빈 인사는 새 사실 없이 done일 수 있다. 명시적 조건의 규칙 보조는 정보성 issue code `condition_rule_assisted`로 남긴다.
+- `filtered`: 근거 불일치·미지원 key·미해결 의도에 해당하는 제안은 제외하고 검증된 제안만 반영한다. 처리 포인터는 전진하고 상태는 needs_input으로 남는다. 원시 모델 응답은 저장하지 않는다.
+- `failed`: 스키마/완결성/추론 실패. Backend는 부작용 제안이 섞여도 반영하지 않고 해당 실행으로 처리 포인터를 전진시키지 않는다. 등록된 메시지만 별도 실패 기록으로 보존한다. 새 메시지는 실패분을 제외해 처리하고, 수동 재계획은 실패분을 최대20개 재시도한다. 과거 실패의 복구는 포인터를 뒤로 돌리지 않는다.
+
+내부 MessageFacts/ExtractionBatch 및 원문 evidence.quote는 외부 필수 proposal 계약에 포함되지 않는다. quote는 API 입력 상한과 같은10000자까지 검증한다. 개발 trace에는 schema_version/decoder_mode/제안 건수/오류 코드가 남고 방의 agent_status.label은 실패·거절을 구분한다. 일반 대기 작업이 비면 직전의 의미 있는 상태를 보존한다.
