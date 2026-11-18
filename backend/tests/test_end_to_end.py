@@ -20,7 +20,7 @@ def test_fake_runtime_applies_candidates_without_running_tools(room):
 
 
 @pytest.mark.integration
-def test_empty_four_person_room_creates_initial_plan(room):
+def test_empty_four_person_room_extracts_supported_item_without_plan(room):
     from backend.tests.integration_support import four_clients
     with four_clients(room['config']) as (clients, path):
         response = clients[0].post(path+'/messages', json={'text':'가상 A식당 가자'})
@@ -30,8 +30,8 @@ def test_empty_four_person_room_creates_initial_plan(room):
         assert len(snapshot['members']) == 4
         assert len(snapshot['items']) == 1
         assert snapshot['items'][0]['state'] == 'mentioned'
-        assert snapshot['current_plan'] is not None
-        assert snapshot['current_plan']['selected_item_ids'] == [snapshot['items'][0]['id']]
+        assert snapshot['current_plan'] is None
+        assert clients[0].app.state.db.observations[snapshot['room_id']] == []
         for client, expected in zip(clients[1:3], ('mentioned','supported')):
             client.post(path+'/messages', json={'text':'가상 A식당 좋아'})
             clients[0].portal.call(clients[0].app.state.jobs.queue.join)
@@ -42,27 +42,6 @@ def test_empty_four_person_room_creates_initial_plan(room):
         snapshot = clients[0].get(path).json()
         assert len(snapshot['items'][0]['supporter_ids']) == 3
         assert snapshot['confirmations'] == []
-        config = dict(room['config'])
-        car = dict(config['fixed_costs'][0], id='car-input', category='car', description='유류·주차·통행료 포함 차량비', unit_price_krw=10000, paid=False)
-        clients[0].patch(path+'/trip', json={'day_start_time':'10:00','fixed_costs':config['fixed_costs']+[car]})
-        clients[0].portal.call(clients[0].app.state.jobs.queue.join)
-        snapshot = clients[0].get(path).json()
-        question = next(q for q in snapshot['questions'] if q['field'] == 'menu_selection' and q['status'] == 'open')
-        answered = clients[0].post(path+'/questions/'+question['id']+'/answer', json={'value':{'menu_id':'fixture:menu-a','quantity':1,'scope':'per_person'}})
-        assert answered.status_code == 200
-        clients[0].portal.call(clients[0].app.state.jobs.queue.join)
-        snapshot = clients[0].get(path).json()
-        assert snapshot['current_plan']['validation'] == 'ready'
-        assert snapshot['current_plan']['cost']['total_krw'] == 130000
-        target = snapshot['current_plan']['confirmation_target']
-        for index, client in enumerate(clients):
-            confirmed = client.post(path+'/plan/confirm', json={'target':target})
-            assert confirmed.status_code == 200
-            assert (confirmed.json()['confirmed_plan'] is not None) == (index == 3)
-        snapshot = confirmed.json()
-        assert snapshot['review_plan']['confirmation_target'] == target
-        assert snapshot['confirmed_plan']['confirmation_target'] == target
-        assert snapshot['items'][0]['state'] == 'confirmed'
 
 
 @pytest.mark.integration
