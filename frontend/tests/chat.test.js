@@ -27,3 +27,10 @@ test('chat scrolling preserves reading position and prepended history', () => {
   assert.equal(chat.chatScroll?.({top:40,height:500,viewport:100},600,true),140);
   assert.equal(chat.chatScroll?.({top:400,height:500,viewport:100},600,false),600);
 });
+test('finishing a send preserves a newer draft', async () => {
+  const form={elements:{text:{value:'first'}},reset(){this.elements.text.value='';}};
+  const load=Promise.withResolvers();
+  const pending=chat.sendChatMessage?.(form,body => load.promise.then(() => body.text));
+  form.elements.text.value='next'; load.resolve();
+  assert.deepEqual([await pending,form.elements.text.value],['first','next']);
+});

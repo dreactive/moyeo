@@ -50,3 +50,9 @@ export function renderChat(snapshot,userId) {
   reconcileChat(list,snapshot,userId);
   restoreChatPosition(list,before,snapshot.messages);
 }
+export async function sendChatMessage(form,send) {
+  const text = form.elements.text.value;
+  const message = await send({text});
+  if (form.elements.text.value === text) form.reset();
+  return message;
+}
