@@ -1,3 +1,4 @@
+import {restoreTripForm,readTripForm,bindFixedCostControls} from './trip-form.js';
 import {renderRoutePanel} from './route-view.js';
 import {getSelectedDay,setSelectedDay} from './state.js';
 import {renderOverview,renderAgentBanner,renderChanged,routeKey} from './workspace-view.js';
@@ -15,8 +16,7 @@ import {renderItems,renderConstraints,renderQuestions,renderConflicts,readDecisi
 import {renderPlan,displayPlan} from './plan.js';
 import {renderCost} from './cost.js';
 import {scenarios,replayScenario,setFixtureUser,emitFixture} from './fixture-api.js';
-import {readTripConfig,tripPatch} from './trip-input.js';
-import {appendCost,readFixedCosts} from './fixed-costs.js';
+import {tripPatch} from './trip-input.js';
 import {initMaps,renderRouteMap,renderPlaceMap} from './map.js';
 import {selectPlace,renderPlace} from './place.js';
 import {getSelectedPlace} from './state.js';
@@ -133,12 +133,10 @@ function bindDecisionActions() {
 }
 
 function bindTripInput() {
-  document.getElementById('add-cost').onclick = () => appendCost();
-  document.addEventListener('click',event => event.target.closest('[data-remove-cost]')?.closest('[data-cost-id]').remove());
-  bindForm('trip',async (data,action) => {
-    const body = {title:data.title,...readTripConfig(data,readFixedCosts())};
-    if (action === 'create') enterRoom(await requestJson('/api/rooms',{method:'POST',body}));
-    else {
+  bindFixedCostControls();
+  bindForm('trip',async (data,action,form) => {
+    const body = readTripForm(form);
+    {
       delete body.title;
       const baseline = tripBaseline;
       const patch = tripPatch(body,baseline,getSnapshot().config);
@@ -150,13 +148,9 @@ function bindTripInput() {
 }
 
 function restoreTrip(snapshot) {
-  const form = document.getElementById('trip');
-  form.elements.title.value = snapshot.title;
-  Object.entries(snapshot.config).forEach(([key,value]) => { if (form.elements[key]) form.elements[key].value = value; });
-  ['origin','destination','lodging'].forEach(key => ['label','latitude','longitude'].forEach(field => form.elements[key + '_' + field].value = snapshot.config[key]?.[field] ?? ''));
-  html('fixed-costs',''); snapshot.config.fixed_costs.forEach(appendCost);
-  tripBaseline = readTripConfig(Object.fromEntries(new FormData(form)),readFixedCosts());
+  tripBaseline = restoreTripForm(snapshot);
 }
+
 function bindHistory() {
   document.getElementById('history').onclick = () => run(async () => {
     const result = await requestJson('/api/rooms/' + encodeURIComponent(roomId) + '/messages?after_seq=0');
