@@ -9,6 +9,11 @@ def test_secure_cookie_setting(monkeypatch):
         response = client.post('/api/auth/register', json=dict(name='A', email='a@b.test', password='password123'))
         assert '; Secure' in response.headers['set-cookie']
         assert client.get('/api/auth/me').status_code == 200
+        assert '; Secure' in client.post('/api/auth/logout').headers['set-cookie']
+        assert client.get('/api/auth/me').status_code == 401
+        login = client.post('/api/auth/login', json=dict(email='a@b.test', password='password123'))
+        assert '; Secure' in login.headers['set-cookie']
+        assert client.get('/api/auth/me').status_code == 200
 
 
 def test_api_errors_are_not_cached():
