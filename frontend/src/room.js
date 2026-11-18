@@ -2,7 +2,7 @@ import {runRoomTask,roomLoadRedirect} from './room-errors.js';
 import {restoreTripForm,readTripForm,bindFixedCostControls} from './trip-form.js';
 import {renderRoutePanel} from './route-view.js';
 import {getSelectedDay,setSelectedDay} from './state.js';
-import {renderOverview,renderAgentBanner,renderChanged,routeKey} from './workspace-view.js';
+import {renderOverview,renderAgentBanner,renderChanged,routeKey,placeVisitDay} from './workspace-view.js';
 import {renderChat,isSendKey} from './chat.js';
 import {getUser} from './state.js';
 import {requireSession,readRoomId,saveRoomId,clearRoomId,navigate,preparePage,signOut,pageUrl} from './session.js';
@@ -267,7 +267,7 @@ export async function renderMaps(snapshot, retry = false) {
 
 function focusRoutePlace(ref) {
   const snapshot = getSnapshot();
-  const day = displayPlan(snapshot)?.days.find(day => day.visits.some(visit => visit.place_ref === ref));
+  const day = placeVisitDay(displayPlan(snapshot),ref,getSelectedDay());
   if (!day) return;
   setSelectedDay(day.date);
   renderRoom(snapshot);

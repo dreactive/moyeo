@@ -16,3 +16,7 @@ test('route dependency ignores chat but follows day and plan changes', () => {
   assert.equal(view.routeKey?.(room,'a'),view.routeKey?.({...room,messages:[{id:'m'}]},'a'));
   assert.notEqual(view.routeKey?.(room,'a'),view.routeKey?.(room,'b'));
 });
+test('a repeated place keeps the currently selected visit day', () => {
+  const plan={days:[{date:'a',visits:[{place_ref:'p'}]},{date:'b',visits:[{place_ref:'p'}]}]};
+  assert.equal(view.placeVisitDay?.(plan,'p','b')?.date,'b');
+});
