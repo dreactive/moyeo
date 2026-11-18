@@ -40,3 +40,11 @@ def test_generation_measurement_restores_model_method():
     with collect_generations(model) as metrics:
         model.generate(input_ids=SimpleNamespace(shape=(1,2)))
     assert metrics[0]['tokens'] == 2 and model.generate is original
+
+async def test_replay_modes_keep_fake_evidence_labeled():
+    from ai.eval.extraction_replay import replay_modes
+    from ai.runtime import create_runtime
+    runtime = create_runtime(dict(model_backend='fake',provider_mode='fixture'))
+    reports = await replay_modes(runtime,[dict(id='hello',group='negative',text='안녕',places=[],conditions={})],['fake'])
+    await runtime.aclose()
+    assert reports['fake']['summary']['passed'] == 1

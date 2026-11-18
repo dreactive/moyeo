@@ -79,3 +79,18 @@ def collect_generations(model):
         yield metrics
     finally:
         model.generate = original
+
+
+async def replay_modes(runtime, cases, modes):
+    from contextlib import nullcontext
+    from unittest.mock import patch
+    reports = {}
+    for mode in modes:
+        rows = []
+        with patch('ai.models.qwen_generation.extraction_options', return_value={}) if mode == 'unconstrained' else nullcontext():
+            for case in cases:
+                row = await replay_case(runtime, case)
+                rows.append(row)
+                print(json.dumps(dict(mode=mode, id=row['id'], passed=row['passed'], issues=row['issues'], seconds=row['seconds']), ensure_ascii=False), flush=True)
+        reports[mode] = dict(summary=summarize(rows), rows=rows)
+    return reports
