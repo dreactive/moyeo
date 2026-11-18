@@ -23,3 +23,10 @@ def record_extraction_failure(db, result):
 def latest_processed(messages, current, proposed):
     positions = {message['id']: index for index, message in enumerate(messages)}
     return max((current, proposed), key=lambda message_id: positions.get(message_id, -1))
+
+
+def recovered_failures(failures, message_ids, processed):
+    for message_id in message_ids[:message_ids.index(processed) + 1]:
+        if message_id in failures:
+            failures[message_id]['status'] = 'recovered'
+    return failures

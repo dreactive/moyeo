@@ -44,3 +44,17 @@ def test_manual_recovery_cannot_move_cursor_backwards():
     messages = [dict(id=str(index)) for index in range(25)]
     assert latest_processed(messages,'24','3') == '24'
     assert latest_processed(messages,'3','24') == '24'
+
+def test_successful_manual_retry_recovers_receipt_without_cursor_regression(room,agent_result):
+    from backend.db import Database
+    from backend.services.agent_apply import apply_agent_result
+    db = Database(':memory:')
+    first,last = room['messages'][0]['id'],room['messages'][-1]['id']
+    db.put('room:' + room['room_id'],room)
+    db.put('processed-message:' + room['room_id'],last)
+    db.put('failed-extraction:' + room['room_id'],{first:dict(status='retry_required')})
+    db.put('run:' + agent_result['run_id'],dict(room_id=room['room_id'],base_versions=room['versions'],message_ids=[first]))
+    agent_result.update(plan_draft=None,observations=[],last_processed_message_id=first,extraction_report=dict(status='ok',issue_codes=[],rejected_message_ids=[],attempts=1))
+    assert apply_agent_result(db,agent_result)
+    assert db.get('processed-message:' + room['room_id']) == last
+    assert db.get('failed-extraction:' + room['room_id'])[first]['status'] == 'recovered'
