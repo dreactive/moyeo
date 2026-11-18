@@ -41,6 +41,8 @@ async def run_agent(task, model, tools, emit_trace):
         return result
     try:
         result.update(await extract_proposals(task, model, emit_trace))
+        if result["extraction_report"]["status"] == "failed":
+            return result
         result["questions"].extend(q for q in task["questions"] if q["status"] == "open")
         task["_new_item_refs"] = [i["client_ref"] for i in result["item_proposals"] if not i.get("existing_item_id")]
         task["items"].extend(dict(i, id=i["client_ref"], item_version=1) for i in result["item_proposals"]
