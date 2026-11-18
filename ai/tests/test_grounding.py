@@ -70,3 +70,11 @@ def test_batch_rejects_missing_assessments_before_projecting():
     batch = ExtractionBatch(message_assessments=[], item_proposals=[], constraint_proposals=[], support_observations=[])
     with pytest.raises(ValueError, match='assessment'):
         ground_extraction(batch, task())
+
+def test_compact_facts_receive_code_owned_evidence():
+    from ai.extraction_projection import facts_to_batch
+    value = task()
+    value['recent_messages'] = [dict(id='new', author_id='u1', text='오동도 가자')]
+    batch = facts_to_batch(dict(places=['오동도'], conditions=[], intents=['place']), value['recent_messages'][0], value)
+    assert batch['item_proposals'][0]['evidence'] == dict(message_id='new', quote='오동도 가자')
+    assert batch['message_assessments'][0]['message_id'] == 'new'
