@@ -81,6 +81,10 @@ async def run_utterance(request, body):
         task, trace = utterance_task(body), []
         async def capture(event):
             trace.append(sanitize(event))
+            settings = request.app.state.dev_runtime_config
+            if event['event'] == 'tool_call' and settings.get('provider_mode') == 'live':
+                from ai.settings import load_settings
+                require_provider_credentials('live', load_settings(settings), event['payload']['tool_name'])
         bridge = await start_agent(request)
         result = await bridge.run(task, capture)
         raise_termination_error(trace)

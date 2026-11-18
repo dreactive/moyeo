@@ -132,6 +132,18 @@ def test_agent_caught_model_failure_is_unavailable(api, monkeypatch):
     assert response.status_code == 503 and 'secret' not in response.text
 
 
+def test_utterance_checks_credentials_before_live_tool(api, monkeypatch):
+    from ai import settings
+    from backend.dev_examples import utterance_examples
+    monkeypatch.setattr(settings, 'load_settings', lambda config: {})
+    api.app.state.dev_token = 'test-dev'
+    api.app.state.dev_runtime_config['provider_mode'] = 'live'
+    body = utterance_examples()['manual_replan']['value']
+    body['context'].update(current_plan=None, observations=[])
+    response = api.post('/api/dev/agent/utterance', json=body, headers={'X-Dev-Token': 'test-dev'})
+    assert response.status_code == 503
+
+
 def test_missing_live_credentials_are_server_error(api, monkeypatch):
     from ai.tools import registry
     from backend.dev_examples import tool_examples
