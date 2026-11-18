@@ -68,7 +68,8 @@ async def test_generation_never_calls_model_scorer_or_tools():
     from ai.models.fake_actions import tool
     class Model:
         def generate_json(self, request):
-            return {} if request["phase"] == "extract" else {"candidates": [tool("search_places",
+            from ai.models.fake_extraction import fixture_batch
+            return fixture_batch({}, request["context"]) if request["phase"] == "extract" else {"candidates": [tool("search_places",
                 {"query": "A", "region": "여수", "category": None})]}
         def score_candidates(self, context, candidates):
             raise AssertionError("Scoring must not run")
@@ -82,7 +83,7 @@ async def test_generation_never_calls_model_scorer_or_tools():
     assert not result["observations"]
 
 
-async def test_rule_assistance_is_labeled_and_does_not_skip_base_generation():
+async def test_invalid_model_extraction_is_labeled_and_never_rule_success():
     from ai.runner import run_agent
     class Model:
         mode = "local_qwen"
@@ -95,8 +96,9 @@ async def test_rule_assistance_is_labeled_and_does_not_skip_base_generation():
     async def sink(event):
         events.append(event)
     result = await run_agent(value, model, None, sink)
-    assert model.calls == 1 and result["constraint_proposals"][0]["value"] == 200000
-    assert events[0]["payload"]["extraction_mode"] == "rule-assisted"
+    assert model.calls == 2 and result["constraint_proposals"] == []
+    assert result["extraction_report"]["status"] == "failed"
+    assert events[0]["payload"]["extraction_mode"] == "schema-grounded"
     assert events[0]["payload"]["model_mode"] == "local_qwen"
 
 

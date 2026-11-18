@@ -8,7 +8,7 @@ async def validated_batch(task, model):
     error = None
     for attempts in (1, 2):
         try:
-            raw = await asyncio.to_thread(model.generate_json, dict(phase='extract', context=task))
+            raw = await asyncio.to_thread(model.generate_json, dict(phase='extract', context=task, validation_error=error))
             if getattr(model, 'mode', None) == 'fake':
                 from ai.models.fake_extraction import fixture_batch
                 raw = fixture_batch(raw, task)

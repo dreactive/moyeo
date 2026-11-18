@@ -9,6 +9,8 @@ def generate_object(model, tokenizer, request):
     if phase == "extract":
         from ai.extraction_schema import MessageFacts
         system += "\nJSON Schema: " + json.dumps(MessageFacts.model_json_schema(), ensure_ascii=False)
+    if request.get("validation_error"):
+        system += "\n이전 구조 검증이 실패했습니다. 필수 필드와 JSON 완결성을 지키세요: " + request["validation_error"]
     context = extraction_context(request["context"]) if phase == "extract" else request["context"]
     prompt = tokenizer.apply_chat_template([dict(role="system", content=system),
              dict(role="user", content=context["recent_messages"][0]["text"] if phase == "extract" and context["recent_messages"] else json.dumps(context, ensure_ascii=False))],
