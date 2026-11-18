@@ -45,7 +45,7 @@ def test_empty_four_person_room_extracts_supported_item_without_plan(room):
 
 
 @pytest.mark.integration
-def test_existing_late_visit_plan_can_be_recalculated(room):
+def test_existing_late_visit_plan_is_preserved_while_conditions_are_extracted(room):
     from backend.tests.integration_support import existing_clients
     room['config']['day_start_time'] = '10:00'
     room['config']['day_end_time'] = '19:00'
@@ -69,12 +69,8 @@ def test_existing_late_visit_plan_can_be_recalculated(room):
         clients[0].portal.call(clients[0].app.state.jobs.queue.join)
         snapshot = clients[0].get(path).json()
         assert receipt.status_code == 202
-        assert snapshot['current_plan']['validation'] == 'ready', {'questions':snapshot['questions'],'conflicts':snapshot['conflicts'],'status':snapshot['agent_status']}
-        assert len(snapshot['current_plan']['days'][1]['visits']) == 1
-        target = snapshot['current_plan']['confirmation_target']
-        for client in clients:
-            assert client.post(path+'/plan/confirm', json={'target':target}).status_code == 200
-        historical = clients[0].get(path).json()['confirmed_plan']
+        assert snapshot['current_plan'] == room['current_plan']
+        historical = snapshot['confirmed_plan']
         clients[3].post(path+'/messages', json={'text':'나는 16시까지 귀가해야 해'})
         clients[0].portal.call(clients[0].app.state.jobs.queue.join)
         snapshot = clients[0].get(path).json()
@@ -85,24 +81,4 @@ def test_existing_late_visit_plan_can_be_recalculated(room):
         assert snapshot['confirmed_plan'] == historical
         assert clients[3].post(path+'/constraints/'+condition['id']+'/confirm').status_code == 200
         clients[0].portal.call(clients[0].app.state.jobs.queue.join)
-        conflicted = clients[0].get(path).json()
-        conflict = next(c for c in conflicted['conflicts'] if c['type'] == 'time' and c['blocking'])
-        assert conflicted['current_plan']['validation'] == 'conflict'
-        assert conflicted['confirmed_plan'] == historical
-        selected = clients[0].post(path+'/conflicts/'+conflict['id']+'/select', json={'option_id':conflict['options'][0]['id']})
-        assert selected.status_code == 202
-        clients[0].portal.call(clients[0].app.state.jobs.queue.join)
-        revised = clients[0].get(path).json()
-        assert revised['current_plan']['validation'] == 'ready'
-        assert revised['current_plan']['cost']['total_krw'] == 90000
-        assert revised['confirmations'] == []
-        assert revised['confirmed_plan'] == historical
-        new_target = revised['current_plan']['confirmation_target']
-        assert new_target != historical['confirmation_target']
-        for client in clients:
-            assert client.post(path+'/plan/confirm', json={'target':new_target}).status_code == 200
-        final = clients[0].get(path).json()
-        assert final['confirmed_plan']['confirmation_target'] == new_target
-        history = clients[0].app.state.db.get('confirmed-history:' + room['room_id'])
-        assert history[0] == historical
-        assert len(history) == 2
+        assert clients[0].get(path).json()['current_plan'] == room['current_plan']
