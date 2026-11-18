@@ -45,3 +45,16 @@ test('fixture pages label test data and decorate app links', () => {
   assert.match(banner.textContent, /fixture/);
   assert.equal(link.href,'/signup.html?mode=fixture');
 });
+
+test('a pending entry form ignores duplicate submission', async () => {
+  const button = {};
+  const form = {querySelector: () => button};
+  const event = {preventDefault() {}};
+  globalThis.document = {getElementById: () => ({})};
+  let submitted = 0;
+  session.bindEntryForm(form, () => submitted++);
+  const first = form.onsubmit(event);
+  await form.onsubmit(event);
+  await first;
+  assert.equal(submitted,1);
+});

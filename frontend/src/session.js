@@ -1,4 +1,5 @@
 import {getDataMode,requestJson} from './api.js';
+import {showError} from './ui.js';
 
 export function pageUrl(path) {
   const url = new URL(path, 'http://workspace.local');
@@ -49,4 +50,20 @@ export function preparePage() {
   for (const link of document.querySelectorAll('[data-app-link]')) {
     link.href = pageUrl(link.dataset.appLink || link.getAttribute('href'));
   }
+}
+
+export function bindEntryForm(form, task, onError = showError) {
+  const button = form.querySelector('button[type=submit]');
+  form.onsubmit = async event => {
+    event.preventDefault();
+    if (button.disabled) return;
+    button.disabled = true;
+    showError(null);
+    try {
+      await task(form);
+    } catch (error) {
+      button.disabled = false;
+      onError(error);
+    }
+  };
 }
