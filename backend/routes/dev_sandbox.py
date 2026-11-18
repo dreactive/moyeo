@@ -1,6 +1,6 @@
 from backend.dev_auth import require_developer
 from backend.dev_examples import tool_examples
-from backend.dev_schemas import SearchTool, DetailsTool, RouteTool, ItineraryTool
+from backend.dev_schemas import SearchTool, DetailsTool, RouteTool, ItineraryTool, CostTool
 from backend.services.dev_sandbox import execute_tool
 from fastapi import APIRouter, Body, Depends, Request
 
@@ -26,3 +26,8 @@ async def get_car_route(request: Request, body: RouteTool = Body(openapi_example
 @router.post('/tools/build_itinerary', summary='Build schedule and check time conflicts (developer only)')
 async def build_itinerary(request: Request, body: ItineraryTool = Body(openapi_examples=tool_examples('build_itinerary'))):
     return await execute_tool(body, 'build_itinerary', request.app.state.dev_runtime_config)
+
+
+@router.post('/tools/calculate_costs', summary='Calculate KRW totals and personal shares (developer only)')
+async def calculate_costs(request: Request, body: CostTool = Body(openapi_examples=tool_examples('calculate_costs'))):
+    return await execute_tool(body, 'calculate_costs', request.app.state.dev_runtime_config)

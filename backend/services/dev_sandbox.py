@@ -7,7 +7,8 @@ async def execute_tool(body, name, settings):
     tools = RegisteredTools(body.context.model_dump(), settings.get('provider_mode', 'fixture'), settings)
     if body.arguments is None:
         from ai.planning import itinerary_arguments
-        arguments = itinerary_arguments(tools.context)
+        from ai.cost_inputs import build_cost_inputs
+        arguments = build_cost_inputs(tools.context)[0] if name == 'calculate_costs' else itinerary_arguments(tools.context)
     else:
         arguments = body.arguments.model_dump()
     result = await tools.execute(name, arguments)

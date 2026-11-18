@@ -65,3 +65,14 @@ def test_itinerary_endpoint_derives_canonical_arguments(api):
                         headers={'X-Dev-Token': 'test-dev'})
     assert response.status_code == 200, response.text
     assert response.json()['result']['days'][0]['visits'][0]['start_at'].endswith('11:30:00+09:00')
+
+
+def test_cost_endpoint_preserves_unknown_amounts(api):
+    from backend.dev_examples import tool_examples
+    api.app.state.dev_token = 'test-dev'
+    response = api.post('/api/dev/tools/calculate_costs', json=tool_examples('calculate_costs')['fixture']['value'],
+                        headers={'X-Dev-Token': 'test-dev'})
+    assert response.status_code == 200, response.text
+    result = response.json()['result']
+    assert result['known_total_krw'] == 120000
+    assert result['total_krw'] is None and result['unknown_line_count'] == 2
