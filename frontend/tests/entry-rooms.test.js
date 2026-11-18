@@ -19,3 +19,12 @@ test('selecting a room action reveals only its form', () => {
   rooms.chooseRoomAction([create,join], join);
   assert.deepEqual([panels.create.hidden,panels.join.hidden], [true,false]);
 });
+
+test('a failed room session lookup leaves choices hidden and offers retry', async () => {
+  const elements = {error:{},'room-actions':{hidden:true}};
+  const retry = {hidden:true};
+  globalThis.document = {getElementById: id => elements[id]};
+  globalThis.fetch = async () => new Response('', {status:503});
+  await rooms.checkRoomsPage(retry);
+  assert.deepEqual([retry.hidden,elements['room-actions'].hidden], [false,true]);
+});
