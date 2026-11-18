@@ -52,6 +52,7 @@ def project_many(proposals, projector, task):
 
 
 def ground_extraction(batch, task):
+    validate_assessments(batch, task)
     raw = batch.model_dump()
     items, item_errors = project_many(raw['item_proposals'], project_item, task)
     conditions, condition_errors = project_many(raw['constraint_proposals'], project_condition, task)

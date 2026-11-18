@@ -62,3 +62,11 @@ def test_support_keeps_explicit_author_and_item_version():
     assert project_support(proposal, value)['source_message_id'] == 'm3'
     proposal['item_version'] = 99
     assert project_support(proposal, value) is None
+
+def test_batch_rejects_missing_assessments_before_projecting():
+    import pytest
+    from ai.grounding import ground_extraction
+    from ai.extraction_schema import ExtractionBatch
+    batch = ExtractionBatch(message_assessments=[], item_proposals=[], constraint_proposals=[], support_observations=[])
+    with pytest.raises(ValueError, match='assessment'):
+        ground_extraction(batch, task())
