@@ -18,3 +18,15 @@ async def validated_batch(task, model):
         except ValueError as exc:
             error = type(exc).__name__
     return None, attempts, error
+
+
+def extraction_output(batch, attempts, error, task):
+    from ai.grounding import ground_extraction
+    if batch is None:
+        return dict(constraint_proposals=[], item_proposals=[], support_observations=[], questions=[],
+                    completion='needs_input', last_processed_message_id=None,
+                    extraction_report=dict(status='failed', issue_codes=[error], rejected_message_ids=[m['id'] for m in task['recent_messages']], attempts=attempts))
+    grounded = ground_extraction(batch, task)
+    report = dict(status='filtered' if grounded.issue_codes else 'ok', issue_codes=grounded.issue_codes,
+                  rejected_message_ids=grounded.rejected_message_ids, attempts=attempts)
+    return dict(grounded.proposals, extraction_report=report)

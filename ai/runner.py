@@ -15,17 +15,14 @@ from ai.cost_inputs import build_cost_inputs
 
 
 async def extract_proposals(task, model, emit_trace):
-    error = None
-    try:
-        raw = await asyncio.to_thread(model.generate_json, {"phase": "extract", "context": task})
-    except ValueError as exc:
-        raw, error = {}, type(exc).__name__
-    output = assist_extraction(raw, task)
+    from ai.extraction_run import validated_batch, extraction_output
+    batch, attempts, error = await validated_batch(task, model)
+    output = extraction_output(batch, attempts, error, task)
     await emit(emit_trace, task, 0, "decision", None,
                dict(goal=task["goal"], candidates=[], selected_index=None, scores=[],
                     model_mode=getattr(model, "mode", "unknown"), base_versions=task["base_versions"],
-                    extraction_mode="rule-assisted", model_format_error=error,
-                    model_proposal_counts={k: len(v) for k, v in raw.items() if isinstance(v, list)}))
+                    extraction_mode="schema-grounded", model_format_error=error,
+                    schema_version="1", extraction_report=output["extraction_report"]))
     return output
 
 
