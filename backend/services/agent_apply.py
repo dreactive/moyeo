@@ -1,4 +1,5 @@
 from backend.db import serialized
+from backend.services.extraction import record_extraction_failure
 from backend.domain import apply_item_proposals, resolve_refs, add_constraint_proposal
 from backend.services.consensus import apply_support
 from backend.services.events import publish_event
@@ -80,9 +81,10 @@ def prepare_result(room, result, old_observations):
 
 @serialized
 def apply_agent_result(db, result):
-    if result.get("extraction_report", {}).get("status") == "failed":
-        return False
     if not valid_result_base(db, result):
+        return False
+    if result.get("extraction_report", {}).get("status") == "failed":
+        record_extraction_failure(db, result)
         return False
     room_id = result['room_id']
     room, observations = prepare_result(db.get('room:' + room_id), result, get_observations(db, room_id))

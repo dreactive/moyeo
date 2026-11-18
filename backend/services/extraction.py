@@ -7,3 +7,14 @@ def select_extraction_messages(messages, processed_id, failures, retry_failed=Fa
     return [message for index, message in enumerate(messages)
             if (failures.get(message['id'], {}).get('status') == 'retry_required' and retry_failed)
             or index >= start and failures.get(message['id'], {}).get('status') != 'retry_required'][:20]
+
+
+def record_extraction_failure(db, result):
+    room_id = result['room_id']
+    run = db.get('run:' + result['run_id'])
+    report = result['extraction_report']
+    failures = db.get('failed-extraction:' + room_id) or {}
+    for message_id in run.get('message_ids', []):
+        failures[message_id] = dict(issue_codes=report['issue_codes'], attempts=report['attempts'], run_id=result['run_id'], status='retry_required')
+    run['extraction_report'] = report
+    db.put_many({'failed-extraction:' + room_id: failures, 'run:' + result['run_id']: run})
