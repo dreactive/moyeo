@@ -17,6 +17,7 @@ def test_stream_replays_only_after_cursor():
         db = Database(':memory:')
         db.put('events:r', [{'event':'room.updated','data':{'seq':1}},{'event':'agent.status','data':{'seq':2}}])
         stream = room_event_stream(db, 'r', 1)
+        assert await anext(stream) == ': keepalive\n\n'
         assert (await anext(stream)).startswith('id: 2\n')
         await stream.aclose()
     asyncio.run(scenario())

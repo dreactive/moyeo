@@ -20,6 +20,7 @@ def event_frame(event):
 
 
 async def room_event_stream(db, room_id, after_seq):
+    yield ': keepalive\n\n'
     while True:
         for event in db.get('events:' + room_id) or []:
             if event['data']['seq'] > after_seq:
