@@ -95,6 +95,10 @@ def raise_termination_error(trace):
         error_type = getattr(httpx, reason, None)
         if isinstance(error_type, type) and issubclass(error_type, HTTPError):
             raise HTTPException(502, 'Agent provider request failed')
+        if reason in ('RuntimeError', 'OSError'):
+            raise HTTPException(503, 'Agent runtime failed')
+        if reason in ('ValueError', 'KeyError', 'TypeError'):
+            raise HTTPException(422, 'Agent could not process sandbox arguments or context')
 
 
 def load_dev_runtime(config):

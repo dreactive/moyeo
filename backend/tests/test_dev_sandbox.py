@@ -120,6 +120,18 @@ def test_agent_caught_provider_failure_is_not_http_success(api, monkeypatch):
     assert response.status_code == 502 and 'secret' not in response.text
 
 
+def test_agent_caught_model_failure_is_unavailable(api, monkeypatch):
+    from ai.models.fake import FakeModelBackend
+    from backend.dev_examples import utterance_examples
+    def fail(*args):
+        raise RuntimeError('secret-model-detail')
+    monkeypatch.setattr(FakeModelBackend, 'generate_json', fail)
+    api.app.state.dev_token = 'test-dev'
+    response = api.post('/api/dev/agent/utterance', json=utterance_examples()['extract']['value'],
+                        headers={'X-Dev-Token': 'test-dev'})
+    assert response.status_code == 503 and 'secret' not in response.text
+
+
 def test_missing_live_credentials_are_server_error(api, monkeypatch):
     from ai.tools import registry
     from backend.dev_examples import tool_examples
