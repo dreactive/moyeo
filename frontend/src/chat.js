@@ -19,3 +19,7 @@ export function reconcileRows(rows,nodes,create) {
   const previous = new Map(nodes.map(node => [node.id,node]));
   return rows.map(row => previous.get('message-' + row.id) ?? create(row));
 }
+export function chatScroll(before,height,prepended) {
+  if (before.height - before.top - before.viewport < 64) return height;
+  return before.top + (prepended ? height - before.height : 0);
+}

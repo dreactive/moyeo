@@ -22,3 +22,8 @@ test('new chat rows reuse existing message nodes', () => {
   assert.equal(rows?.[0],old);
   assert.equal(rows?.[1].id,'message-b');
 });
+test('chat scrolling preserves reading position and prepended history', () => {
+  assert.equal(chat.chatScroll?.({top:40,height:500,viewport:100},600,false),40);
+  assert.equal(chat.chatScroll?.({top:40,height:500,viewport:100},600,true),140);
+  assert.equal(chat.chatScroll?.({top:400,height:500,viewport:100},600,false),600);
+});
