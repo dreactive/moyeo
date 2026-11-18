@@ -1,3 +1,5 @@
+import {renderChat,isSendKey} from './chat.js';
+import {getUser} from './state.js';
 import {requireSession,readRoomId,saveRoomId,clearRoomId,navigate,preparePage,signOut} from './session.js';
 import {html,escapeHtml as e} from './ui.js';
 import {requestJson,getDataMode} from './api.js';
@@ -18,7 +20,7 @@ import {getSelectedPlace} from './state.js';
 export function renderRoom(snapshot) {
   renderItems(snapshot); renderConstraints(snapshot); renderQuestions(snapshot); renderConflicts(snapshot);
   renderPlan(snapshot); renderCost(displayPlan(snapshot)?.cost); run(() => renderMaps(snapshot));
-  html('messages',snapshot.messages.map(message => `<li id="message-${e(message.id)}"><strong>${e(snapshot.members.find(member => member.user_id === message.author_id)?.name ?? message.author_id)}</strong><p>${e(message.text)}</p><small>${e(message.created_at)}</small></li>`).join(''));
+  renderChat(snapshot,getUser()?.id);
   html('room-heading', e(snapshot.title) + ' · 초대 ' + e(snapshot.invite_code));
   html('members', snapshot.members.map(member => e(member.name)).join(' · '));
   html('agent', e(snapshot.agent_status.label) + ' / ' + e(snapshot.agent_status.state) + ' / ' + e(snapshot.agent_status.run_id));

@@ -44,3 +44,9 @@ function restoreChatPosition(list,before,messages) {
   list.scrollTop = chatScroll(before,list.scrollHeight,prepended);
   document.getElementById('new-messages').hidden = prepended || messages.length <= before.count || before.height - before.top - before.viewport < 64;
 }
+export function renderChat(snapshot,userId) {
+  const list = document.getElementById('messages');
+  const before = captureChatPosition(list);
+  reconcileChat(list,snapshot,userId);
+  restoreChatPosition(list,before,snapshot.messages);
+}
