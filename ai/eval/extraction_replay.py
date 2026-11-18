@@ -109,3 +109,27 @@ async def evaluate(config, cases, modes):
             return await replay_modes(runtime, cases, modes, metrics)
     finally:
         await runtime.aclose()
+
+
+def main():
+    import argparse
+    import asyncio
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--model-backend', choices=['fake','local_qwen'], default='fake')
+    parser.add_argument('--base-model-path')
+    parser.add_argument('--adapter-path')
+    parser.add_argument('--compare-unconstrained', action='store_true')
+    parser.add_argument('--output', required=True)
+    args = parser.parse_args()
+    cases = [json.loads(line) for line in Path(__file__).with_name('extraction_cases.jsonl').read_text(encoding='utf-8').splitlines()]
+    config = dict(model_backend=args.model_backend,provider_mode='fixture',base_model_path=args.base_model_path,adapter_path=args.adapter_path)
+    modes = ['constrained','unconstrained'] if args.compare_unconstrained else ['constrained']
+    reports = asyncio.run(evaluate(config,cases,modes))
+    Path(args.output).write_text(json.dumps(dict(model_backend=args.model_backend,reports=reports),ensure_ascii=False,indent=2),encoding='utf-8')
+    print(json.dumps({mode: data['summary'] for mode,data in reports.items()},ensure_ascii=False),flush=True)
+    summary = reports['constrained']['summary']
+    return 0 if summary['critical_passed'] and not any(summary[key] for key in ('schema_failures','unexpected_conditions','provenance_errors','tool_calls')) else 1
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
