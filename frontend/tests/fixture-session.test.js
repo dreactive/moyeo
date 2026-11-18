@@ -13,8 +13,9 @@ test('fixture auth and room data require explicit login', async () => {
 test('fixture session storage includes only fixture state fields', async () => {
   let stored;
   globalThis.sessionStorage = {setItem: (_,value) => stored = value,getItem: () => stored};
-  const {readFixtureSession,saveFixtureSession} = await import('../src/fixture-session.js');
-  saveFixtureSession({authenticated:true,userId:'u1',password:'discard-me'});
+  const {readFixtureSession,readStoredFixtureSession,saveFixtureSession} = await import('../src/fixture-session.js');
+  const saved = saveFixtureSession({authenticated:true,userId:'u1',password:'discard-me'});
+  assert.equal(saved,readStoredFixtureSession());
   assert.deepEqual(readFixtureSession(), {authenticated:true,userId:'u1'});
 });
 

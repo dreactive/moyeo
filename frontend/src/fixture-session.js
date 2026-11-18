@@ -5,9 +5,13 @@ export function clearFixtureSession() {
   globalThis.sessionStorage?.removeItem('trip-fixture-room');
 }
 
-export function readFixtureSession() {
+export function readStoredFixtureSession() {
+  return globalThis.sessionStorage?.getItem(fixtureSessionKey) ?? null;
+}
+
+export function readFixtureSession(stored = readStoredFixtureSession()) {
   try {
-    return JSON.parse(globalThis.sessionStorage?.getItem(fixtureSessionKey) ?? 'null');
+    return JSON.parse(stored);
   } catch {
     clearFixtureSession();
     return null;
@@ -15,6 +19,7 @@ export function readFixtureSession() {
 }
 
 export function saveFixtureSession({authenticated,userId,snapshot,scenario}) {
-  const state = {authenticated,userId,snapshot,scenario};
-  globalThis.sessionStorage?.setItem(fixtureSessionKey, JSON.stringify(state));
+  const stored = JSON.stringify({authenticated,userId,snapshot,scenario});
+  globalThis.sessionStorage?.setItem(fixtureSessionKey, stored);
+  return stored;
 }
