@@ -19,12 +19,18 @@ function persistFixture() {
   lastFixtureRecord = saveFixtureSession({authenticated:fixtureAuthenticated,userId:fixtureUser.id,snapshot:fixtureRoom,scenario:fixtureScenario});
 }
 
+function isSavedTrip(config) {
+  return Array.isArray(config?.fixed_costs)
+    && Object.entries(initial.config).every(([key, value]) => typeof config[key] === typeof value)
+    && [config.start_date,config.end_date].every(date => Number.isFinite(Date.parse(date)));
+}
+
 function isSavedFixture(saved) {
   const snapshot = saved.snapshot;
   return saved.authenticated === true && snapshot?.room_id === initial.room_id
     && initial.members.some(member => member.user_id === saved.userId)
     && Object.keys(scenarios).includes(saved.scenario)
-    && Array.isArray(snapshot.config?.fixed_costs)
+    && isSavedTrip(snapshot.config)
     && Object.entries(initial).every(([key, value]) => Object.hasOwn(snapshot, key)
       && (!Array.isArray(value) || Array.isArray(snapshot[key])));
 }

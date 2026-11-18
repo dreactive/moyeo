@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import initial from '../fixtures/room-snapshot.json' with {type:'json'};
 import {requestFixture,resetFixtureSession} from '../src/fixture-api.js';
 
 test('fixture auth and room data require explicit login', async () => {
@@ -129,4 +130,23 @@ test('fixture logout in one document revokes requests from an older document', a
   await newer.requestFixture('/api/auth/logout', {method:'POST'});
   await assert.rejects(older.requestFixture('/api/rooms', {method:'POST',body:{title:'stale'}}), {status:401});
   assert.equal(values.size,0);
+});
+
+async function assertRejectedFixtureSnapshot(documentName, change) {
+  const snapshot = structuredClone(initial);
+  change(snapshot);
+  const record = {authenticated:true,userId:'u1',scenario:'initial',snapshot};
+  const keys = new Map([
+    ['trip-fixture-session-v1',JSON.stringify(record)],
+    ['trip-fixture-room','room-fixture'],
+    ['trip-room','live-room']
+  ]);
+  globalThis.sessionStorage = {getItem: key => keys.get(key),removeItem: key => keys.delete(key)};
+  const next = await import('../src/fixture-api.js?' + documentName);
+  await assert.rejects(next.requestFixture('/api/auth/me'), {status:401});
+  assert.deepEqual([...keys], [['trip-room','live-room']]);
+}
+
+test('a saved trip with missing configuration needs a fresh fixture login', async () => {
+  await assertRejectedFixtureSnapshot('invalid-config', snapshot => snapshot.config = {fixed_costs:[]});
 });
