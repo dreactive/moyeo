@@ -3,7 +3,7 @@ import {displayPlan,sameTarget,hasCurrentBasis} from './plan.js';
 import {getUser} from './state.js';
 const labels = {mentioned:'언급됨',supported:'다수 지지',confirmed:'확정',pending:'새 안 · 미확정'};
 export const sourceLinks = ids => ids.map((id,index) =>
-  `<button type="button" data-message="${e(id)}">대화에서 보기${ids.length > 1 ? ' ' + (index + 1) : ''}</button>`
+  `<button class="source-link" type="button" data-message="${e(id)}">대화에서 보기${ids.length > 1 ? ' ' + (index + 1) : ''}</button>`
 ).join('');
 export function renderItems(snapshot) {
   const plan = displayPlan(snapshot);
@@ -15,9 +15,11 @@ export function renderItems(snapshot) {
       && plan.selected_item_ids.includes(item.id) && official.selected_item_ids.includes(item.id)
       && plan.item_snapshots.some(matchesItem) && official.item_snapshots.some(matchesItem);
     const state = confirmed ? 'confirmed' : item.state === 'confirmed' ? 'pending' : item.state;
-    return `<div class="card ${e(state)}"><strong>${e(item.title)} · ${e(labels[state])}</strong>
-    ${item.conflict_ids.length ? '<strong class="badge">! 충돌</strong>' : ''}
-    <p>지지 ${item.supporter_ids.length}명 / 기준 ${item.support_threshold}명 · v${item.item_version}</p>${sourceLinks(item.source_message_ids)}</div>`;
+    return `<details class="card ${e(state)}"><summary>${e(item.title)} · ${e(labels[state])}
+      ${item.conflict_ids.length ? '<strong class="badge">! 충돌</strong>' : ''}</summary>
+      <p>지지 ${item.supporter_ids.length}명 / 기준 ${item.support_threshold}명 · v${item.item_version}</p>
+      ${sourceLinks(item.source_message_ids)}
+    </details>`;
   }).join('') || '<p>아직 공동 항목이 없습니다.</p>');
 }
 const constraintLabels = {budget:'1인 예산',budget_krw:'1인 예산',return_by:'귀가지 도착 제한',allergy:'알레르기',diet:'식이 조건'};
