@@ -58,3 +58,17 @@ test('a pending entry form ignores duplicate submission', async () => {
   await first;
   assert.equal(submitted,1);
 });
+
+test('a failing entry action unlocks its whole control group', async () => {
+  const submit = {};
+  const peer = {};
+  const form = {querySelector: () => submit};
+  globalThis.document = {getElementById: () => ({})};
+  const task = Promise.withResolvers();
+  session.bindEntryForm(form, () => task.promise, () => {}, [submit,peer]);
+  const request = form.onsubmit({preventDefault() {}});
+  assert.equal(peer.disabled,true);
+  task.reject(new Error('offline'));
+  await request;
+  assert.equal(peer.disabled,false);
+});

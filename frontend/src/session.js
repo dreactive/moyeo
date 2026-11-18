@@ -52,17 +52,19 @@ export function preparePage() {
   }
 }
 
-export function bindEntryForm(form, task, onError = showError) {
+export function bindEntryForm(form, task, onError = showError, controls) {
   const button = form.querySelector('button[type=submit]');
+  const group = controls ?? [button];
   form.onsubmit = async event => {
     event.preventDefault();
     if (button.disabled) return;
-    button.disabled = true;
+    const available = group.filter(control => !control.disabled);
+    available.forEach(control => control.disabled = true);
     showError(null);
     try {
       await task(form);
     } catch (error) {
-      button.disabled = false;
+      available.forEach(control => control.disabled = false);
       onError(error);
     }
   };
