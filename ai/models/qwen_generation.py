@@ -7,11 +7,11 @@ def generate_object(model, tokenizer, request):
     phase = "extract" if request["phase"] == "extract" else "generate"
     system = (Path(__file__).parents[1] / "prompts" / (phase + ".txt")).read_text(encoding="utf-8")
     if phase == "extract":
-        from ai.extraction_schema import ExtractionBatch
-        system += "\nJSON Schema: " + json.dumps(ExtractionBatch.model_json_schema(), ensure_ascii=False)
+        from ai.extraction_schema import MessageFacts
+        system += "\nJSON Schema: " + json.dumps(MessageFacts.model_json_schema(), ensure_ascii=False)
     context = extraction_context(request["context"]) if phase == "extract" else request["context"]
     prompt = tokenizer.apply_chat_template([dict(role="system", content=system),
-             dict(role="user", content=json.dumps(context, ensure_ascii=False))],
+             dict(role="user", content=context["recent_messages"][0]["text"] if phase == "extract" and context["recent_messages"] else json.dumps(context, ensure_ascii=False))],
              tokenize=False, add_generation_prompt=True)
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
     length = inputs["input_ids"].shape[1]
@@ -37,6 +37,6 @@ def parse_object(text):
 def extraction_options(request, tokenizer):
     if request['phase'] != 'extract':
         return {}
-    from ai.extraction_schema import ExtractionBatch
+    from ai.extraction_schema import MessageFacts
     from ai.models.structured_generation import build_extraction_prefix
-    return dict(prefix_allowed_tokens_fn=build_extraction_prefix(tokenizer, ExtractionBatch.model_json_schema()))
+    return dict(prefix_allowed_tokens_fn=build_extraction_prefix(tokenizer, MessageFacts.model_json_schema()))

@@ -11,6 +11,9 @@ class LocalQwenBackend:
 
     def generate_json(self, request):
         with self.model.disable_adapter():
+            if request.get("phase") == "extract":
+                from ai.models.qwen_extraction import generate_extraction
+                return generate_extraction(self.model, self.tokenizer, request)
             return generate_object(self.model, self.tokenizer, dict(request, context=model_context(request.get("context", {}))))
 
     def close(self):

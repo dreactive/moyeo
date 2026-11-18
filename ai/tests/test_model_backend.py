@@ -116,7 +116,7 @@ def test_extract_generation_uses_prefix_and_schema_prompt(monkeypatch):
     class Tokenizer:
         eos_token_id = 0
         def apply_chat_template(self, messages, **kwargs):
-            assert 'message_assessments' in messages[0]['content']
+            assert 'places' in messages[0]['content']
             return 'prompt'
         def __call__(self, text, **kwargs): return Inputs(input_ids=Tokens([[9]]))
         def decode(self, tokens, **kwargs): return '{}'
