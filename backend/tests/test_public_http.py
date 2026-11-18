@@ -42,3 +42,12 @@ def test_mutation_limit_rejects_before_handler_and_allows_reads(tmp_path):
         assert limited.headers['cache-control'] == 'no-store'
         assert len(calls) == 1
         assert client.get('/api/auth/me').status_code == 401
+
+
+def test_health_reports_database_availability_only():
+    with TestClient(create_app(database_path=':memory:')) as client:
+        assert client.get('/api/health').json() == {'status': 'ok'}
+        client.app.state.db.close()
+        response = client.get('/api/health')
+        assert response.status_code == 503
+        assert response.json() == {'status': 'unavailable'}
