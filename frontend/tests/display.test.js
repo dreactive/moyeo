@@ -26,7 +26,7 @@ test('unknown costs and market prices keep unknown values and distinct budget la
   renderPlace(scenarios.market.places[0]);
   assert.match(output.place,/시가 \(금액 미확인\)/);
   assert.match(output.place,/공급자 기준일 미확인/);
-  assert.match(output.place,/ambiguous/);
+  assert.match(output.place,/장소 일치 확인 필요/);
   renderPlace(scenarios['no-menu'].places[0]);
   assert.match(output.place,/메뉴 미등록 · 가격 미확인/);
 });
