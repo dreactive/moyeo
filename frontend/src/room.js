@@ -230,7 +230,7 @@ let routeRenderStamp = null;
 document.getElementById('route-load-status').onclick = event => {
   if (!event.target.closest('[data-route-retry]')) return;
   const snapshot = getSnapshot();
-  if (snapshot) return renderMaps(snapshot,true).catch(showError);
+  if (snapshot) return run(() => renderMaps(snapshot,true));
 };
 export async function renderMaps(snapshot, retry = false) {
   const date = getSelectedDay();
@@ -245,6 +245,8 @@ export async function renderMaps(snapshot, retry = false) {
   routeRenderStamp = stamp;
   const results = await Promise.allSettled(refs.map(ref => requestJson('/api/rooms/' + encodeURIComponent(snapshot.room_id) + '/places/' + encodeURIComponent(ref))));
   if (routeRenderStamp !== stamp || routeKey(getSnapshot() ?? {},getSelectedDay()) !== key) return;
+  const expired = results.find(result => result.status === 'rejected' && result.reason.status === 401);
+  if (expired) throw expired.reason;
   const places = results.flatMap(result => result.status === 'fulfilled' && result.value?.place ? [result.value.place] : []);
   if (places.length) renderRouteMap(plan,new Map(places.map(place => [place.id,place])),snapshot.config,date);
   if (places.length < refs.length) {

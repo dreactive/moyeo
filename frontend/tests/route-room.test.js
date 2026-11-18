@@ -74,3 +74,9 @@ test('the route retry refreshes coordinates without changing the selected date',
   assert.equal(status.innerHTML,'');
   assert.match(route.innerHTML,/가상 A식당 · 34[.]761, 127[.]661/);
 });
+test('expired place requests propagate instead of appearing as coordinate failures', async () => {
+  const room={...snapshot,room_id:'room-expired'};
+  applySnapshot(room);
+  globalThis.fetch=async () => new Response(null,{status:401});
+  await assert.rejects(renderMaps(room),error => error.status === 401);
+});
