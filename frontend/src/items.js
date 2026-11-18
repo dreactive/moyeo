@@ -24,6 +24,11 @@ function conditionValue({key,value}) {
   if (constraintLabels[key] === '1인 예산' && typeof value === 'number') return money(value);
   return value && typeof value === 'object' ? JSON.stringify(value) : value ?? '미확인';
 }
+function conditionInput(condition) {
+  const type = {budget:'number',budget_krw:'number',return_by:'time'}[condition?.key];
+  if (!type) return '';
+  return `<label>${constraintLabels[condition.key]}<input name="value" type="${type}" value="${e(condition.value)}" required></label>`;
+}
 export function renderConstraints(snapshot) {
   html('constraints', snapshot.constraints.map(item => `<div class="card">
   <strong>${e(constraintLabels[item.key] ?? item.key)} · ${e(conditionValue(item))}</strong>
@@ -64,7 +69,11 @@ export function renderQuestions(snapshot) {
     const fields = question.field === 'support_target'
       ? supportFields(snapshot.items,question.related_item_ids)
       : questionFields[question.field];
+    const condition = question.field === 'constraint_value'
+      ? snapshot.constraints.find(item => item.id === question.target_ref)
+      : null;
+    const input = fields || conditionInput(condition);
     return `<div class="card"><h3>${e(question.text)}</h3><p>${e(question.field)} / 대상 ${e(question.target_ref)} / ${e(question.owner_id ?? '공유 질문')}</p>
-  <form data-question="${e(question.id)}" data-value-mode="${fields ? 'fields' : 'json'}">${fields ?? `<label>응답 (JSON)<textarea name="value" required>${e(JSON.stringify(answerExamples[question.field]))}</textarea></label>`}<button ${question.owner_id && question.owner_id !== getUser()?.id ? 'disabled' : ''}>답변 보내기</button></form></div>`;
+  <form data-question="${e(question.id)}" data-value-mode="${input ? 'fields' : 'json'}">${input || `<label>응답 (JSON)<textarea name="value" required>${e(JSON.stringify(answerExamples[question.field]))}</textarea></label>`}<button ${question.owner_id && question.owner_id !== getUser()?.id ? 'disabled' : ''}>답변 보내기</button></form></div>`;
   }).join(''));
 }

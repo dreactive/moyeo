@@ -87,3 +87,10 @@ test('required budgets use a human label, won, and an owner verification status'
   assert.match(card.innerHTML,/200,000원/);
   assert.match(card.innerHTML,/필수 · 본인 확인됨/);
 });
+
+test('condition questions offer a numeric field for a budget target', () => {
+  const card = {};
+  globalThis.document = {getElementById:() => card};
+  decisions.renderQuestions(scenarios.questions.snapshot);
+  assert.match(card.innerHTML,/data-question="q5" data-value-mode="fields">[^]*name="value" type="number"/);
+});
