@@ -29,6 +29,8 @@ def extraction_output(batch, attempts, error, task):
                     completion='needs_input', last_processed_message_id=None,
                     extraction_report=dict(status='failed', issue_codes=[error], rejected_message_ids=[m['id'] for m in task['recent_messages']], attempts=attempts))
     grounded = ground_extraction(batch, task)
+    if any(p.key not in ("budget", "budget_krw", "return_by") for p in batch.constraint_proposals):
+        grounded.issue_codes.append("unsupported_constraint_key")
     missing = unresolved_messages(batch, grounded.proposals)
     if missing:
         grounded.issue_codes.append("unresolved_intent")

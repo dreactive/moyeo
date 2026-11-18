@@ -48,3 +48,14 @@ async def test_runtime_failure_is_not_marked_processed_or_retried():
     assert output['last_processed_message_id'] is None
     assert output['extraction_report']['status'] == 'failed'
     assert model.calls == 1
+
+def test_unsupported_condition_key_has_explicit_rejection_code():
+    from ai.extraction_run import extraction_output
+    from ai.extraction_schema import ExtractionBatch
+    from ai.extraction_projection import facts_to_batch
+    from ai.tests.test_place_route_tools import task
+    value = task()
+    message = dict(id='new',author_id='u1',text='휠체어 접근은 필수야')
+    value['recent_messages'] = [message]
+    batch = ExtractionBatch.model_validate(facts_to_batch(dict(places=[],conditions=[dict(key='wheelchair',value=True)],intents=['condition']),message,value))
+    assert 'unsupported_constraint_key' in extraction_output(batch,1,None,value)['extraction_report']['issue_codes']
