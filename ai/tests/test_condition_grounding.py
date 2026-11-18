@@ -20,3 +20,8 @@ def test_time_period_and_decimal_budget_are_not_misnormalized():
     from ai.condition_grounding import condition_value
     assert condition_value('return_by', '오후 4시까지 귀가해야 해') == '16:00'
     assert condition_value('budget', '내 예산은 2.5만원') == 25000
+
+@pytest.mark.parametrize('key,text', [('budget','철수는 예산 20만원'),('return_by','철수는 16시까지 귀가해야 해')])
+def test_third_person_facts_without_quotation_are_not_owned_by_speaker(key,text):
+    from ai.condition_grounding import condition_value
+    assert condition_value(key,text) is None
