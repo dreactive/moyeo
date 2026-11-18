@@ -46,8 +46,18 @@ const questionFields = {
     <label>분담 방식<select name="scope"><option value="shared">함께 나누기</option><option value="per_person">각자 주문</option></select></label>`,
   visit_duration: '<label>체류시간 (분)<input name="stay_minutes" type="number" min="1" step="1" required></label>'
 };
-const answerExamples = {constraint_value:{value:''},support_target:{item_id:''}};
+const answerExamples = {constraint_value:{value:''}};
+function supportFields(items,relatedIds) {
+  const options = items.filter(item => !relatedIds.length || relatedIds.includes(item.id))
+    .map(item => `<option value="${e(item.id)}">${e(item.title)}</option>`).join('');
+  return `<label>의견 대상<select name="item_id" required><option value="">항목을 선택해 주세요</option>${options}</select></label>`;
+}
 export function renderQuestions(snapshot) {
-  html('questions', snapshot.questions.filter(question => question.status === 'open').map(question => `<div class="card"><h3>${e(question.text)}</h3><p>${e(question.field)} / 대상 ${e(question.target_ref)} / ${e(question.owner_id ?? '공유 질문')}</p>
-  <form data-question="${e(question.id)}" data-value-mode="${questionFields[question.field] ? 'fields' : 'json'}">${questionFields[question.field] ?? `<label>응답 (JSON)<textarea name="value" required>${e(JSON.stringify(answerExamples[question.field]))}</textarea></label>`}<button ${question.owner_id && question.owner_id !== getUser()?.id ? 'disabled' : ''}>답변 보내기</button></form></div>`).join(''));
+  html('questions', snapshot.questions.filter(question => question.status === 'open').map(question => {
+    const fields = question.field === 'support_target'
+      ? supportFields(snapshot.items,question.related_item_ids)
+      : questionFields[question.field];
+    return `<div class="card"><h3>${e(question.text)}</h3><p>${e(question.field)} / 대상 ${e(question.target_ref)} / ${e(question.owner_id ?? '공유 질문')}</p>
+  <form data-question="${e(question.id)}" data-value-mode="${fields ? 'fields' : 'json'}">${fields ?? `<label>응답 (JSON)<textarea name="value" required>${e(JSON.stringify(answerExamples[question.field]))}</textarea></label>`}<button ${question.owner_id && question.owner_id !== getUser()?.id ? 'disabled' : ''}>답변 보내기</button></form></div>`;
+  }).join(''));
 }

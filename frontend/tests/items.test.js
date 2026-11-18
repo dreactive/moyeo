@@ -70,3 +70,11 @@ test('anchor, stay and menu questions offer controls with DTO field names', () =
   assert.match(card.innerHTML,/name="stay_minutes" type="number"/);
   assert.match(card.innerHTML,/<select name="scope"/);
 });
+
+test('target questions offer only the items attached to the question', () => {
+  const card = {};
+  globalThis.document = {getElementById:() => card};
+  decisions.renderQuestions(scenarios.questions.snapshot);
+  assert.match(card.innerHTML,/<select name="item_id"[^>]*>[\s\S]*<option value="item-a">가상 A식당/);
+  assert.doesNotMatch(card.innerHTML,/<option value="item-b">/);
+});
