@@ -15,3 +15,11 @@ test('fixture session storage includes only fixture state fields', async () => {
   saveFixtureSession({authenticated:true,userId:'u1',password:'discard-me'});
   assert.deepEqual(readFixtureSession(), {authenticated:true,userId:'u1'});
 });
+
+test('a corrupt fixture session discards fixture keys only', async () => {
+  const removed = [];
+  globalThis.sessionStorage = {getItem: () => '{',removeItem: key => removed.push(key)};
+  const {readFixtureSession} = await import('../src/fixture-session.js');
+  assert.equal(readFixtureSession(), null);
+  assert.deepEqual(removed, ['trip-fixture-session-v1','trip-fixture-room']);
+});

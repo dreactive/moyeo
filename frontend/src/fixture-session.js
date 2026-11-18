@@ -1,7 +1,17 @@
 const fixtureSessionKey = 'trip-fixture-session-v1';
 
+export function clearFixtureSession() {
+  globalThis.sessionStorage?.removeItem(fixtureSessionKey);
+  globalThis.sessionStorage?.removeItem('trip-fixture-room');
+}
+
 export function readFixtureSession() {
-  return JSON.parse(globalThis.sessionStorage?.getItem(fixtureSessionKey) ?? 'null');
+  try {
+    return JSON.parse(globalThis.sessionStorage?.getItem(fixtureSessionKey) ?? 'null');
+  } catch {
+    clearFixtureSession();
+    return null;
+  }
 }
 
 export function saveFixtureSession({authenticated,userId,snapshot,scenario}) {
