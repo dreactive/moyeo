@@ -81,9 +81,9 @@ function showUser(user) { setUser(user); html('session',e(user?.name ?? '로그�
 
 function bindSessionActions() {
   document.getElementById('logout').onclick = () => run(async () => {
-    await requestJson('/api/auth/logout',{method:'POST'});
-    closeEvents(); roomId = null; sessionStorage.removeItem('trip-room');
-    applySnapshot(null); showUser(null); location.reload();
+    await signOut();
+    closeEvents(); roomId = null;
+    applySnapshot(null); showUser(null);
   });
   bindForm('message',async (body, action,form) => {
     if (!roomId) throw new Error('먼저 방에 입장하세요.');
@@ -125,9 +125,9 @@ function bindPlanActions() {
     if (!button) return;
     const snapshot = getSnapshot();
     const action = button.dataset.plan;
-    run(() => roomAction('plan/' + action,action === 'activate' ? {plan_revision:snapshot.current_plan.plan_revision} : {target:displayPlan(snapshot).confirmation_target}));
+    run(() => withPending(button,() => roomAction('plan/' + action,action === 'activate' ? {plan_revision:snapshot.current_plan.plan_revision} : {target:displayPlan(snapshot).confirmation_target})));
   });
-  document.getElementById('replan').onclick = () => run(() => roomAction('agent-runs',{reason:'manual_replan'}));
+  document.getElementById('replan').onclick = event => run(() => withPending(event.currentTarget,() => roomAction('agent-runs',{reason:'manual_replan'})));
 }
 
 function bindDecisionActions() {
