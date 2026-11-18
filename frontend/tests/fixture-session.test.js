@@ -106,3 +106,11 @@ test('fixture room changes remain in the saved snapshot', async () => {
   const next = await import('../src/fixture-api.js?messages');
   assert.equal((await next.requestFixture(path)).messages.at(-1).id,message.id);
 });
+
+test('a partial fixture snapshot cannot restore the session', async () => {
+  const snapshot = {room_id:'room-fixture',config:{fixed_costs:[]}};
+  const data = {authenticated:true,userId:'u1',scenario:'initial',snapshot};
+  globalThis.sessionStorage = {getItem: () => JSON.stringify(data),removeItem() {}};
+  const next = await import('../src/fixture-api.js?partial-snapshot');
+  await assert.rejects(next.requestFixture('/api/auth/me'), {status:401});
+});

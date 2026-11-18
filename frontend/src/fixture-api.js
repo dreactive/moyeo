@@ -23,8 +23,10 @@ function isSavedFixture(saved) {
   const snapshot = saved.snapshot;
   return saved.authenticated === true && snapshot?.room_id === initial.room_id
     && initial.members.some(member => member.user_id === saved.userId)
-    && Object.hasOwn(scenarios, saved.scenario)
-    && Array.isArray(snapshot.config?.fixed_costs);
+    && Object.keys(scenarios).includes(saved.scenario)
+    && Array.isArray(snapshot.config?.fixed_costs)
+    && Object.entries(initial).every(([key, value]) => Object.hasOwn(snapshot, key)
+      && (!Array.isArray(value) || Array.isArray(snapshot[key])));
 }
 
 function hydrateFixture() {
