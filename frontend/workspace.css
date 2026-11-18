@@ -809,7 +809,7 @@ body.workspace-page {
   font-size: 12px;
 }
 
-.workspace-page #route-days button[aria-selected="true"] {
+.workspace-page #route-days button[aria-pressed="true"] {
   background: var(--surface);
   color: var(--primary-hover);
 }
@@ -1235,3 +1235,18 @@ body.auth-page {
     grid-column: 1 / -1;
   }
 }
+
+/* The server totals describe the whole room's category composition. */
+.workspace-page .cost-composition-bar { display:flex; height:7px; gap:3px; margin:20px 0 12px; overflow:hidden; border-radius:4px; }
+.workspace-page .cost-composition-bar span { min-width:0; flex-basis:0; background:#bbb1f8; }
+.workspace-page [data-category="transport"] { --category-color:#6552ef; }
+.workspace-page [data-category="lodging"] { --category-color:#8e7ff0; }
+.workspace-page [data-category="meal"] { --category-color:#b3a7f7; }
+.workspace-page [data-category="admission"] { --category-color:#d2cbfa; }
+.workspace-page [data-category="other"] { --category-color:#e3dffb; }
+.workspace-page .cost-composition-bar [data-category] { background:var(--category-color); }
+.workspace-page .cost-composition-legend { list-style:none; padding:0; display:grid; gap:7px; color:var(--muted); font-size:12px; }
+.workspace-page .cost-composition-legend li::before { content:""; display:inline-block; width:7px; height:7px; margin-right:8px; border-radius:2px; background:var(--category-color); }
+.workspace-page .member-avatar:nth-child(2) { --avatar-bg:#e7efff; --avatar-fg:#4674b2; }
+.workspace-page .member-avatar:nth-child(3) { --avatar-bg:#f8e8ec; --avatar-fg:#aa687c; }
+.workspace-page .member-avatar:nth-child(4) { --avatar-bg:#ebe8ff; --avatar-fg:#6652dc; }
