@@ -12,6 +12,12 @@ export function restoreTripForm(snapshot) {
   for (const [key,value] of Object.entries(snapshot.config)) {
     if (form.elements[key]) form.elements[key].value = value;
   }
+  for (const anchor of ['origin','destination','lodging']) {
+    for (const field of ['label','latitude','longitude']) {
+      const input = form.elements[anchor + '_' + field];
+      if (input) input.value = snapshot.config[anchor]?.[field] ?? '';
+    }
+  }
   const {title,...baseline} = readTripForm(form);
   return baseline;
 }

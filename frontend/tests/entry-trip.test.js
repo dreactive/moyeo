@@ -16,3 +16,11 @@ test('restoring the trip pre-fills title and scalar settings', () => {
   trip.restoreTripForm({title:'주말 여행', config:{region:'여수'}});
   assert.deepEqual(form.elements, {title:{value:'주말 여행'},region:{value:'여수'}});
 });
+
+test('restoring an anchor writes its fields individually', () => {
+  const form = [];
+  form.elements = {title:{}, origin_label:{},origin_latitude:{},origin_longitude:{}};
+  globalThis.document.getElementById = () => form;
+  trip.restoreTripForm({title:'주말 여행',config:{origin:{label:'여수역',latitude:34,longitude:127}}});
+  assert.equal(form.elements.origin_latitude.value,34);
+});
