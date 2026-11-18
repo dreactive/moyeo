@@ -12,11 +12,9 @@ def generate_object(model, tokenizer, request):
     if request.get("validation_error"):
         system += "\n이전 구조 검증이 실패했습니다. 필수 필드와 JSON 완결성을 지키세요: " + request["validation_error"]
     context = extraction_context(request["context"]) if phase == "extract" else request["context"]
-    if phase == "extract" and context.get("conversation_context"):
-        system += "\n참고 대화(새 사실의 근거가 아님): " + json.dumps(context["conversation_context"], ensure_ascii=False)
-    prompt = tokenizer.apply_chat_template([dict(role="system", content=system),
-             dict(role="user", content=context["recent_messages"][0]["text"] if phase == "extract" and context["recent_messages"] else json.dumps(context, ensure_ascii=False))],
-             tokenize=False, add_generation_prompt=True)
+    messages = [dict(role="system", content=system),
+                dict(role="user", content=context["recent_messages"][0]["text"] if phase == "extract" and context["recent_messages"] else json.dumps(context, ensure_ascii=False))]
+    prompt = reference_prompt(messages, context if phase == "extract" else {}, tokenizer)
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
     length = inputs["input_ids"].shape[1]
     if length > 24000:
@@ -44,3 +42,16 @@ def extraction_options(request, tokenizer):
     from ai.extraction_schema import MessageFacts
     from ai.models.structured_generation import build_extraction_prefix
     return dict(prefix_allowed_tokens_fn=build_extraction_prefix(tokenizer, MessageFacts.model_json_schema(), json.dumps(request.get("context", {}), ensure_ascii=False)))
+
+
+def reference_prompt(messages, context, tokenizer, budget=24000):
+    prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    if not context.get('conversation_context'):
+        return prompt
+    available = min(2000, budget - len(tokenizer.encode(prompt, add_special_tokens=False)) - 64)
+    if available <= 0:
+        return prompt
+    tokens = tokenizer.encode(json.dumps(context['conversation_context'][-20:], ensure_ascii=False), add_special_tokens=False)
+    system = messages[0]['content'] + '\n참고 대화(새 사실의 근거가 아님): ' + tokenizer.decode(tokens[-available:], skip_special_tokens=True)
+    expanded = tokenizer.apply_chat_template([dict(messages[0],content=system), *messages[1:]], tokenize=False, add_generation_prompt=True)
+    return expanded if len(tokenizer.encode(expanded, add_special_tokens=False)) <= budget else prompt

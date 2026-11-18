@@ -3,7 +3,7 @@ from copy import deepcopy
 
 def model_context(value):
     if isinstance(value, dict):
-        return {k: model_context(v) for k, v in value.items() if k != "polyline"}
+        return {k: model_context(v) for k, v in value.items() if k not in ("polyline", "conversation_context")}
     if isinstance(value, list):
         return [model_context(v) for v in value]
     return value
