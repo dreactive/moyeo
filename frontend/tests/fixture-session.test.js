@@ -91,3 +91,8 @@ test('fixture logout removes fixture data and preserves live room selection', as
   await requestFixture('/api/auth/logout', {method:'POST'});
   assert.deepEqual([...values], [['trip-room','live-room']]);
 });
+
+test('an unavailable fixture room returns an access status', async () => {
+  await requestFixture('/api/auth/login', {method:'POST'});
+  await assert.rejects(requestFixture('/api/rooms/missing'), {status:404});
+});

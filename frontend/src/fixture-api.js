@@ -76,7 +76,10 @@ export async function requestFixture(path, {method = 'GET',body,headers} = {}) {
   }
   if (parts[2] === 'rooms') requireFixtureLogin();
   if (parts[4] === 'places') return structuredClone(fixturePlaces.get(parts[5]));
-  if (parts.length === 4 && method === 'GET') return structuredClone(fixtureRoom);
+  if (parts[2] === 'rooms' && parts.length === 4 && method === 'GET') {
+    if (parts[3] !== fixtureRoom.room_id) throw Object.assign(new Error('fixture 방을 찾을 수 없어요.'), {status:404});
+    return structuredClone(fixtureRoom);
+  }
   if (parts[2] === 'rooms' && parts[3] === 'join') {
     if (body.invite_code !== 'FIXTURE') throw new Error('fixture 초대 코드는 FIXTURE입니다.');
     return replayScenario('initial');
