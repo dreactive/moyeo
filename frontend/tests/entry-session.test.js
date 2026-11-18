@@ -17,3 +17,9 @@ test('only a rejected session redirects the protected page', async () => {
   assert.equal(await session.requireSession(), null);
   assert.deepEqual(visited, ['/login.html']);
 });
+
+test('fixture navigation uses a separate selected room key', () => {
+  globalThis.location = {search:'?mode=fixture'};
+  globalThis.sessionStorage = {setItem: (key,id) => assert.deepEqual([key,id], ['trip-fixture-room','sample'])};
+  session.saveRoomId('sample');
+});

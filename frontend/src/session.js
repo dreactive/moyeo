@@ -19,3 +19,19 @@ export async function requireSession() {
     return null;
   }
 }
+
+function roomKey() {
+  return getDataMode() === 'fixture' ? 'trip-fixture-room' : 'trip-room';
+}
+
+export function saveRoomId(id) {
+  sessionStorage.setItem(roomKey(), id);
+}
+
+export function readRoomId() {
+  return sessionStorage.getItem(roomKey());
+}
+
+export function clearRoomId() {
+  sessionStorage.removeItem(roomKey());
+}
