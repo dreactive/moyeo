@@ -126,3 +126,11 @@ test('selecting a new place immediately replaces the previous card and map with 
   requests[1].resolve(Response.json(otherPlace));
   await next;
 });
+
+test('a failed place lookup offers a retry for the selected place', async () => {
+  const {requests,output} = prepare();
+  const pending = selectPlace(room.room_id,otherPlace.place.id);
+  requests[0].resolve(new Response(null,{status:503}));
+  await assert.rejects(pending);
+  assert.match(output.place,/불러오지 못했어요[^]*data-place="fixture:place-b">장소 정보 다시 시도/);
+});

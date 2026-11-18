@@ -44,8 +44,11 @@ export async function selectPlace(roomId,ref) {
   if (getSnapshot()?.room_id !== roomId || getSelectedPlace() !== ref) return;
   const currentTarget = displayPlan(getSnapshot() ?? {})?.confirmation_target ?? null;
   if (target !== currentTarget && !sameTarget(target,currentTarget)) return;
-  if ('error' in result) throw result.error;
   const {details} = result;
-  if (!details) throw new Error('장소 조회 결과가 없습니다.');
+  if (!details) {
+    html('place', `<p role="status">선택한 장소 정보를 불러오지 못했어요.</p>
+      <button type="button" data-place="${e(ref)}">장소 정보 다시 시도</button>`);
+    throw 'error' in result ? result.error : new Error('장소 조회 결과가 없습니다.');
+  }
   renderPlace(details); renderPlaceMap(details.place);
 }
