@@ -28,3 +28,12 @@ def test_search_tool_has_editable_swagger_inputs(api):
                         headers={'X-Dev-Token': 'test-dev'})
     assert response.status_code == 200, response.text
     assert response.json()['result']['places'][0]['id'] == 'fixture:place-a'
+
+
+def test_place_details_endpoint_returns_observed_prices(api):
+    from backend.dev_examples import tool_examples
+    api.app.state.dev_token = 'test-dev'
+    response = api.post('/api/dev/tools/get_place_details', json=tool_examples('get_place_details')['fixture']['value'],
+                        headers={'X-Dev-Token': 'test-dev'})
+    assert response.status_code == 200, response.text
+    assert response.json()['result']['menus'][0]['price_krw'] == 10000
