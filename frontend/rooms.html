@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>방 선택 · 모여</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/workspace.css">
+</head>
+<body class="rooms-page">
+  <header class="entry-header">
+    <div class="app-brand">
+      <span class="brand-icon"><svg class="app-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="17" cy="6" r="2.5"/><circle cx="7" cy="18" r="2.5"/><path d="M14.5 6H7a3 3 0 0 0 0 6h10a3 3 0 0 1 0 6H9.5"/></svg></span>
+      <span>모여</span>
+    </div>
+    <div class="workspace-user">
+      <span id="session" class="user-chip">연결 중</span>
+      <button id="logout" class="quiet-button" type="button" disabled>로그아웃</button>
+    </div>
+  </header>
+  <main class="rooms-content" aria-labelledby="rooms-heading">
+    <h1 id="rooms-heading">어떤 여행을 함께할까요?</h1>
+    <p id="mode" role="status"></p>
+    <p id="error" role="alert"></p>
+    <button id="retry" type="button" hidden>다시 시도</button>
+    <div class="room-actions" id="room-actions" hidden>
+      <button type="button" class="room-action-card" data-room-action aria-controls="trip" aria-expanded="false">
+        <strong>방 만들기</strong>
+        <span>새 여행에 친구를 초대해요.</span>
+      </button>
+      <button type="button" class="room-action-card" data-room-action aria-controls="join" aria-expanded="false">
+        <strong>방 참가하기</strong>
+        <span>초대 코드로 여행에 합류해요.</span>
+      </button>
+    </div>
+    <form id="trip" class="entry-form trip-form" method="post" hidden>
+      <h2>새 여행방 만들기</h2>
+      <label class="wide">방 이름<input name="title" maxlength="200" required></label>
+      <label>지역<input name="region" placeholder="예: 여수" required></label>
+      <label>1인 전체 예산 (원)<input name="per_person_budget_krw" type="number" min="0" required></label>
+      <label>시작일<input name="start_date" type="date" required></label>
+      <label>종료일<input name="end_date" type="date" required></label>
+      <label>활동 시작<input name="day_start_time" type="time" value="09:00" required></label>
+      <label>활동 종료<input name="day_end_time" type="time" value="18:00" required></label>
+      <p class="wide muted">여행 중 이동수단은 자동차입니다.</p>
+      <details class="wide">
+        <summary>거점과 고정비 설정</summary>
+        <fieldset>
+          <legend>출발 지점</legend>
+          <label>명칭<input name="origin_label"></label>
+          <label>위도<input name="origin_latitude" type="number" min="-90" max="90" step="any"></label>
+          <label>경도<input name="origin_longitude" type="number" min="-180" max="180" step="any"></label>
+        </fieldset>
+        <fieldset>
+          <legend>귀가 지점</legend>
+          <label>명칭<input name="destination_label"></label>
+          <label>위도<input name="destination_latitude" type="number" min="-90" max="90" step="any"></label>
+          <label>경도<input name="destination_longitude" type="number" min="-180" max="180" step="any"></label>
+        </fieldset>
+        <fieldset>
+          <legend>숙소</legend>
+          <label>명칭<input name="lodging_label"></label>
+          <label>위도<input name="lodging_latitude" type="number" min="-90" max="90" step="any"></label>
+          <label>경도<input name="lodging_longitude" type="number" min="-180" max="180" step="any"></label>
+        </fieldset>
+        <div class="settings-costs">
+          <h3>고정비</h3>
+          <div id="fixed-costs"></div>
+          <button id="add-cost" type="button">비용 추가</button>
+        </div>
+      </details>
+      <div class="form-actions"><button type="submit" class="primary-button">방 만들기</button></div>
+    </form>
+    <form id="join" class="entry-form" method="post" hidden>
+      <h2>초대받은 방에 참가하기</h2>
+      <label class="wide">초대 코드<input name="invite_code" autocomplete="off" autocapitalize="none" spellcheck="false" required></label>
+      <p id="fixture-invite" class="wide muted" hidden>fixture 초대 코드 <strong>FIXTURE</strong></p>
+      <div class="form-actions"><button type="submit" class="primary-button">방 참가하기</button></div>
+    </form>
+  </main>
+  <script type="module" src="/src/rooms-page.js"></script>
+</body>
+</html>

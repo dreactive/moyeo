@@ -44,3 +44,13 @@ test('the invite form sends the case-sensitive code', async () => {
   await join.onsubmit({preventDefault() {}});
   assert.deepEqual(sent, ['/api/rooms/join',{invite_code:'AbC'}]);
 });
+
+test('room page startup opens choices for the signed-in user', async () => {
+  const elements = {};
+  const element = id => elements[id] ??= {querySelector: () => ({})};
+  globalThis.document = {getElementById: element,querySelectorAll: () => []};
+  globalThis.fetch = async () => Response.json({name:'여행자'});
+  await rooms.startRoomsPage();
+  assert.equal(elements.session.textContent,'여행자');
+  assert.equal(elements['room-actions'].hidden,false);
+});

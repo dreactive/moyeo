@@ -1,7 +1,7 @@
-import {requestJson} from './api.js';
-import {bindEntryForm,navigate,requireSession,saveRoomId} from './session.js';
-import {readTripForm} from './trip-form.js';
-import {showError} from './ui.js';
+import {getDataMode,requestJson} from './api.js';
+import {bindEntryForm,navigate,preparePage,requireSession,saveRoomId,signOut} from './session.js';
+import {bindFixedCostControls,readTripForm} from './trip-form.js';
+import {run,showError} from './ui.js';
 
 export async function submitRoom(endpoint, body) {
   const snapshot = await requestJson(endpoint, {method:'POST',body});
@@ -40,3 +40,20 @@ export function bindRoomForms(trip, join) {
   bindEntryForm(join, () => submitRoom('/api/rooms/join', {invite_code:new FormData(join).get('invite_code').trim()}),
     error => showError(error.status === 404 ? new Error('초대 코드를 확인해 주세요.') : error));
 }
+
+export function startRoomsPage() {
+  preparePage();
+  const actions = document.querySelectorAll('[data-room-action]');
+  for (const action of actions) {
+    action.onclick = () => chooseRoomAction(actions, action);
+  }
+  bindRoomForms(document.getElementById('trip'), document.getElementById('join'));
+  bindFixedCostControls();
+  document.getElementById('logout').onclick = () => run(signOut);
+  document.getElementById('fixture-invite').hidden = getDataMode() !== 'fixture';
+  const retry = document.getElementById('retry');
+  retry.onclick = () => checkRoomsPage(retry);
+  return retry.onclick();
+}
+
+if (globalThis.document?.getElementById('room-actions')) startRoomsPage();
