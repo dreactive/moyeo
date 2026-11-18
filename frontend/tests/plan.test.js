@@ -93,3 +93,12 @@ test('the archived route can be read without selecting an old place', () => {
   assert.match(archived,/<li>가상 A식당.*11:30/);
   assert.doesNotMatch(archived,/data-place=/);
 });
+
+test('the consent summary identifies the fixed review revision when a new draft arrives', () => {
+  const room = structuredClone(fixture);
+  room.review_plan = structuredClone(room.current_plan);
+  room.current_plan.plan_revision = room.current_plan.confirmation_target.plan_revision = 2;
+  const output = renderConsensus(room);
+  assert.match(output,/검토 중인 안 v1/);
+  assert.match(output,/새 초안 v2/);
+});

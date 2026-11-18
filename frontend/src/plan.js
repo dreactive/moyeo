@@ -35,13 +35,18 @@ export function renderPlan(snapshot) {
   }).join('');
   const canWithdraw = sameTarget(snapshot.active_target,target) && votes.get(getUser()?.id) === 'confirm';
   const note = confirmationNote(plan,currentBasis,pendingHard);
-  html('plan', `<h3>${snapshot.review_plan ? '검토 중인 안' : '최신 초안'}</h3>${planContent(plan)}
-  <p class="consensus-status">같은 여행안 확인 ${count}/${snapshot.members.length} · ${status}</p>
+  const draft = snapshot.current_plan;
+  const hasNewDraft = snapshot.review_plan && draft && !sameTarget(draft.confirmation_target,target);
+  const label = snapshot.review_plan ? '검토 중인 안' : '최신 초안';
+  html('plan', `<h3>${plan ? `${label} v${e(plan.plan_revision)}` : '여행안 준비 중'}</h3>
+  <p class="consensus-status ${official ? 'official' : 'pending'}">같은 여행안 확인 ${count}/${snapshot.members.length} · ${status}</p>
   <ul class="member-votes">${members}</ul>
   ${note ? `<p class="muted">${note}</p>` : ''}
+  <div class="consensus-actions">
   ${canWithdraw ? '<button data-plan="withdraw">내 동의 철회</button>'
     : `<button data-plan="confirm" ${note ? 'disabled' : ''}>나도 동의하기</button>`}
-  ${snapshot.review_plan && !sameTarget(snapshot.current_plan?.confirmation_target,plan?.confirmation_target) ? '<button data-plan="activate">새 안으로 전환</button>' : ''}`);
+  ${hasNewDraft ? `<button data-plan="activate">새 초안 v${e(draft.plan_revision)}으로 전환</button>` : ''}
+  </div>`);
   html('confirmed-plan', '<h3>이전/현재 확정 스냅샷</h3>' + planContent(snapshot.confirmed_plan));
 }
 const basisKeys = ['participant_version','constraint_version','evidence_version'];
