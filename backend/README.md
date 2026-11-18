@@ -88,4 +88,9 @@ results do not establish Qwen quality. Responses distinguish 422 invalid inputs,
 502 provider failures and 503 unavailable dependencies/runtime without returning
 secret-bearing exception details.
 
+Sandbox regressions requiring the real AI package carry the `integration` marker;
+default Backend tests remain AI-independent. Run the explicit integration command
+above after installing `ai/requirements.txt`. See
+`docs/verification/dev-sandbox.md` for the executed modes, review fixes and limits.
+
 Open SSE responses can keep uvicorn waiting indefinitely at shutdown without a grace limit. The documented commands set --timeout-graceful-shutdown 5 so remaining HTTP streams are cancelled and application lifespan cleanup can run. The separate actual-Qwen/open-SSE probe closed the runtime once with a two-second limit. An active GPU operation may still need to finish before the serialized model close acquires its lock; this is not a five-second inference cancellation guarantee.
