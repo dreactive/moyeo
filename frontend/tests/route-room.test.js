@@ -59,3 +59,18 @@ test('unavailable coordinates leave the rest of the selected route usable', asyn
   assert.match(route.innerHTML,/가상 A식당 · 34[.]761, 127[.]661/);
   assert.match(document.getElementById('route-load-status').innerHTML,/일부 장소 좌표/);
 });
+
+test('the route retry refreshes coordinates without changing the selected date', async () => {
+  const room = {...snapshot,room_id:'room-retry'};
+  applySnapshot(room);
+  globalThis.fetch = async () => new Response(null,{status:503});
+  await renderMaps(room);
+  const status = document.getElementById('route-load-status');
+  assert.match(status.innerHTML,/data-route-retry/);
+  globalThis.fetch = async path => Response.json({place:{
+    id:decodeURIComponent(path.split('/').at(-1)),latitude:34.761,longitude:127.661
+  }});
+  await status.onclick({target:{closest:selector => selector === '[data-route-retry]' ? {} : null}});
+  assert.equal(status.innerHTML,'');
+  assert.match(route.innerHTML,/가상 A식당 · 34[.]761, 127[.]661/);
+});

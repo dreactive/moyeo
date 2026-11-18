@@ -188,13 +188,19 @@ function bindHistory() {
 }
 
 let routeRenderStamp = null;
-export async function renderMaps(snapshot) {
+document.getElementById('route-load-status').onclick = event => {
+  if (!event.target.closest('[data-route-retry]')) return;
+  const snapshot = getSnapshot();
+  if (snapshot) return renderMaps(snapshot,true).catch(showError);
+};
+export async function renderMaps(snapshot, retry = false) {
   const date = getSelectedDay();
   const key = routeKey(snapshot,date);
-  if (key === routeRenderStamp?.key || routeKey(getSnapshot() ?? {},date) !== key) return;
+  const sameRoute = key === routeRenderStamp?.key;
+  if ((!retry && sameRoute) || routeKey(getSnapshot() ?? {},date) !== key) return;
   const plan = displayPlan(snapshot);
   html('route-load-status','');
-  renderRouteMap(plan,new Map(),snapshot.config,date);
+  if (!sameRoute) renderRouteMap(plan,new Map(),snapshot.config,date);
   const refs = [...new Set(plan?.days.filter(day => day.date === date).flatMap(day => day.visits.map(visit => visit.place_ref)) ?? [])];
   const stamp = {key};
   routeRenderStamp = stamp;
@@ -204,7 +210,7 @@ export async function renderMaps(snapshot) {
   if (places.length) renderRouteMap(plan,new Map(places.map(place => [place.id,place])),snapshot.config,date);
   if (places.length < refs.length) {
     const note = places.length ? '일부 장소 좌표를 불러오지 못했어요.' : '장소 좌표를 불러오지 못했어요.';
-    html('route-load-status',`<p>${note}</p>`);
+    html('route-load-status',`<p>${note}</p><button type="button" data-route-retry>좌표 다시 불러오기</button>`);
   }
   if (getSelectedPlace()) await selectPlace(snapshot.room_id,getSelectedPlace());
   else { renderPlace(null); renderPlaceMap(null); }
