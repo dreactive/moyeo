@@ -53,6 +53,10 @@ class AgentJobs:
             self.pending[task['room_id']] -= 1
             try:
                 task = self.refresh_task(task)
+                if task['goal'] in ('new_message', 'message_created', 'remaining_messages') and not task['recent_messages']:
+                    waiting = bool(self.db.get('failed-extraction:' + task['room_id']))
+                    set_status(self.db, task['room_id'], task['run_id'], 'needs_input' if waiting else 'done', '추출 실패 메시지는 수동 재시도해 주세요.' if waiting else '처리할 새 메시지가 없습니다.')
+                    continue
                 self.active_run_id = task['run_id']
                 set_status(self.db, task['room_id'], task['run_id'], 'running', 'Working')
                 result = await self.port.run(task, self.emit_trace)

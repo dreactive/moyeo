@@ -58,3 +58,26 @@ def test_successful_manual_retry_recovers_receipt_without_cursor_regression(room
     assert apply_agent_result(db,agent_result)
     assert db.get('processed-message:' + room['room_id']) == last
     assert db.get('failed-extraction:' + room['room_id'])[first]['status'] == 'recovered'
+
+def test_queued_empty_message_task_does_not_retry_failed_batch(room, agent_result):
+    import asyncio
+    from backend.db import Database
+    from backend.services.agent_jobs import AgentJobs
+    async def scenario():
+        class Port:
+            calls = 0
+            async def run(self,task,emit):
+                self.calls += 1
+                return dict(agent_result,run_id=task['run_id'],base_versions=task['base_versions'],
+                            extraction_report=dict(status='failed',issue_codes=['ValidationError'],attempts=2))
+        db = Database(':memory:')
+        db.put('room:' + room['room_id'],room)
+        port = Port()
+        jobs = AgentJobs(db,port)
+        await jobs.enqueue(room['room_id'],'new_message')
+        await jobs.enqueue(room['room_id'],'new_message')
+        worker = asyncio.create_task(jobs.work())
+        await asyncio.wait_for(jobs.queue.join(),1)
+        worker.cancel()
+        assert port.calls == 1
+    asyncio.run(scenario())
