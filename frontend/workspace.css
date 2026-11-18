@@ -1,0 +1,1237 @@
+/* Shared styles for the customer-facing pages. The developer trace uses styles.css. */
+body:is(.workspace-page, .auth-page, .rooms-page) {
+  --canvas: #f3f3f7;
+  --surface: #fff;
+  --text: #182239;
+  --muted: #65718a;
+  --border: #e3e5ee;
+  --primary: #5e4ce5;
+  --primary-hover: #4e3dc7;
+  --primary-tint: #eeebff;
+  --accent-border: #cbc3fa;
+  --success: #226b55;
+  --success-tint: #ebf7f2;
+  min-width: 0;
+  min-height: 100dvh;
+  background: #fafafd;
+  color: var(--text);
+  font-family: system-ui, "Malgun Gothic", sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+:is(.workspace-page, .auth-page, .rooms-page) [hidden] {
+  display: none !important;
+}
+
+:is(.workspace-page, .auth-page, .rooms-page) :where(h1, h2, h3, p, dl, dd) {
+  margin: 0;
+}
+
+:is(.workspace-page, .auth-page, .rooms-page) a {
+  color: var(--primary-hover);
+  text-underline-offset: .2em;
+}
+
+:is(.workspace-page, .auth-page, .rooms-page) :focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+:is(.workspace-page, .auth-page, .rooms-page) :where(input, select, textarea, button) {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+}
+
+:is(.workspace-page, .auth-page, .rooms-page) :where(input, select, textarea)::placeholder {
+  color: var(--muted);
+}
+
+:is(.workspace-page, .auth-page, .rooms-page) button {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+}
+
+:is(.workspace-page, .auth-page, .rooms-page) button:not(:disabled):hover {
+  background: var(--primary-tint);
+  color: var(--primary-hover);
+}
+
+:is(.workspace-page, .auth-page, .rooms-page) .primary-button,
+.workspace-page .consensus-bar [data-plan="confirm"] {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+  font-weight: 650;
+}
+
+:is(.workspace-page, .auth-page, .rooms-page) .primary-button:not(:disabled):hover,
+.workspace-page .consensus-bar [data-plan="confirm"]:not(:disabled):hover {
+  border-color: var(--primary-hover);
+  background: var(--primary-hover);
+  color: #fff;
+}
+
+:is(.workspace-page, .auth-page, .rooms-page) .quiet-button {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+
+:is(.workspace-page, .auth-page, .rooms-page) .muted {
+  color: var(--muted);
+}
+
+:is(.workspace-page, .auth-page, .rooms-page) .app-brand {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 9px;
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -.04em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+:is(.workspace-page, .auth-page, .rooms-page) .brand-icon {
+  display: grid;
+  width: 31px;
+  height: 31px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--primary);
+  color: #fff;
+}
+
+:is(.workspace-page, .auth-page, .rooms-page) .brand-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.workspace-page .app-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+:is(.workspace-page, .auth-page, .rooms-page) #mode {
+  background: #fff5db;
+  color: #624314;
+  padding: 5px 16px;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+:is(.workspace-page, .auth-page, .rooms-page) #mode:empty,
+:is(.workspace-page, .auth-page, .rooms-page) #error:empty {
+  display: none;
+}
+
+:is(.workspace-page, .auth-page, .rooms-page) #error {
+  min-width: 0;
+  padding: 0;
+  color: #9e2d3d;
+  font-size: 13px;
+}
+
+/* Workspace frame */
+body.workspace-page {
+  --frame-margin: clamp(5px, .65vw, 12px);
+  padding: var(--frame-margin);
+}
+
+.workspace-page .workspace-shell {
+  display: flex;
+  width: 100%;
+  max-width: 1440px;
+  height: calc(100dvh - 2 * var(--frame-margin));
+  min-height: 0;
+  flex-direction: column;
+  margin-inline: auto;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 19px;
+  background: var(--surface);
+}
+
+.workspace-page .workspace-header,
+.workspace-page .room-overview {
+  display: flex;
+  min-width: 0;
+  min-height: 65px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  padding: 8px 22px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.workspace-page :is(.workspace-nav, .workspace-user, .room-members, .room-actions) {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+}
+
+.workspace-page .workspace-nav {
+  column-gap: 20px;
+  font-size: 13px;
+}
+
+.workspace-page .workspace-nav > :not(.app-brand) {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  text-decoration: none;
+}
+
+.workspace-page .workspace-nav > a:not(.app-brand) {
+  color: var(--muted);
+}
+
+.workspace-page .workspace-nav > a:not(.app-brand):hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+.workspace-page .nav-current {
+  font-weight: 720;
+}
+
+.workspace-page .workspace-user {
+  justify-content: flex-end;
+}
+
+.workspace-page .user-chip {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--primary-tint);
+  color: var(--primary-hover);
+  font-size: 12px;
+  font-weight: 660;
+}
+
+.workspace-page .room-overview {
+  min-height: 83px;
+}
+
+.workspace-page #room-heading {
+  font-size: clamp(18px, 2vw, 22px);
+  font-weight: 760;
+  letter-spacing: -.035em;
+}
+
+.workspace-page .room-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.workspace-page .room-access {
+  display: grid;
+  min-width: 0;
+  justify-items: end;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.workspace-page .room-actions {
+  gap: 0 4px;
+}
+
+.workspace-page .room-actions button,
+.workspace-page .workspace-user button {
+  font-size: 12px;
+}
+
+.workspace-page .room-invite {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px 5px;
+}
+
+.workspace-page #invite-code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--canvas);
+  color: var(--text);
+  font: inherit;
+  font-weight: 680;
+  user-select: all;
+}
+
+.workspace-page :is(.member-avatar, .chat-avatar) {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--avatar-bg, var(--primary-tint));
+  color: var(--avatar-fg, var(--primary-hover));
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.workspace-page .member-avatar + .member-avatar {
+  margin-left: -10px;
+  border: 2px solid var(--surface);
+}
+
+.workspace-page .workspace-alert {
+  display: flex;
+  min-width: 0;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.workspace-page .workspace-alert:has(#error:not(:empty)) {
+  padding: 6px 16px;
+  background: #fff0f3;
+}
+
+.workspace-page .workspace-alert #error:empty + #retry {
+  display: none;
+}
+
+.workspace-page #fixture-controls {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 0;
+  padding: 3px 16px;
+  border-top: 1px solid #f2e5bb;
+  background: #fffbef;
+  font-size: 12px;
+}
+
+.workspace-page #fixture-controls label {
+  flex: none;
+  min-width: 0;
+  flex-direction: row;
+  align-items: center;
+}
+
+.workspace-page #fixture-controls :is(button, select) {
+  min-height: 32px;
+  padding: 4px 7px;
+}
+
+.workspace-page .workspace-main {
+  display: grid;
+  min-height: 0;
+  flex: 1 1 0;
+  grid-template-columns: min(30%, 360px) minmax(0, 1fr);
+  gap: 0;
+  align-items: stretch;
+  margin: 0;
+}
+
+/* Conversation */
+.workspace-page .workspace-chat {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.workspace-page .chat-heading {
+  display: flex;
+  min-height: 54px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 5px;
+  padding: 4px 13px 4px 17px;
+  border-bottom: 1px solid var(--border);
+}
+
+.workspace-page :is(.chat-heading, .card-heading) h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 730;
+  letter-spacing: -.025em;
+}
+
+.workspace-page #history {
+  padding-inline: 5px;
+  font-size: 11px;
+}
+
+.workspace-page #messages {
+  min-height: 0;
+  max-height: none;
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 14px 14px 12px;
+  list-style: none;
+  overflow: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-width: thin;
+}
+
+.workspace-page #messages:focus-visible {
+  outline-offset: -2px;
+}
+
+.workspace-page #messages li {
+  padding: 0;
+  border: 0;
+}
+
+.workspace-page #messages li + li {
+  margin-top: 13px;
+}
+
+.workspace-page #messages .chat-date {
+  margin-block: 4px 15px;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.workspace-page .chat-message {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 4px 8px;
+  align-items: start;
+}
+
+.workspace-page .chat-message .chat-avatar {
+  grid-column: 1;
+}
+
+.workspace-page .chat-message > :not(.chat-avatar) {
+  grid-column: 2;
+}
+
+.workspace-page #messages .chat-message.is-own {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: end;
+  padding-left: 24px;
+}
+
+.workspace-page .chat-message.is-own > :not(.chat-avatar) {
+  grid-column: 1;
+}
+
+.workspace-page .chat-message.is-own .chat-avatar {
+  display: none;
+}
+
+.workspace-page .chat-message-content {
+  display: grid;
+  min-width: 0;
+  justify-items: start;
+  gap: 3px;
+}
+
+.workspace-page .chat-message.is-own .chat-message-content {
+  justify-items: end;
+}
+
+.workspace-page .chat-message .chat-bubble,
+.workspace-page #messages li:not([class]) > p {
+  width: fit-content;
+  max-width: 100%;
+  margin: 2px 0 0;
+  padding: 8px 11px;
+  border-radius: 2px 12px 12px;
+  background: var(--canvas);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.52;
+  white-space: pre-wrap;
+}
+
+.workspace-page .chat-message.is-own .chat-bubble {
+  border-radius: 12px 2px 12px 12px;
+  background: var(--primary-tint);
+}
+
+.workspace-page :is(.chat-author, .chat-time),
+.workspace-page #messages small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.workspace-page #messages li:target,
+.workspace-page #messages .chat-message:focus {
+  outline: 1px solid var(--accent-border);
+  outline-offset: 3px;
+  border-radius: 8px;
+  background: transparent;
+}
+
+.workspace-page .chat-compose {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 6px 14px 12px;
+  background: var(--surface);
+}
+
+.workspace-page #new-messages {
+  position: absolute;
+  z-index: 1;
+  right: 16px;
+  bottom: 100%;
+  border-color: var(--accent-border);
+  background: var(--surface);
+  color: var(--primary-hover);
+  font-size: 12px;
+}
+
+.workspace-page .message-composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 2px;
+  padding: 7px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.workspace-page .message-composer:focus-within {
+  border-color: var(--primary);
+}
+
+.workspace-page #message-text {
+  width: 100%;
+  min-height: 64px;
+  grid-column: 1 / -1;
+  padding: 5px 3px;
+  resize: vertical;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.workspace-page #message-text:focus-visible {
+  outline-offset: -2px;
+}
+
+.workspace-page .send-button {
+  display: grid;
+  width: 36px;
+  min-height: 36px;
+  grid-column: 2;
+  place-items: center;
+  padding: 0;
+  border-radius: 9px;
+}
+
+.workspace-page #composer-hint {
+  margin: 8px 2px 0;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.workspace-page .visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-width: 0;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Work area and shared card contents */
+.workspace-page .workspace-board {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  gap: 13px;
+  padding: 16px;
+  overflow: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-width: thin;
+  background: var(--canvas);
+}
+
+.workspace-page .agent-banner,
+.workspace-page .consensus-bar {
+  min-width: 0;
+  flex: 0 0 auto;
+  border: 1px solid var(--accent-border);
+  border-radius: 13px;
+  background: var(--surface);
+}
+
+.workspace-page .agent-banner {
+  display: grid;
+  min-height: 66px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 13px;
+}
+
+.workspace-page .agent-icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--primary-tint);
+  color: var(--primary);
+}
+
+.workspace-page #agent strong {
+  font-size: 13px;
+}
+
+.workspace-page #agent :is(p, small) {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.workspace-page #replan {
+  padding-inline: 6px;
+  font-size: 12px;
+}
+
+.workspace-page .workspace-cards {
+  display: grid;
+  min-width: 0;
+  flex: 0 0 auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.workspace-page .workspace-card {
+  min-width: 0;
+  min-height: clamp(270px, 29.75dvh, 360px);
+  padding: 13px 14px 14px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: var(--surface);
+  font-size: 13px;
+}
+
+.workspace-page :is(.budget-card, .place-card) {
+  min-height: clamp(300px, 35.25dvh, 425px);
+}
+
+.workspace-page .card-heading {
+  display: flex;
+  min-height: 25px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px 7px;
+  margin-bottom: 9px;
+}
+
+.workspace-page .card-heading .badge {
+  margin-left: auto;
+}
+
+.workspace-page .badge,
+.workspace-page .member-votes li {
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: var(--canvas);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 580;
+}
+
+.workspace-page .workspace-card :is(p, ul, ol, dl) {
+  margin: 5px 0;
+}
+
+.workspace-page .workspace-card :is(ul, ol) {
+  padding-left: 20px;
+}
+
+.workspace-page .workspace-card h3,
+.workspace-page .card-section-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.workspace-page .workspace-card .card {
+  padding: 8px 9px;
+  margin: 7px 0 0;
+  border-color: var(--border);
+  border-radius: 8px;
+}
+
+.workspace-page .workspace-card .card:last-child {
+  margin-bottom: 0;
+}
+
+.workspace-page .workspace-card .card.mentioned {
+  border-left-color: #b34c58;
+  background: #fff0f2;
+  color: #6e303a;
+}
+
+.workspace-page .workspace-card .card.supported {
+  border-left-color: #92690d;
+  background: #fff5db;
+  color: #624314;
+}
+
+.workspace-page .workspace-card .card.confirmed {
+  border-left-color: #2b876d;
+  background: var(--success-tint);
+  color: var(--success);
+}
+
+.workspace-page .workspace-card .card.conflict {
+  border-color: #eac3c8;
+  background: #fff6f7;
+}
+
+.workspace-page .workspace-card .card.pending {
+  background: var(--primary-tint);
+}
+
+.workspace-page .card :where(form, .decision-options) {
+  gap: 5px;
+}
+
+.workspace-page .card :where(label, button, input, textarea, select) {
+  min-width: 0;
+  font-size: 12px;
+}
+
+.workspace-page .card :where(button, input, textarea, select) {
+  padding: 5px 7px;
+}
+
+.workspace-page .card label :where(input, textarea, select) {
+  width: 100%;
+}
+
+.workspace-page .card :where(fieldset) {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 5px;
+  border-color: var(--border);
+  border-radius: 7px;
+}
+
+.workspace-page .constraint-meta {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.workspace-page .card-section-title:not(:first-child),
+.workspace-page .card-details {
+  margin-top: 9px;
+}
+
+.workspace-page .card-details {
+  padding-top: 7px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.workspace-page .card-details summary,
+.workspace-page #confirmed-plan summary {
+  min-height: 30px;
+  color: var(--primary-hover);
+  font-weight: 630;
+}
+
+/* Route and independently selected place */
+.workspace-page .route-toolbar,
+.workspace-page #route-days {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.workspace-page .route-toolbar {
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 11px;
+}
+
+.workspace-page #route-days:not(:empty) {
+  padding: 2px;
+  border-radius: 7px;
+  background: var(--canvas);
+}
+
+.workspace-page #route-days button {
+  min-height: 30px;
+  padding: 4px 7px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.workspace-page #route-days button[aria-selected="true"] {
+  background: var(--surface);
+  color: var(--primary-hover);
+}
+
+.workspace-page .map {
+  height: 173px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #f8f7fc;
+  color: var(--muted);
+  font-size: 12px;
+  scrollbar-width: thin;
+}
+
+.workspace-page #place-map {
+  height: 124px;
+  margin-bottom: 9px;
+}
+
+.workspace-page .map:not(.sdk) {
+  align-content: start;
+  background-image: radial-gradient(circle, #e4e0f1 1px, transparent 1px);
+  background-size: 14px 14px;
+}
+
+.workspace-page .map:not(.sdk) :is(ol, ul) {
+  padding-left: 17px;
+}
+
+.workspace-page .map:not(.sdk) li::marker {
+  color: var(--primary-hover);
+  font-weight: 700;
+}
+
+.workspace-page .map:not(.sdk):has(.map-placeholder) {
+  align-content: center;
+  text-align: center;
+}
+
+.workspace-page #route-summary {
+  padding-top: 6px;
+  font-size: 12px;
+}
+
+.workspace-page #route-summary button[data-place] {
+  min-height: 34px;
+  padding: 4px 7px;
+  color: var(--primary-hover);
+}
+
+/* Cost and consent */
+.workspace-page .personal-cost {
+  padding-bottom: 8px;
+}
+
+.workspace-page .cost-amount {
+  display: block;
+  margin: 4px 0;
+  color: var(--text);
+  font-size: clamp(25px, 3vw, 32px);
+  font-weight: 760;
+  letter-spacing: -.055em;
+  line-height: 1.14;
+}
+
+.workspace-page .card-facts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px 9px;
+}
+
+.workspace-page .card-facts dt {
+  color: var(--muted);
+}
+
+.workspace-page .card-facts dd {
+  margin: 0;
+  color: var(--text);
+  font-weight: 640;
+  text-align: right;
+}
+
+.workspace-page .workspace-card :is(td, th) {
+  padding: 4px 2px;
+  border-color: var(--border);
+  font-size: 11px;
+}
+
+.workspace-page .consensus-bar {
+  min-height: 88px;
+  padding: 11px 14px;
+  font-size: 13px;
+}
+
+.workspace-page .consensus-bar h3 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.workspace-page .consensus-bar p {
+  margin: 3px 0;
+}
+
+.workspace-page .consensus-bar .member-votes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 0;
+  margin: 6px 0 0;
+  list-style: none;
+}
+
+.workspace-page .member-votes .has-vote,
+.workspace-page .consensus-status.official {
+  background: var(--success-tint);
+  color: var(--success);
+}
+
+.workspace-page .consensus-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.workspace-page .consensus-bar button {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.workspace-page .consensus-bar #confirmed-plan:not(:empty) {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Entry, room selection, and trip settings */
+body.auth-page {
+  display: grid;
+  place-items: center;
+  padding: 24px 14px;
+}
+
+.auth-page .auth-card {
+  display: grid;
+  width: min(100%, 400px);
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  justify-items: stretch;
+  margin: 0;
+  padding: clamp(22px, 5vw, 32px);
+  border: 1px solid var(--border);
+  border-radius: 19px;
+  background: var(--surface);
+  box-shadow: 0 12px 38px #2514560a;
+}
+
+.auth-page h1,
+.rooms-page h1 {
+  font-size: clamp(23px, 4vw, 29px);
+  font-weight: 760;
+  letter-spacing: -.045em;
+  line-height: 1.26;
+}
+
+.auth-page p,
+.rooms-page p {
+  color: var(--muted);
+}
+
+.auth-page .auth-card > p:last-child {
+  margin-top: 2px;
+  text-align: center;
+}
+
+:is(.auth-page, .rooms-page) #mode:not(:empty) {
+  border-radius: 8px;
+}
+
+.rooms-page .entry-header {
+  display: flex;
+  min-height: 64px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 10px clamp(16px, 6vw, 78px);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.rooms-page .rooms-content {
+  display: grid;
+  width: min(calc(100% - 28px), 850px);
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+  margin: 0 auto;
+  padding: clamp(24px, 6vw, 64px) 0 32px;
+}
+
+.rooms-page .room-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.rooms-page .room-action-card {
+  display: grid;
+  min-height: 112px;
+  align-content: center;
+  justify-items: start;
+  gap: 6px;
+  padding: 16px 20px;
+  border-radius: 15px;
+  text-align: left;
+}
+
+.rooms-page .room-action-card strong {
+  color: var(--text);
+  font-size: 17px;
+}
+
+.rooms-page .room-action-card span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 450;
+}
+
+.rooms-page .room-action-card[aria-expanded="true"] {
+  border-color: var(--accent-border);
+  background: var(--primary-tint);
+}
+
+.rooms-page .entry-form {
+  padding: clamp(15px, 3vw, 22px);
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: var(--surface);
+}
+
+:is(.workspace-page, .auth-page, .rooms-page) .entry-form {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  gap: 13px;
+}
+
+.auth-page .entry-form {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+:is(.workspace-page, .rooms-page) .entry-form > :is(h2, h3, details, fieldset, .wide, .form-actions) {
+  grid-column: 1 / -1;
+}
+
+:is(.workspace-page, .auth-page, .rooms-page) .entry-form label {
+  min-width: 0;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 615;
+}
+
+:is(.workspace-page, .auth-page, .rooms-page) .entry-form :where(label input, label select) {
+  width: 100%;
+}
+
+:is(.workspace-page, .rooms-page) .entry-form :is(fieldset, details) {
+  min-width: 0;
+  margin: 0;
+  padding: 8px 10px 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+
+:is(.workspace-page, .rooms-page) .entry-form fieldset {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+:is(.workspace-page, .rooms-page) .entry-form details > fieldset {
+  margin-top: 9px;
+}
+
+:is(.workspace-page, .rooms-page) .entry-form legend {
+  padding-inline: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 655;
+}
+
+:is(.workspace-page, .rooms-page) .form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+:is(.workspace-page, .rooms-page) .cost-row > * {
+  min-width: min(104px, 100%);
+}
+
+.workspace-page .trip-settings {
+  width: min(calc(100% - 24px), 680px);
+  max-height: calc(100dvh - 32px);
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.workspace-page .trip-settings::backdrop {
+  background: #131a37a0;
+}
+
+.workspace-page .settings-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.workspace-page .settings-heading h2 {
+  font-size: 20px;
+  margin-bottom: 3px;
+}
+
+.workspace-page .settings-costs > :not(#fixed-costs) {
+  margin: 5px 0;
+}
+
+.workspace-page .entry-form input[readonly] {
+  background: var(--canvas);
+}
+
+@media (max-width: 819px) {
+  .workspace-page .workspace-shell {
+    height: auto;
+    min-height: calc(100dvh - 2 * var(--frame-margin));
+  }
+
+  .workspace-page :is(.workspace-header, .room-overview) {
+    padding-inline: 14px;
+  }
+
+  .workspace-page .workspace-main,
+  .workspace-page .workspace-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace-page .workspace-main {
+    flex: 1 0 auto;
+  }
+
+  .workspace-page .workspace-chat {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .workspace-page #messages {
+    min-height: 110px;
+    max-height: min(42dvh, 370px);
+  }
+
+  .workspace-page .workspace-board {
+    overflow: visible;
+    padding: 12px;
+  }
+
+  .workspace-page .workspace-card {
+    min-height: 0;
+  }
+
+  .workspace-page .route-card {
+    min-height: 255px;
+  }
+
+  .workspace-page .place-card {
+    min-height: 181px;
+  }
+}
+
+@media (max-width: 480px) {
+  .workspace-page .workspace-nav {
+    column-gap: 9px;
+  }
+
+  .workspace-page .workspace-header,
+  .workspace-page .room-overview {
+    flex-wrap: wrap;
+    gap: 0 8px;
+    padding-block: 7px;
+  }
+
+  .workspace-page .room-access {
+    justify-items: start;
+  }
+
+  .workspace-page .room-actions {
+    justify-content: flex-start;
+  }
+
+  .rooms-page .room-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rooms-page .entry-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  :is(.workspace-page, .rooms-page) .entry-form fieldset {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  :is(.workspace-page, .rooms-page) .entry-form fieldset label:first-of-type {
+    grid-column: 1 / -1;
+  }
+}
