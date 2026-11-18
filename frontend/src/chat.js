@@ -35,3 +35,7 @@ export function reconcileChat(list,snapshot,userId) {
   list.replaceChildren(...reconcileRows(chatRows(snapshot.messages),nodes,row => createChatNode(row,snapshot.members,userId)));
   list.dataset.userId = userId;
 }
+function captureChatPosition(list) {
+  return {top:list.scrollTop,height:list.scrollHeight,viewport:list.clientHeight,
+    first:list.querySelector('.chat-message')?.id,count:list.querySelectorAll('.chat-message').length};
+}
