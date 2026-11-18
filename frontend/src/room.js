@@ -1,4 +1,4 @@
-import {runRoomTask} from './room-errors.js';
+import {runRoomTask,roomLoadRedirect} from './room-errors.js';
 import {restoreTripForm,readTripForm,bindFixedCostControls} from './trip-form.js';
 import {renderRoutePanel} from './route-view.js';
 import {getSelectedDay,setSelectedDay} from './state.js';
@@ -59,7 +59,16 @@ export async function startRoomApp() {
   subscribeState(snapshot => snapshot && renderRoom(snapshot));
   setUser(user);
   html('session', e(user.name));
-  if (savedRoom) enterRoom(await requestJson('/api/rooms/' + encodeURIComponent(savedRoom)));
+  await openSavedRoom(savedRoom);
+}
+async function openSavedRoom(id) {
+  try { enterRoom(await requestJson('/api/rooms/' + encodeURIComponent(id))); }
+  catch (error) {
+    const destination = roomLoadRedirect(error);
+    if (!destination) throw error;
+    clearRoomId();
+    navigate(destination);
+  }
 }
 run(startRoomApp);
 let closeEvents = () => {};
@@ -247,5 +256,5 @@ document.addEventListener('click',event => {
 document.getElementById('retry').onclick = () => run(async () => {
   showError(null);
   if (roomId) await refreshRoom();
-  else showUser(await requestJson('/api/auth/me'));
+  else await startRoomApp();
 });
