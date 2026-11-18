@@ -59,3 +59,14 @@ test('the typed decision reader preserves numeric fields in the submitted payloa
   ]};
   assert.deepEqual(decisions.readDecisionValue?.(form),{menu_id:'fixture:menu-a',quantity:2,scope:'shared'});
 });
+
+import scenarios from '../fixtures/scenarios.json' with {type:'json'};
+
+test('anchor, stay and menu questions offer controls with DTO field names', () => {
+  const card = {};
+  globalThis.document = {getElementById:() => card};
+  decisions.renderQuestions(scenarios.questions.snapshot);
+  assert.match(card.innerHTML,/name="latitude" type="number"/);
+  assert.match(card.innerHTML,/name="stay_minutes" type="number"/);
+  assert.match(card.innerHTML,/<select name="scope"/);
+});
