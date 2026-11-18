@@ -41,6 +41,7 @@ test('a required condition awaiting its owner disables plan confirmation', () =>
   globalThis.document = {getElementById:id => ({set innerHTML(value) { output[id] = value; }})};
   plan.renderPlan(room);
   assert.match(output.plan,/data-plan="confirm" disabled/);
+  assert.match(output.plan,/href="#constraints"/);
 });
 
 function renderConsensus(room) {
