@@ -81,7 +81,7 @@ def collect_generations(model):
         model.generate = original
 
 
-async def replay_modes(runtime, cases, modes):
+async def replay_modes(runtime, cases, modes, metrics=None):
     from contextlib import nullcontext
     from unittest.mock import patch
     reports = {}
@@ -89,8 +89,23 @@ async def replay_modes(runtime, cases, modes):
         rows = []
         with patch('ai.models.qwen_generation.extraction_options', return_value={}) if mode == 'unconstrained' else nullcontext():
             for case in cases:
+                offset = len(metrics or [])
                 row = await replay_case(runtime, case)
+                row["generations"] = (metrics or [])[offset:]
                 rows.append(row)
                 print(json.dumps(dict(mode=mode, id=row['id'], passed=row['passed'], issues=row['issues'], seconds=row['seconds']), ensure_ascii=False), flush=True)
         reports[mode] = dict(summary=summarize(rows), rows=rows)
     return reports
+
+
+async def evaluate(config, cases, modes):
+    from contextlib import nullcontext
+    from ai.runtime import create_runtime
+    runtime = create_runtime(config)
+    try:
+        await replay_case(runtime, dict(id='warmup', group='negative', text='안녕', places=[], conditions={}))
+        model = getattr(runtime.model.backend, 'model', None)
+        with collect_generations(model) if model is not None else nullcontext([]) as metrics:
+            return await replay_modes(runtime, cases, modes, metrics)
+    finally:
+        await runtime.aclose()
