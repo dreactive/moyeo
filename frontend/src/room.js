@@ -1,3 +1,4 @@
+import {requireSession,readRoomId,saveRoomId,clearRoomId,navigate,preparePage,signOut} from './session.js';
 import {html,escapeHtml as e} from './ui.js';
 import {requestJson,getDataMode} from './api.js';
 import {applySnapshot,subscribeState,setUser} from './state.js';
@@ -23,14 +24,17 @@ export function renderRoom(snapshot) {
   html('agent', e(snapshot.agent_status.label) + ' / ' + e(snapshot.agent_status.state) + ' / ' + e(snapshot.agent_status.run_id));
 }
 export async function startRoomApp() {
+  preparePage();
+  const user = await requireSession();
+  if (!user) return;
+  const savedRoom = readRoomId();
+  if (!savedRoom) return navigate('/rooms.html');
   initMaps({routeElement:document.getElementById('route-map'),placeElement:document.getElementById('place-map'),appKey:document.querySelector('meta[name="kakao-map-app-key"]').content});
-  bindAccount(); bindSessionActions(); bindFixtureControls(); bindPlanActions(); bindDecisionActions(); bindTripInput(); bindHistory();
+  bindSessionActions(); bindFixtureControls(); bindPlanActions(); bindDecisionActions(); bindTripInput(); bindHistory();
   html('mode', getDataMode() === 'fixture' ? '개발용 fixture · 실제 API 조회 아님' : 'LIVE · Backend 연결');
   subscribeState(snapshot => snapshot && renderRoom(snapshot));
-  const user = await requestJson('/api/auth/me');
   setUser(user);
   html('session', e(user.name));
-  const savedRoom = getDataMode() === 'fixture' ? 'room-fixture' : sessionStorage.getItem('trip-room');
   if (savedRoom) enterRoom(await requestJson('/api/rooms/' + encodeURIComponent(savedRoom)));
 }
 startRoomApp().catch(showError);
@@ -45,7 +49,7 @@ export function enterRoom(snapshot) {
   closeEvents();
   roomId = snapshot.room_id;
   restoreTrip(snapshot);
-  sessionStorage.setItem('trip-room',roomId);
+  saveRoomId(roomId);
   applySnapshot(snapshot);
   closeEvents = openRoomEvents(roomId,{onMessage:data => appendMessage(data.message,data.seq),
     onRoomUpdated:() => run(() => refreshRoom()),onPlanConfirmed:() => run(() => refreshRoom()),
@@ -60,14 +64,6 @@ function bindForm(id, task) {
   };
 }
 function showUser(user) { setUser(user); html('session',e(user?.name ?? '로그인 전')); }
-function bindAccount() {
-  bindForm('auth',async (data, action) => {
-    const body = action === 'register' ? data : {email:data.email,password:data.password};
-    showUser(await requestJson('/api/auth/' + action,{method:'POST',body}));
-    document.querySelector('#auth [name=password]').value = '';
-  });
-  bindForm('join',async body => enterRoom(await requestJson('/api/rooms/join',{method:'POST',body})));
-}
 
 function bindSessionActions() {
   document.getElementById('logout').onclick = () => run(async () => {
