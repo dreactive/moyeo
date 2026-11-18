@@ -115,3 +115,15 @@ def test_utterance_builds_fresh_isolated_message():
     assert first['run_id'] != second['run_id']
     assert first['recent_messages'][-1]['text'] == body.text
     assert first['recent_messages'][-1]['author_id'] == 'u1'
+
+
+def test_utterance_rejects_unknown_author():
+    import pytest
+    from fastapi import HTTPException
+    from backend.dev_schemas import Utterance
+    from backend.dev_examples import tool_examples
+    from backend.services.dev_sandbox import utterance_task
+    body = Utterance(context=tool_examples('search_places')['fixture']['value']['context'], text='안녕', author_id='outsider')
+    with pytest.raises(HTTPException) as error:
+        utterance_task(body)
+    assert error.value.status_code == 422

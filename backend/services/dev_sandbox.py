@@ -44,6 +44,8 @@ async def tool_result(body, name, settings):
 
 def utterance_task(body):
     task = body.context.model_dump()
+    if body.author_id not in {member['user_id'] for member in task['members']}:
+        raise HTTPException(422, 'author_id must belong to context.members')
     task.update(run_id=uuid4().hex, goal=body.goal)
     task['recent_messages'].append(dict(id=uuid4().hex, author_id=body.author_id,
                                         text=body.text, created_at=datetime.now(timezone.utc).isoformat()))
