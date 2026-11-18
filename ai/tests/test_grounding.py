@@ -159,3 +159,18 @@ def test_api_length_message_facts_keep_valid_full_evidence():
     message = dict(id='long',author_id='u1',text='오동도 가자. ' + '가' * 9992)
     batch = ExtractionBatch.model_validate(facts_to_batch(dict(places=['오동도'],conditions=[],intents=['place']),message,value))
     assert batch.item_proposals[0].evidence.quote == message['text']
+
+def test_repeated_place_mentions_merge_sources_before_support_resolution():
+    from ai.extraction_projection import facts_to_batch
+    from ai.extraction_schema import ExtractionBatch
+    from ai.grounding import ground_extraction
+    value = task()
+    value['items'] = []
+    value['recent_messages'] = [dict(id='a',author_id='u1',text='오동도 가자'),dict(id='b',author_id='u2',text='오동도 가자')]
+    batches = [facts_to_batch(dict(places=['오동도'],conditions=[],intents=['place']),message,value) for message in value['recent_messages']]
+    raw = {key:sum((batch[key] for batch in batches),[]) for key in batches[0]}
+    output = ground_extraction(ExtractionBatch.model_validate(raw),value).proposals
+    assert len(output['item_proposals']) == 1
+    assert output['item_proposals'][0]['source_message_ids'] == ['a','b']
+    assert {p['author_id'] for p in output['support_observations']} == {'u1','u2'}
+    assert output['questions'] == []

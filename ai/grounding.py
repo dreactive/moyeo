@@ -64,6 +64,7 @@ def ground_extraction(batch, task):
         item['client_ref'] += ':' + str(counts[ref]) if counts[ref] else ''
         counts[ref] += 1
     conditions, condition_errors = project_many(raw['constraint_proposals'], project_condition, task)
+    items = merge_place_mentions(items)
     supports, questions, support_errors = support_results(raw['support_observations'], task, items)
     rejected = list(dict.fromkeys(item_errors + condition_errors + support_errors))
     issues = ['ungrounded_proposal'] if rejected else []
@@ -113,3 +114,12 @@ def assist_conditions(conditions, task):
                 conditions.append(proposal)
                 added += 1
     return added
+
+
+def merge_place_mentions(items):
+    grouped = {}
+    for item in items:
+        key = item['existing_item_id'], normalized(item['title'])
+        canonical = grouped.setdefault(key, item)
+        canonical['source_message_ids'] = list(dict.fromkeys(canonical['source_message_ids'] + item['source_message_ids']))
+    return list(grouped.values())
