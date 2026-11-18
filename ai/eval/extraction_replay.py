@@ -34,3 +34,16 @@ def provenance_issues(case, result):
             if proposal['source_message_ids'] != [case['id']] or proposal.get('owner_id', 'u1') != 'u1':
                 return ['provenance']
     return []
+
+
+async def replay_case(runtime, case):
+    import time
+    events = []
+    async def sink(event):
+        events.append(event)
+    started = time.perf_counter()
+    result = await runtime.run(case_task(case), sink)
+    issues = check_case(case, result)
+    return dict(id=case['id'], group=case['group'], critical=case.get('critical',False),
+                passed=not issues, issues=issues, seconds=time.perf_counter() - started,
+                tool_calls=sum(e['event'] == 'tool_call' for e in events), result=result)

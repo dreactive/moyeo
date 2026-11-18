@@ -16,3 +16,11 @@ def test_replay_rejects_wrong_source_or_owner():
     case = dict(id='new')
     result = dict(item_proposals=[],constraint_proposals=[dict(owner_id='u2',source_message_ids=['old'])],support_observations=[])
     assert provenance_issues(case,result) == ['provenance']
+
+async def test_fake_replay_never_executes_provider_tools():
+    from ai.eval.extraction_replay import replay_case
+    from ai.runtime import create_runtime
+    runtime = create_runtime(dict(model_backend='fake',provider_mode='fixture'))
+    row = await replay_case(runtime,dict(id='island',group='place',text='오동도 가자',places=['오동도'],conditions={}))
+    await runtime.aclose()
+    assert row['passed'] and not row['tool_calls']
