@@ -56,3 +56,12 @@ def test_tool_response_context_can_be_reused(api):
                       headers={'X-Dev-Token': 'test-dev'}).json()
     assert result['context']['observations'][-1] == result['observation']
     assert result['observation']['result'] == result['result']
+
+
+def test_itinerary_endpoint_derives_canonical_arguments(api):
+    from backend.dev_examples import tool_examples
+    api.app.state.dev_token = 'test-dev'
+    response = api.post('/api/dev/tools/build_itinerary', json=tool_examples('build_itinerary')['fixture']['value'],
+                        headers={'X-Dev-Token': 'test-dev'})
+    assert response.status_code == 200, response.text
+    assert response.json()['result']['days'][0]['visits'][0]['start_at'].endswith('11:30:00+09:00')

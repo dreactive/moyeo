@@ -5,7 +5,11 @@ from datetime import datetime, timezone
 async def execute_tool(body, name, settings):
     from ai.tools.registry import RegisteredTools
     tools = RegisteredTools(body.context.model_dump(), settings.get('provider_mode', 'fixture'), settings)
-    arguments = body.arguments.model_dump()
+    if body.arguments is None:
+        from ai.planning import itinerary_arguments
+        arguments = itinerary_arguments(tools.context)
+    else:
+        arguments = body.arguments.model_dump()
     result = await tools.execute(name, arguments)
     context = body.context.model_dump()
     observation = dict(tool_name=name, arguments=arguments, result=result,
