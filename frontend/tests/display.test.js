@@ -52,3 +52,11 @@ test('the individual plan amount comes from the signed-in traveler', () => {
   renderCost({...cost,per_person_krw:{u1:null,u2:173400}},'u1');
   assert.match(card.innerHTML,/내 전체 계획액\s*<strong[^>]*>미확인/);
 });
+
+test('personal budget figures distinguish spending now from the balance after planning', () => {
+  const card = {};
+  globalThis.document = {getElementById:() => card};
+  renderCost(scenarios.ready.snapshot.current_plan.cost,'u2');
+  assert.match(card.innerHTML,/<dt>앞으로 쓸 수 있는 금액<\/dt><dd>120,000원/);
+  assert.match(card.innerHTML,/<dt>계획 반영 후 여유<\/dt><dd>50,000원/);
+});
