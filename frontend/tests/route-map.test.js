@@ -42,3 +42,14 @@ test('clearing the personal map removes SDK mode from that host only', () => {
   assert.match(place.innerHTML,/장소를 선택/);
   assert.equal(route.innerHTML,before);
 });
+
+test('an SDK load failure keeps coordinates visible with the failure reason',async t => {
+  route.insertAdjacentHTML = (_,markup) => { route.innerHTML = markup + route.innerHTML; };
+  globalThis.document = {createElement:() => ({}),head:{append:script => script.onerror()}};
+  t.after(() => delete globalThis.document);
+  const loading = initMaps({appKey:'test-key',routeElement:route,placeElement:place});
+  renderRouteMap(plan,new Map(),config,'2026-11-21');
+  await loading;
+  assert.match(route.innerHTML,/지도를 불러오지 못했어요/);
+  assert.match(route.innerHTML,/34[.]76, 127[.]66/);
+});
