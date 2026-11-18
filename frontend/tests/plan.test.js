@@ -56,3 +56,13 @@ test('votes stop projecting as current when the room basis changes', () => {
   room.versions.constraint_version++;
   assert.match(renderConsensus(room),/0\/4/);
 });
+
+test('unanimous votes wait for the official snapshot of the same target', () => {
+  const room = structuredClone(fixture);
+  room.confirmations = room.members.map(({user_id}) => ({
+    user_id,stance:'confirm',target:room.current_plan.confirmation_target
+  }));
+  assert.match(renderConsensus(room),/4\/4.*모두 동의 · 확정 확인 중/);
+  room.confirmed_plan = room.current_plan;
+  assert.match(renderConsensus(room),/4\/4.*공식 확정/);
+});
