@@ -22,7 +22,8 @@ async def extract_proposals(task, model, emit_trace):
                dict(goal=task["goal"], candidates=[], selected_index=None, scores=[],
                     model_mode=getattr(model, "mode", "unknown"), base_versions=task["base_versions"],
                     extraction_mode="schema-grounded", model_format_error=error,
-                    schema_version="1", extraction_report=output["extraction_report"]))
+                    schema_version="1", decoder_mode="json-schema" if getattr(model, "mode", "unknown") == "local_qwen" else "fixture-schema",
+                    model_proposal_counts={key:len(getattr(batch, key)) if batch else 0 for key in ("item_proposals", "constraint_proposals", "support_observations")}, extraction_report=output["extraction_report"]))
     return output
 
 

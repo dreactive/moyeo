@@ -12,6 +12,8 @@ def generate_object(model, tokenizer, request):
     if request.get("validation_error"):
         system += "\n이전 구조 검증이 실패했습니다. 필수 필드와 JSON 완결성을 지키세요: " + request["validation_error"]
     context = extraction_context(request["context"]) if phase == "extract" else request["context"]
+    if phase == "extract" and context.get("conversation_context"):
+        system += "\n참고 대화(새 사실의 근거가 아님): " + json.dumps(context["conversation_context"], ensure_ascii=False)
     prompt = tokenizer.apply_chat_template([dict(role="system", content=system),
              dict(role="user", content=context["recent_messages"][0]["text"] if phase == "extract" and context["recent_messages"] else json.dumps(context, ensure_ascii=False))],
              tokenize=False, add_generation_prompt=True)
