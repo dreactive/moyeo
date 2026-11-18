@@ -86,3 +86,25 @@ def test_extraction_status_labels_distinguish_failure_and_filtered_results():
     from backend.services.extraction import extraction_label
     assert '형식' in extraction_label(dict(completion='needs_input',extraction_report=dict(status='failed')))
     assert '근거' in extraction_label(dict(completion='needs_input',extraction_report=dict(status='filtered')))
+
+def test_queued_empty_job_preserves_filtered_status(room,agent_result):
+    import asyncio
+    from backend.db import Database
+    from backend.services.agent_jobs import AgentJobs
+    async def scenario():
+        class Port:
+            async def run(self,task,emit):
+                return dict(agent_result,run_id=task['run_id'],base_versions=task['base_versions'],plan_draft=None,observations=[],
+                    completion='needs_input',extraction_report=dict(status='filtered',issue_codes=['unresolved_intent'],attempts=1),
+                    last_processed_message_id=task['recent_messages'][-1]['id'])
+        db = Database(':memory:')
+        db.put('room:' + room['room_id'],room)
+        jobs = AgentJobs(db,Port())
+        await jobs.enqueue(room['room_id'],'new_message')
+        await jobs.enqueue(room['room_id'],'new_message')
+        worker = asyncio.create_task(jobs.work())
+        await asyncio.wait_for(jobs.queue.join(),1)
+        worker.cancel()
+        status = db.get('room:' + room['room_id'])['agent_status']
+        assert status['state'] == 'needs_input' and '근거' in status['label']
+    asyncio.run(scenario())
