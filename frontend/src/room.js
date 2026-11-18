@@ -157,12 +157,15 @@ function bindDecisionActions() {
     const form = event.target;
     if (!form.dataset.question && !form.dataset.constraint) return;
     event.preventDefault();
-    run(() => roomAction(form.dataset.question ? 'questions/' + encodeURIComponent(form.dataset.question) + '/answer' : 'constraints/' + encodeURIComponent(form.dataset.constraint),{value:readDecisionValue(form)},form.dataset.question ? 'POST' : 'PATCH'));
+    run(() => withPending(event.submitter,async () => {
+      await roomAction(form.dataset.question ? 'questions/' + encodeURIComponent(form.dataset.question) + '/answer' : 'constraints/' + encodeURIComponent(form.dataset.constraint),{value:readDecisionValue(form)},form.dataset.question ? 'POST' : 'PATCH');
+      if (form.contains(document.activeElement)) document.activeElement.blur();
+    }));
   });
   document.addEventListener('click',event => {
     const button = event.target.closest('[data-conflict],[data-constraint-confirm]');
     if (!button) return;
-    run(() => button.dataset.conflict ? roomAction('conflicts/' + encodeURIComponent(button.dataset.conflict) + '/select',{option_id:button.dataset.option}) : roomAction('constraints/' + encodeURIComponent(button.dataset.constraintConfirm) + '/confirm'));
+    run(() => withPending(button,() => button.dataset.conflict ? roomAction('conflicts/' + encodeURIComponent(button.dataset.conflict) + '/select',{option_id:button.dataset.option}) : roomAction('constraints/' + encodeURIComponent(button.dataset.constraintConfirm) + '/confirm')));
   });
 }
 
