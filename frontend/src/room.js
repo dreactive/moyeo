@@ -16,7 +16,7 @@ import {withPending} from './ui.js';
 import {renderItems,renderConstraints,renderQuestions,renderConflicts,readDecisionValue} from './items.js';
 import {renderPlan,displayPlan} from './plan.js';
 import {renderCost} from './cost.js';
-import {scenarios,replayScenario,setFixtureUser,emitFixture} from './fixture-api.js';
+import {scenarios,replayScenario,setFixtureUser,getFixtureScenario} from './fixture-api.js';
 import {tripPatch} from './trip-input.js';
 import {initMaps,renderRouteMap,renderPlaceMap} from './map.js';
 import {selectPlace,renderPlace} from './place.js';
@@ -61,6 +61,10 @@ export async function startRoomApp() {
   }
   setUser(user);
   html('session', e(user.name));
+  if (getDataMode() === 'fixture') {
+    document.getElementById('fixture-user').value = user.id;
+    document.getElementById('scenario').value = getFixtureScenario();
+  }
   await openSavedRoom(savedRoom);
 }
 async function openSavedRoom(id) {
@@ -83,6 +87,7 @@ export async function refreshRoom(id = roomId) {
 }
 export function enterRoom(snapshot) {
   closeEvents();
+  routeRenderStamp = null;
   roomId = snapshot.room_id;
   restoreTrip(snapshot);
   saveRoomId(roomId);
