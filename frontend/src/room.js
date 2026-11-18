@@ -154,7 +154,13 @@ function bindPlanActions() {
     const action = button.dataset.plan;
     run(() => withPending(button,() => roomAction('plan/' + action,action === 'activate' ? {plan_revision:snapshot.current_plan.plan_revision} : {target:displayPlan(snapshot).confirmation_target})));
   });
-  document.getElementById('replan').onclick = event => run(() => withPending(event.currentTarget,() => roomAction('agent-runs',{reason:'manual_replan'})));
+  document.getElementById('replan').onclick = event => {
+    const button = event.currentTarget;
+    run(() => withPending(button,() => roomAction('agent-runs',{reason:'manual_replan'})).finally(() => {
+      const snapshot = getSnapshot();
+      if (snapshot) renderAgentBanner(snapshot);
+    }));
+  };
 }
 
 function bindDecisionActions() {
