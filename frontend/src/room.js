@@ -1,4 +1,4 @@
-import {renderOverview} from './workspace-view.js';
+import {renderOverview,renderAgentBanner} from './workspace-view.js';
 import {renderChat,isSendKey} from './chat.js';
 import {getUser} from './state.js';
 import {requireSession,readRoomId,saveRoomId,clearRoomId,navigate,preparePage,signOut} from './session.js';
@@ -23,7 +23,7 @@ export function renderRoom(snapshot) {
   renderPlan(snapshot); renderCost(displayPlan(snapshot)?.cost,getUser()?.id); run(() => renderMaps(snapshot));
   renderChat(snapshot,getUser()?.id);
   renderOverview(snapshot);
-  html('agent', e(snapshot.agent_status.label) + ' / ' + e(snapshot.agent_status.state) + ' / ' + e(snapshot.agent_status.run_id));
+  renderAgentBanner(snapshot);
 }
 export async function startRoomApp() {
   preparePage();

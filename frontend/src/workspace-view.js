@@ -15,3 +15,9 @@ export function renderOverview(snapshot) {
   html('invite-code',e(snapshot.invite_code));
   html('members',snapshot.members.map(member => `<span class="member-avatar" title="${e(member.name)}">${e(member.name.slice(0,1))}</span>`).join('') + `<span class="member-count">${snapshot.members.length}명 참여</span>`);
 }
+export function renderAgentBanner(snapshot) {
+  const questions = snapshot.questions.filter(item => item.status === 'open').length;
+  const conflicts = snapshot.conflicts.filter(item => item.status === 'open').length;
+  html('agent',`<strong>${e(snapshot.agent_status.label)}</strong><p>확인 질문 ${questions}개 · 해결할 충돌 ${conflicts}개</p>`);
+  document.getElementById('replan').disabled = snapshot.agent_status.state === 'running';
+}
