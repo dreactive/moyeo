@@ -41,6 +41,15 @@ function hydrateFixture() {
   Object.assign(fixtureRoom, saved.snapshot);
   setScenarioPlaces(saved.scenario);
 }
+export function resetFixtureSession() {
+  fixtureAuthenticated = false;
+  fixtureSessionLoaded = true;
+  setFixtureUser('u1');
+  Object.assign(fixtureRoom, structuredClone(initial));
+  setScenarioPlaces('initial');
+  clearFixtureSession();
+}
+
 export async function requestFixture(path, {method = 'GET',body,headers} = {}) {
   const parts = new URL(path,'http://fixture').pathname.split('/').map(decodeURIComponent);
   if (parts[2] === 'dev') {
@@ -51,7 +60,7 @@ export async function requestFixture(path, {method = 'GET',body,headers} = {}) {
   hydrateFixture();
   if (parts[2] === 'auth') {
     if (method === 'POST' && parts[3] === 'logout') {
-      fixtureAuthenticated = false;
+      resetFixtureSession();
       return {ok:true};
     }
     if (method === 'POST' && ['login','register'].includes(parts[3])) {

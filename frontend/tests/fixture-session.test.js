@@ -77,3 +77,15 @@ test('the selected fixture user survives a new document', async () => {
   const user = await next.requestFixture('/api/auth/me');
   assert.equal(user.id,'u3');
 });
+
+test('fixture logout removes fixture data and preserves live room selection', async () => {
+  const values = new Map([['trip-room','live-room'],['trip-fixture-room','room-fixture']]);
+  globalThis.sessionStorage = {
+    getItem: key => values.get(key),
+    setItem: (key,value) => values.set(key,value),
+    removeItem: key => values.delete(key)
+  };
+  await requestFixture('/api/auth/login', {method:'POST'});
+  await requestFixture('/api/auth/logout', {method:'POST'});
+  assert.deepEqual([...values], [['trip-room','live-room']]);
+});
