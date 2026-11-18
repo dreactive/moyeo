@@ -38,3 +38,23 @@ def project_condition(proposal, task):
     if value is None or type(value) is not type(proposal['value']) or value != proposal['value']:
         return None
     return dict({k: v for k, v in proposal.items() if k != 'evidence'}, source_message_ids=[message['id']])
+
+
+def project_many(proposals, projector, task):
+    accepted, rejected = [], []
+    for proposal in proposals:
+        result = projector(proposal, task)
+        if result is None:
+            rejected.append(proposal['evidence']['message_id'])
+        else:
+            accepted.append(result)
+    return accepted, rejected
+
+
+def ground_extraction(batch, task):
+    raw = batch.model_dump()
+    items, item_errors = project_many(raw['item_proposals'], project_item, task)
+    conditions, condition_errors = project_many(raw['constraint_proposals'], project_condition, task)
+    rejected = list(dict.fromkeys(item_errors + condition_errors))
+    return GroundedExtraction(dict(item_proposals=items, constraint_proposals=conditions,
+        support_observations=[], questions=[]), ['ungrounded_proposal'] if rejected else [], rejected)

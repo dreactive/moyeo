@@ -29,3 +29,17 @@ def test_condition_projection_rejects_greeting_hallucination_and_hidden_negation
     value['recent_messages'][0]['text'] = '내 예산은 20만원이 아니야'
     proposal.update(key='budget', value=200000, evidence=dict(message_id='new', quote='예산은 20만원'))
     assert project_condition(proposal, value) is None
+
+def test_batch_keeps_valid_place_and_reports_rejected_condition():
+    from ai.grounding import ground_extraction
+    from ai.extraction_schema import ExtractionBatch
+    value = task()
+    value['recent_messages'] = [dict(id='new', author_id='u1', text='롤링 파스타에서 점심 먹자')]
+    evidence = dict(message_id='new', quote=value['recent_messages'][0]['text'])
+    raw = dict(message_assessments=[dict(message_id='new', intents=['place','condition'])],
+        item_proposals=[dict(title='롤링 파스타', mention_text='롤링 파스타', existing_item_id=None, evidence=evidence)],
+        constraint_proposals=[dict(owner_id='u1', key='return_by', value='12:00', kind='hard', replaces_constraint_id=None, evidence=evidence)], support_observations=[])
+    output = ground_extraction(ExtractionBatch.model_validate(raw), value)
+    assert len(output.proposals['item_proposals']) == 1
+    assert output.proposals['constraint_proposals'] == []
+    assert output.rejected_message_ids == ['new']
