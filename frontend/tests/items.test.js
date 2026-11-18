@@ -176,3 +176,7 @@ test('a pending verification stays visible beside the collapsed owner edit', () 
   setUser(null);
   assert.match(card.innerHTML,/<details[^>]*><summary>조건 수정<\/summary>[\s\S]*<\/details>\s*<button[^>]+data-constraint-confirm/);
 });
+
+test('source controls refer readers to the conversation while preserving the message target', () => {
+  assert.match(decisions.sourceLinks(['m4']),/data-message="m4">대화에서 보기<\/button>/);
+});

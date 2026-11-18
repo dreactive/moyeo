@@ -2,7 +2,9 @@ import {html,escapeHtml as e,money} from './ui.js';
 import {displayPlan,sameTarget,hasCurrentBasis} from './plan.js';
 import {getUser} from './state.js';
 const labels = {mentioned:'언급됨',supported:'다수 지지',confirmed:'확정',pending:'새 안 · 미확정'};
-export const sourceLinks = ids => ids.map(id => `<button data-message="${e(id)}">근거 ${e(id)}</button>`).join('');
+export const sourceLinks = ids => ids.map((id,index) =>
+  `<button type="button" data-message="${e(id)}">대화에서 보기${ids.length > 1 ? ' ' + (index + 1) : ''}</button>`
+).join('');
 export function renderItems(snapshot) {
   const plan = displayPlan(snapshot);
   html('items', snapshot.items.map(item => {
