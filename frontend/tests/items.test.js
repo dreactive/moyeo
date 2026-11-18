@@ -100,3 +100,14 @@ test('editing a return deadline passes a scalar time to the existing condition r
   assert.doesNotThrow(() => decisions.readDecisionValue(form));
   assert.equal(decisions.readDecisionValue(form),'16:00');
 });
+
+import {setUser} from '../src/state.js';
+test('condition rows name their owner and reserve verification for a pending owner decision', () => {
+  const card = {};
+  globalThis.document = {getElementById:() => card};
+  setUser({id:'u1'});
+  decisions.renderConstraints(scenarios.conflict.snapshot);
+  setUser(null);
+  assert.match(card.innerHTML,/참가자4 · 필수 · 본인 확인됨/);
+  assert.doesNotMatch(card.innerHTML,/data-constraint="return-time"|data-constraint-confirm=/);
+});

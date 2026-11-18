@@ -29,14 +29,16 @@ function conditionInput(condition) {
   if (!type) return '';
   return `<label>${constraintLabels[condition.key]}<input name="value" type="${type}" value="${e(condition.value)}" required></label>`;
 }
+const memberName = (snapshot,id) => snapshot.members.find(member => member.user_id === id)?.name ?? id;
 export function renderConstraints(snapshot) {
   html('constraints', snapshot.constraints.map(item => {
     const input = conditionInput(item);
     return `<div class="card">
   <strong>${e(constraintLabels[item.key] ?? item.key)} · ${e(conditionValue(item))}</strong>
-  <p class="constraint-meta">${e(item.owner_id)} · ${item.kind === 'hard' ? '필수' : '선호'} · ${e(constraintStatuses[item.status] ?? item.status)}</p>
+  <p class="constraint-meta">${e(memberName(snapshot,item.owner_id))} · ${item.kind === 'hard' ? '필수' : '선호'} · ${e(constraintStatuses[item.status] ?? item.status)}</p>
   ${sourceLinks(item.source_message_ids)}
-  ${item.owner_id === getUser()?.id ? `<form data-constraint="${e(item.id)}" data-value-mode="${input ? 'scalar' : 'json'}">${input || `<label>값 (JSON)<input name="value" value="${e(JSON.stringify(item.value))}" required></label>`}<button>수정</button><button type="button" data-constraint-confirm="${e(item.id)}">본인 확인</button></form>` : '<p>소유자만 수정·확인할 수 있습니다.</p>'}</div>`;
+  ${item.owner_id === getUser()?.id ? `<form data-constraint="${e(item.id)}" data-value-mode="${input ? 'scalar' : 'json'}">${input || `<label>값 (JSON)<input name="value" value="${e(JSON.stringify(item.value))}" required></label>`}<button>수정</button>
+  ${item.status === 'needs_owner_confirmation' ? `<button type="button" data-constraint-confirm="${e(item.id)}">본인 확인</button>` : ''}</form>` : ''}</div>`;
   }).join(''));
 }
 export function renderConflicts(snapshot) {
