@@ -81,3 +81,8 @@ def test_queued_empty_message_task_does_not_retry_failed_batch(room, agent_resul
         worker.cancel()
         assert port.calls == 1
     asyncio.run(scenario())
+
+def test_extraction_status_labels_distinguish_failure_and_filtered_results():
+    from backend.services.extraction import extraction_label
+    assert '형식' in extraction_label(dict(completion='needs_input',extraction_report=dict(status='failed')))
+    assert '근거' in extraction_label(dict(completion='needs_input',extraction_report=dict(status='filtered')))

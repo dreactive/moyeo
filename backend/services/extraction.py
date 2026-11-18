@@ -30,3 +30,9 @@ def recovered_failures(failures, message_ids, processed):
         if message_id in failures:
             failures[message_id]['status'] = 'recovered'
     return failures
+
+
+def extraction_label(result):
+    status = result.get('extraction_report', {}).get('status')
+    return {'failed': '메시지 형식을 확인하지 못했습니다. 다시 시도해 주세요.',
+            'filtered': '근거를 확인하지 못한 제안은 반영하지 않았습니다.'}.get(status, result['completion'])

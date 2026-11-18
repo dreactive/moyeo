@@ -1,5 +1,5 @@
 from backend.db import serialized
-from backend.services.extraction import select_extraction_messages
+from backend.services.extraction import select_extraction_messages, extraction_label
 from backend.services.agent_apply import apply_agent_result
 from backend.services.events import publish_event
 from backend.services.observations import get_observations
@@ -54,7 +54,7 @@ class AgentJobs:
             try:
                 task = self.refresh_task(task)
                 if task['goal'] in ('new_message', 'message_created', 'remaining_messages') and not task['recent_messages']:
-                    waiting = bool(self.db.get('failed-extraction:' + task['room_id']))
+                    waiting = any(r['status'] == 'retry_required' for r in (self.db.get('failed-extraction:' + task['room_id']) or {}).values())
                     set_status(self.db, task['room_id'], task['run_id'], 'needs_input' if waiting else 'done', '추출 실패 메시지는 수동 재시도해 주세요.' if waiting else '처리할 새 메시지가 없습니다.')
                     continue
                 self.active_run_id = task['run_id']
@@ -71,9 +71,9 @@ class AgentJobs:
                 if not applied and result.get('extraction_report', {}).get('status') != 'failed' and self.pending[task['room_id']] == 0 and self.db.get('room:' + task['room_id'])['versions'] != task['base_versions']:
                     await self.enqueue(task['room_id'], 'state_changed')
                 step = max((event['step'] for event in self.db.traces.get(task['run_id'], {}).get('events', [])), default=0) + 1
-                await self.emit_trace(dict(run_id=task['run_id'], step=step, event='state_applied', call_id=None, created_at=datetime.now(timezone.utc).isoformat(), payload={'applied':applied, 'summary':'Applied' if applied else 'Stale result', 'versions':self.db.get('room:' + task['room_id'])['versions']}))
+                await self.emit_trace(dict(run_id=task['run_id'], step=step, event='state_applied', call_id=None, created_at=datetime.now(timezone.utc).isoformat(), payload={'applied':applied, 'summary':'Applied' if applied else 'Extraction failed' if result.get('extraction_report', {}).get('status') == 'failed' else 'Stale result', 'versions':self.db.get('room:' + task['room_id'])['versions']}))
                 state = 'done' if applied and result['completion'] == 'done' else 'needs_input'
-                set_status(self.db, task['room_id'], task['run_id'], state, result['completion'])
+                set_status(self.db, task['room_id'], task['run_id'], state, extraction_label(result))
             except Exception:
                 set_status(self.db, task['room_id'], task['run_id'], 'needs_input', 'Agent run failed')
             finally:
