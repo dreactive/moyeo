@@ -3,10 +3,12 @@ const targetKeys = ['participant_version','constraint_version','evidence_version
 export const sameTarget = (a,b) => !!a && !!b && targetKeys.every(key => a[key] === b[key]);
 import {html,escapeHtml as e} from './ui.js';
 import {getUser} from './state.js';
+const validationLabels = {ready:'검증 완료',needs_input:'추가 입력 필요',conflict:'충돌 해결 필요'};
 export function planContent(plan) {
   if (!plan) return '<p>여행안이 아직 없습니다.</p>';
   const titles = new Map(plan.item_snapshots.map(item => [item.id,item.title]));
-  return `<ul>${plan.item_snapshots.map(item => `<li>${e(item.title)} · v${e(item.item_version)}</li>`).join('')}</ul>
+  return `<p>${validationLabels[plan.validation] ?? '검증 상태 미확인'}</p>
+  <ul>${plan.item_snapshots.map(item => `<li>${e(item.title)} · v${e(item.item_version)}</li>`).join('')}</ul>
   ${plan.days.map(day => `<h3>${e(day.date)}</h3><ol>${day.visits.map(visit => `<li>${e(titles.get(visit.item_id) ?? visit.place_ref)} ${e(visit.start_at)} ~ ${e(visit.end_at)} · ${visit.stay_minutes}분 · ${e(visit.assumptions.join(' / '))}</li>`).join('')}</ol>`).join('')}`;
 }
 function confirmationNote(plan,currentBasis,pendingHard) {
