@@ -215,3 +215,14 @@ def test_calculation_cannot_override_canonical_facts(api, name):
     else:
         body['arguments']['route_legs'][0]['duration_seconds'] += 1
     assert api.post(path, json=body, headers=headers).status_code == 422
+
+
+def test_lazy_developer_runtime_is_closed_on_shutdown():
+    from backend.app import create_app
+    from fastapi.testclient import TestClient
+    with TestClient(create_app(database_path=':memory:')) as client:
+        bridge = client.app.state.dev_agent
+        bridge.config = {'model_backend': 'fake', 'provider_mode': 'fixture'}
+        client.portal.call(bridge.start)
+        runtime = bridge.runtime
+    assert bridge.runtime is None and runtime.model.closed
