@@ -58,4 +58,4 @@ docs/verification/deployment.md
 - [x] Cloudflare/Windows/Vercel/Kakao 설정과 점검·문제 해결을 문서화.
 - [x] Backend/FE 회귀와 임시 origin·public key의 실제 build를 실행.
 - [x] 독립 검토 후 필요한 수정, diff·staged·비밀값 점검, 작은 커밋 마감.
-- [ ] 로컬 규칙에 따라 develop push와 master 대상 기존 PR 갱신/생성 시도.
+- [x] 로컬 규칙에 따라 develop push와 master 대상 기존 PR 갱신/생성 시도.
