@@ -66,4 +66,3 @@ Interfaces: lazy `app.state.dev_agent` reuses `LocalAIBridge`; utterance respons
 - [x] Check staged files exclude personal instructions and unrelated documents.
 - [ ] Push `develop` without force and create/update the `master <- develop` PR.
 - [ ] Report tests, commit range, push and PR; distinguish offline coverage from unrun live calls.
-

@@ -43,7 +43,7 @@ not merged. Six developer-only POST operations are documented in Swagger:
 | Check | Result |
 | --- | --- |
 | Backend default suite with AI/Torch/Transformers imports blocked by a fresh-process finder | 128 passed, 23 deselected |
-| Backend explicit integration suite, fake/fixture | 23 passed, 127 deselected at run time; the later test-only addition increased independent tests to 128 |
+| Backend explicit integration suite, fake/fixture | 23 passed |
 | AI offline suite (`not live_model and not live_provider`) | 113 passed |
 | Independent read-only code review | Five P2 findings addressed with regression tests; no remaining/deferred findings |
 | Diff whitespace checks | Passed |
