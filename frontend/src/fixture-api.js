@@ -57,6 +57,13 @@ function isSavedPlan(plan) {
   );
 }
 
+function hasSavedCardLists({items,constraints,questions,conflicts}) {
+  return items.every(item => [item.source_message_ids,item.conflict_ids,item.supporter_ids].every(Array.isArray))
+    && constraints.every(item => Array.isArray(item.source_message_ids))
+    && questions.every(item => Array.isArray(item.related_item_ids))
+    && conflicts.every(item => isRecordList(item.options));
+}
+
 function isSavedFixture(saved) {
   const snapshot = saved.snapshot;
   return saved.authenticated === true && snapshot?.room_id === initial.room_id
@@ -66,6 +73,7 @@ function isSavedFixture(saved) {
     && Object.entries(initial).every(([key, value]) => Object.hasOwn(snapshot, key)
       && (!Array.isArray(value) || isRecordList(snapshot[key])))
     && snapshot.members.every(member => typeof member.name === 'string' && typeof member.user_id === 'string')
+    && hasSavedCardLists(snapshot)
     && [snapshot.current_plan,snapshot.review_plan,snapshot.confirmed_plan].every(isSavedPlan);
 }
 

@@ -165,3 +165,8 @@ test('fixture cost rendering requires line records and personal totals', async (
   await assertRejectedFixtureSnapshot('bad-cost-lines', snapshot => snapshot.current_plan.cost.lines = [null]);
   await assertRejectedFixtureSnapshot('bad-cost-totals', snapshot => snapshot.current_plan.cost.per_person_krw = null);
 });
+
+test('fixture cards require their nested decision and source lists', async () => {
+  await assertRejectedFixtureSnapshot('bad-sources', snapshot => snapshot.constraints[0].source_message_ids = null);
+  await assertRejectedFixtureSnapshot('bad-options', snapshot => snapshot.conflicts = [{status:'open',options:[null]}]);
+});
