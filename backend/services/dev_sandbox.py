@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from fastapi import HTTPException
 from httpx import HTTPError
+from uuid import uuid4
 
 
 async def execute_tool(body, name, settings):
@@ -39,3 +40,11 @@ async def tool_result(body, name, settings):
     context['observations'].append(observation)
     return dict(tool_name=name, provider_mode=tools.mode, arguments=arguments, result=result,
                 observation=observation, context=context)
+
+
+def utterance_task(body):
+    task = body.context.model_dump()
+    task.update(run_id=uuid4().hex, goal=body.goal)
+    task['recent_messages'].append(dict(id=uuid4().hex, author_id=body.author_id,
+                                        text=body.text, created_at=datetime.now(timezone.utc).isoformat()))
+    return task

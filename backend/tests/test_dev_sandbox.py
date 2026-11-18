@@ -104,3 +104,14 @@ def test_developer_agent_is_lazy_and_separate_from_fixture(api):
     bridge = api.app.state.dev_agent
     assert bridge.runtime is None
     assert bridge is not api.app.state.agent
+
+
+def test_utterance_builds_fresh_isolated_message():
+    from backend.dev_schemas import Utterance
+    from backend.dev_examples import tool_examples
+    from backend.services.dev_sandbox import utterance_task
+    body = Utterance(context=tool_examples('search_places')['fixture']['value']['context'], text='예산은 15만원')
+    first, second = utterance_task(body), utterance_task(body)
+    assert first['run_id'] != second['run_id']
+    assert first['recent_messages'][-1]['text'] == body.text
+    assert first['recent_messages'][-1]['author_id'] == 'u1'
