@@ -82,3 +82,7 @@ python -m ai.eval.extraction_replay --model-backend local_qwen --base-model-path
 - 현재 자동 확인 가능한 조건은 개인 예산과 귀가 마감이다. 지원하지 않는 key와 불명확한 문법/복수 값은 needs_input으로 남기며 표현을 명확히 하거나 별도 validator를 추가해야 한다.
 - 기존 DB에 저장된 잘못된 조건은 자동 삭제·역추적 수정하지 않았다. 기존 실행 서버는 새 브랜치/의존성으로 재시작한 뒤 새 메시지부터 동작을 확인해야 한다.
 - 본 기능 브랜치를 전달하며 develop/master에 직접 병합하거나 기존 열린PR#1을 자동 병합하지 않는다.
+
+## 원격 전달
+
+`codex/grounded-qwen-extraction`을 원격에 push하고 [PR#2](https://github.com/SEMI-CNU/trip-agent/pull/2)를 develop 대상으로 생성했다. 사용자 지정 새 브랜치에서 전달했으며 기존 develop→master PR#1은 직접 병합하거나 변경하지 않았다. develop 대비 선행 후보 전용4개 커밋도 포함한다.

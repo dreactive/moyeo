@@ -108,7 +108,7 @@
 - [x] 격리 입력의 실제 Qwen 32개 회귀와 자유/제한 생성 비교를 단일 GPU 실행 주체가 수행한다. 핵심 3개 장소 성공, 근거 없는 hard 조건 저장0, 정상 완료 구조검증100%를 확인하고 false rejection/recall/p50/p95/잘림을 공개한다. 실패하면 계획 완료로 보고하지 않는다.
 - [x] 기존 실제 방의 잘못된 조건은 자동 정정/삭제하지 않는다. 배포 후 별도 사용자 확인으로 정정하는 절차만 안내한다.
 - [x] 문서에 모델·adapter 정책·정확한 의존성 버전·코드 버전·명령·결과·미검증 범위를 기록한다. 개인 스킬 체크 후 작은 커밋 목록을 정리한다.
-- [ ] 구현 요청에서 승인된 전달 범위와 브랜치 통합 경로를 확인한 뒤 develop push/master 대상 PR 절차를 따른다. 자동 merge하지 않는다. 계획 작성만으로 push/PR을 시작하지 않는다.
+- [x] 구현 요청에서 승인된 전달 범위와 브랜치 통합 경로를 확인한 뒤 develop push/master 대상 PR 절차를 따른다. 자동 merge하지 않는다. 계획 작성만으로 push/PR을 시작하지 않는다.
 
 ## 자체 검토 결과
 
@@ -123,3 +123,5 @@
 작업1–7과 독립 코드 리뷰의6개 수정 완료. 세부 구현 판단과 테스트 근거는 설계의 실제 적용 기록 및 docs/verification/grounded-qwen-extraction.md를 따른다. 전달은 사용자 지정 새 기능 브랜치에서 수행하며 develop/master에 직접 병합하지 않는다.
 
 실제 구현의 내부 파싱은 `ExtractionBatch.model_validate()`를 직접 사용하며 별도 중복 파서 래퍼를 만들지 않았다. 조건 검증은 `project_condition()`의 수용/거절을 coordinator가 집계한다.
+
+전달 완료: 새 기능 브랜치를 원격에 push하고 develop 대상 PR https://github.com/SEMI-CNU/trip-agent/pull/2 를 생성했다. 공유 develop/master에 직접 병합하지 않았다.
