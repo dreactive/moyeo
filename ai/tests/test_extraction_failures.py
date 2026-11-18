@@ -24,3 +24,13 @@ async def test_failed_extraction_preserves_watermark_and_never_plans():
     assert output['extraction_report']['status'] == 'failed'
     assert output['last_processed_message_id'] is None
     assert 'candidates' not in output
+
+def test_unresolved_place_intent_is_not_a_clean_empty_result():
+    from ai.extraction_run import extraction_output
+    from ai.extraction_schema import ExtractionBatch
+    from ai.tests.test_place_route_tools import task
+    value = task()
+    value['recent_messages'] = [dict(id='new',author_id='u1',text='전남대학교 가자')]
+    batch = ExtractionBatch(message_assessments=[dict(message_id='new',intents=['place'])],
+                            item_proposals=[],constraint_proposals=[],support_observations=[])
+    assert extraction_output(batch,1,None,value)['extraction_report']['status'] == 'filtered'
