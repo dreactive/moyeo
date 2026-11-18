@@ -73,6 +73,10 @@ function isSavedFixture(saved) {
     && Object.entries(initial).every(([key, value]) => Object.hasOwn(snapshot, key)
       && (!Array.isArray(value) || isRecordList(snapshot[key])))
     && snapshot.members.every(member => typeof member.name === 'string' && typeof member.user_id === 'string')
+    && Number.isInteger(snapshot.seq)
+    && isRecord(snapshot.agent_status)
+    && isRecord(snapshot.versions)
+    && snapshot.messages.every(message => typeof message.author_id === 'string')
     && hasSavedCardLists(snapshot)
     && [snapshot.current_plan,snapshot.review_plan,snapshot.confirmed_plan].every(isSavedPlan);
 }

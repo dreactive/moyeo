@@ -170,3 +170,8 @@ test('fixture cards require their nested decision and source lists', async () =>
   await assertRejectedFixtureSnapshot('bad-sources', snapshot => snapshot.constraints[0].source_message_ids = null);
   await assertRejectedFixtureSnapshot('bad-options', snapshot => snapshot.conflicts = [{status:'open',options:[null]}]);
 });
+
+test('fixture overview and chat require usable nested records', async () => {
+  await assertRejectedFixtureSnapshot('bad-agent-status', snapshot => snapshot.agent_status = null);
+  await assertRejectedFixtureSnapshot('bad-message-author', snapshot => snapshot.messages[0].author_id = null);
+});
