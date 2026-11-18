@@ -97,6 +97,16 @@ def test_invalid_place_returns_validation_error(api):
     assert response.status_code == 422
 
 
+@pytest.mark.parametrize('key', ['provider_mode', 'model_backend'])
+def test_invalid_server_modes_are_unavailable(api, key):
+    from backend.dev_examples import tool_examples
+    api.app.state.dev_token = 'test-dev'
+    api.app.state.dev_runtime_config[key] = 'typo'
+    response = api.post('/api/dev/tools/search_places', json=tool_examples('search_places')['fixture']['value'],
+                        headers={'X-Dev-Token': 'test-dev'})
+    assert response.status_code == 503
+
+
 def test_provider_failure_does_not_expose_secrets(api, monkeypatch):
     import httpx
     from ai.tools.registry import RegisteredTools

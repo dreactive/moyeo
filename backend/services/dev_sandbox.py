@@ -10,7 +10,14 @@ from decimal import DecimalException
 
 async def execute_tool(body, name, settings):
     async with sandbox_errors():
+        validate_settings(settings)
         return await tool_result(body, name, settings)
+
+
+def validate_settings(settings):
+    if (settings.get('provider_mode', 'fixture') not in ('fixture', 'live')
+            or settings.get('model_backend', 'fake') not in ('fake', 'local_qwen')):
+        raise HTTPException(503, 'Invalid server model/provider configuration')
 
 
 @asynccontextmanager
@@ -58,6 +65,7 @@ def utterance_task(body):
 
 async def run_utterance(request, body):
     async with sandbox_errors():
+        validate_settings(request.app.state.dev_runtime_config)
         task, trace = utterance_task(body), []
         async def capture(event):
             trace.append(sanitize(event))
