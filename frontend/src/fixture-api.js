@@ -1,10 +1,24 @@
 import initial from '../fixtures/room-snapshot.json' with {type:'json'};
 import {fixturePlaces,resetFixturePlaces} from './fixture-places.js';
+import {readFixtureSession,saveFixtureSession} from './fixture-session.js';
+
 export const fixtureRoom = structuredClone(initial);
 let fixtureUser = {id:'u1',name:'참가자1',email:'u1@fixture.test'};
 export const setFixtureUser = id => { fixtureUser = {id,name:'참가자' + id.slice(1),email:id + '@fixture.test'}; return fixtureUser; };
 export const getFixtureUser = () => fixtureUser;
 let fixtureAuthenticated = false;
+let fixtureSessionLoaded = false;
+let fixtureScenario = 'initial';
+
+function persistFixture() {
+  saveFixtureSession({authenticated:fixtureAuthenticated,userId:fixtureUser.id,snapshot:fixtureRoom,scenario:fixtureScenario});
+}
+
+function hydrateFixture() {
+  if (fixtureSessionLoaded) return;
+  fixtureSessionLoaded = true;
+  fixtureAuthenticated = readFixtureSession()?.authenticated === true;
+}
 export async function requestFixture(path, {method = 'GET',body,headers} = {}) {
   const parts = new URL(path,'http://fixture').pathname.split('/').map(decodeURIComponent);
   if (parts[2] === 'dev') {
@@ -12,12 +26,16 @@ export async function requestFixture(path, {method = 'GET',body,headers} = {}) {
     const runId = new URL(path,'http://fixture').searchParams.get('run_id');
     return {runs:!runId || runId === trace.run_id ? [structuredClone(trace)] : []};
   }
+  hydrateFixture();
   if (parts[2] === 'auth') {
     if (method === 'POST' && parts[3] === 'logout') {
       fixtureAuthenticated = false;
       return {ok:true};
     }
-    if (method === 'POST' && ['login','register'].includes(parts[3])) fixtureAuthenticated = true;
+    if (method === 'POST' && ['login','register'].includes(parts[3])) {
+      fixtureAuthenticated = true;
+      persistFixture();
+    }
     if (!fixtureAuthenticated) throw Object.assign(new Error('fixture 로그인이 필요합니다.'), {status:401});
     return structuredClone(fixtureUser);
   }

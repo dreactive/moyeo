@@ -23,3 +23,11 @@ test('a corrupt fixture session discards fixture keys only', async () => {
   assert.equal(readFixtureSession(), null);
   assert.deepEqual(removed, ['trip-fixture-session-v1','trip-fixture-room']);
 });
+
+test('fixture login survives a document reload', async () => {
+  let stored;
+  globalThis.sessionStorage = {setItem: (_,value) => stored = value,getItem: () => stored};
+  await requestFixture('/api/auth/login', {method:'POST'});
+  const next = await import('../src/fixture-api.js?next-page');
+  assert.equal((await next.requestFixture('/api/auth/me')).id,'u1');
+});
