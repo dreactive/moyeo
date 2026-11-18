@@ -31,3 +31,13 @@ test('fixture login survives a document reload', async () => {
   const next = await import('../src/fixture-api.js?next-page');
   assert.equal((await next.requestFixture('/api/auth/me')).id,'u1');
 });
+
+test('created fixture room settings survive a new document', async () => {
+  let stored;
+  globalThis.sessionStorage = {setItem: (_,value) => stored = value,getItem: () => stored};
+  await requestFixture('/api/auth/login', {method:'POST'});
+  await requestFixture('/api/rooms', {method:'POST',body:{title:'새 여행방',region:'부산'}});
+  const next = await import('../src/fixture-api.js?new-room');
+  const room = await next.requestFixture('/api/rooms/room-fixture');
+  assert.deepEqual([room.title,room.config.region], ['새 여행방','부산']);
+});

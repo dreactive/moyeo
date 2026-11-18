@@ -11,13 +11,16 @@ let fixtureSessionLoaded = false;
 let fixtureScenario = 'initial';
 
 function persistFixture() {
+  if (!fixtureAuthenticated) return;
   saveFixtureSession({authenticated:fixtureAuthenticated,userId:fixtureUser.id,snapshot:fixtureRoom,scenario:fixtureScenario});
 }
 
 function hydrateFixture() {
   if (fixtureSessionLoaded) return;
   fixtureSessionLoaded = true;
-  fixtureAuthenticated = readFixtureSession()?.authenticated === true;
+  const saved = readFixtureSession();
+  fixtureAuthenticated = saved?.authenticated === true;
+  if (fixtureAuthenticated) Object.assign(fixtureRoom, saved.snapshot);
 }
 export async function requestFixture(path, {method = 'GET',body,headers} = {}) {
   const parts = new URL(path,'http://fixture').pathname.split('/').map(decodeURIComponent);
@@ -52,6 +55,7 @@ export async function requestFixture(path, {method = 'GET',body,headers} = {}) {
     fixtureRoom.current_plan = fixtureRoom.review_plan = fixtureRoom.active_target = null;
     fixtureRoom.confirmations = [];
     fixtureRoom.seq++;
+    persistFixture();
     return structuredClone(fixtureRoom);
   }
   if (parts[4] === 'messages') {
