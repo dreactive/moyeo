@@ -1,4 +1,4 @@
-import {getDataMode} from './api.js';
+import {getDataMode,requestJson} from './api.js';
 
 export function pageUrl(path) {
   const url = new URL(path, 'http://workspace.local');
@@ -8,4 +8,14 @@ export function pageUrl(path) {
 
 export function navigate(path) {
   location.assign(pageUrl(path));
+}
+
+export async function requireSession() {
+  try {
+    return await requestJson('/api/auth/me');
+  } catch (error) {
+    if (error.status !== 401) throw error;
+    navigate('/login.html');
+    return null;
+  }
 }
