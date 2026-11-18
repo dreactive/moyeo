@@ -16,7 +16,7 @@ node --test tests/*.test.js
 - live: Backend가 같은 origin에서 index.html, /src, /fixtures, /styles.css, /dev를 제공합니다. FE 요청은 상대 /api 경로와 same-origin cookie를 사용합니다. 별도 CORS/프록시가 필요 없습니다.
 - mode=fixture를 명시한 경우만 개발 데이터가 사용됩니다. live 오류는 짧은 오류와 재시도 동작으로 남고 자동 전환하지 않습니다.
 - Python이 설치돼 있으면 python -m http.server 5173 --directory frontend로도 사용자 화면을 열 수 있습니다. 이 경우 개발자 화면은 /dev.html?mode=fixture입니다.
-- 로그인의 이름/이메일/비밀번호는 서버 cookie 인증에 쓰입니다. user_id를 요청 body에 보내지 않습니다. 여행방 ID만 sessionStorage에 보관합니다. 개발자 token과 비밀번호는 저장하지 않습니다.
+- 로그인의 이름/이메일/비밀번호는 서버 cookie 인증에 쓰입니다. user_id를 요청 body에 보내지 않습니다. live에서는 여행방 ID만 sessionStorage에 보관합니다. 명시적 fixture는 별도 trip-fixture 저장 공간에 테스트 세션·snapshot·시나리오를 보관합니다. 개발자 token과 비밀번호는 저장하지 않습니다.
 - 질문은 카드에 표시된 field/target_ref의 JSON 예제로 응답합니다. 위도/경도·메뉴 수량/공유·체류시간·조건 값·지지 대상을 바꿔 보낼 수 있습니다.
 
 ## 개발 시나리오
@@ -46,3 +46,14 @@ index.html의 meta[name="kakao-map-app-key"] content에 **공개 JavaScript 키*
 frontend/**와 docs/verification/frontend.md만 가져옵니다. Backend/AI/공용 계약/루트 설정 변경은 없습니다. 동결 DTO가 원본이며 과거/검토 항목명은 item_snapshots를 씁니다. 초록은 표시안과 confirmed_plan의 target 및 item_version이 일치하고 현재 방의 참가자·조건·근거 version도 그 target과 같을 때만 보입니다. 새 초안의 plan_revision만 증가하면 고정된 검토안은 유지합니다. 불일치 시 중립 ‘새 안 · 미확정’이고 FE가 지지 수로 색상을 계산하지 않습니다.
 
 [검증·커밋 기록](../docs/verification/frontend.md)의 G3/G4 미검증 항목을 이어서 확인합니다. 최종 develop push와 master PR은 S2 담당입니다.
+
+
+## 분리된 로그인과 여행 작업방
+
+- 로그인 `/login.html`, 회원가입 `/signup.html`은 별도 페이지입니다.
+- 로그인/가입 성공 → `/rooms.html`의 방 만들기 또는 방 참가하기 → 성공한 방의 `/` 메인 순서입니다. 이전 방 ID가 있어도 로그인 성공 직후 메인으로 건너뛰지 않습니다.
+- 메인 새로고침은 선택한 방을 서버에서 복원합니다. 방 선택/로그아웃 시 기존 SSE를 정리합니다.
+- 로컬 UI 재생은 `/login.html?mode=fixture`에서 시작합니다. 실제 계정 검증이 아닌 지정 DTO 시나리오이며 모든 내부 이동에서 모드를 유지합니다. 방 참가 예시는 `FIXTURE`입니다.
+- 채팅·조건·검토안·개인 장소·내 경비를 분리하고, 실제 지도 키가 없을 때는 좌표/방문 순서를 표시합니다.
+- Vercel 빌드에도 새 인증·방 선택 HTML과 workspace.css를 포함합니다. 기존 배포 환경 값과 `/api/*` proxy는 유지합니다.
+- [구현·검증 기록](../docs/verification/workspace-ui.md), [화면 설계](../docs/superpowers/specs/2026-11-18-workspace-ui-design.md).
