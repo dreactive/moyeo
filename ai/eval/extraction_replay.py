@@ -47,3 +47,16 @@ async def replay_case(runtime, case):
     return dict(id=case['id'], group=case['group'], critical=case.get('critical',False),
                 passed=not issues, issues=issues, seconds=time.perf_counter() - started,
                 tool_calls=sum(e['event'] == 'tool_call' for e in events), result=result)
+
+
+def summarize(rows):
+    from statistics import median
+    from math import ceil
+    seconds = sorted(row['seconds'] for row in rows)
+    return dict(total=len(rows), passed=sum(row['passed'] for row in rows),
+                critical_passed=all(row['passed'] for row in rows if row['critical']),
+                unexpected_conditions=sum('conditions' in row['issues'] for row in rows),
+                provenance_errors=sum('provenance' in row['issues'] for row in rows),
+                schema_failures=sum(row['result']['extraction_report']['status'] == 'failed' for row in rows),
+                tool_calls=sum(row['tool_calls'] for row in rows),
+                p50_seconds=median(seconds), p95_seconds=seconds[ceil(len(seconds)*.95)-1])

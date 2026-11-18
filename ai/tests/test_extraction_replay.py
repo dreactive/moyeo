@@ -24,3 +24,10 @@ async def test_fake_replay_never_executes_provider_tools():
     row = await replay_case(runtime,dict(id='island',group='place',text='오동도 가자',places=['오동도'],conditions={}))
     await runtime.aclose()
     assert row['passed'] and not row['tool_calls']
+
+def test_replay_summary_keeps_quality_failures_visible():
+    from ai.eval.extraction_replay import summarize
+    rows = [dict(passed=False,critical=True,issues=['conditions'],seconds=1.0,tool_calls=0,result={'extraction_report':{'status':'ok'}})]
+    summary = summarize(rows)
+    assert summary['passed'] == 0 and summary['unexpected_conditions'] == 1
+    assert summary['critical_passed'] is False
