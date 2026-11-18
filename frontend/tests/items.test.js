@@ -135,3 +135,12 @@ test('another member can read a private question without an answer form', () => 
   assert.match(card.innerHTML,/constraint_value 입력 확인/);
   assert.doesNotMatch(card.innerHTML,/data-question="q5"/);
 });
+
+test('blocking conflicts name the authorized owner and disable their action for others', () => {
+  const card = {};
+  globalThis.document = {getElementById:() => card};
+  decisions.renderConflicts(scenarios.conflict.snapshot);
+  assert.match(card.innerHTML,/개인 조건 · 확정 차단/);
+  assert.match(card.innerHTML,/data-option="relax" disabled/);
+  assert.match(card.innerHTML,/참가자4 본인/);
+});

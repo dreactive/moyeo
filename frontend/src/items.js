@@ -47,8 +47,16 @@ export function renderConstraints(snapshot) {
   html('constraints', (active.join('') || '<p>아직 등록된 조건이 없습니다.</p>') +
     (history.length ? `<details class="card-details"><summary>이전 조건 보기</summary>${history.join('')}</details>` : ''));
 }
+const conflictLabels = {time:'시간',budget:'예산',opening_hours:'영업시간',personal_constraint:'개인 조건',preference:'선호'};
 export function renderConflicts(snapshot) {
-  html('conflicts', snapshot.conflicts.filter(item => item.status === 'open').map(item => `<div class="card conflict"><h3>! ${e(item.type)} · ${item.blocking ? '확정 차단' : '선호 선택'}</h3><p>${e(item.explanation)}</p>${item.options.map(option => `<p><button data-conflict="${e(item.id)}" data-option="${e(option.id)}" ${option.requires_owner_id && option.requires_owner_id !== getUser()?.id ? 'disabled' : ''}>${e(option.label)}</button> ${e(option.effect_summary)} · ${option.requires_owner_id ? e(option.requires_owner_id) + ' 본인 조건 수정·확인 필요' : '새 초안 생성'}</p>`).join('')}</div>`).join(''));
+  const cards = snapshot.conflicts.filter(item => item.status === 'open').map(item => `<div class="card conflict">
+    <strong>! ${e(conflictLabels[item.type] ?? item.type)} · ${item.blocking ? '확정 차단' : '선호 선택'}</strong>
+    <p>${e(item.explanation)}</p>
+    <ul class="decision-options">${item.options.map(option => `<li>
+      <button type="button" data-conflict="${e(item.id)}" data-option="${e(option.id)}" ${option.requires_owner_id && option.requires_owner_id !== getUser()?.id ? 'disabled' : ''}>${e(option.label)}</button>
+      <p>${e(option.effect_summary)}${option.requires_owner_id ? ' · ' + e(memberName(snapshot,option.requires_owner_id)) + ' 본인만 선택 가능' : ''}</p></li>`).join('')}</ul>
+  </div>`).join('');
+  html('conflicts', cards ? '<h3 class="card-section-title">해결할 충돌</h3>' + cards : '');
 }
 const fieldValue = field => field.type === 'number' ? field.valueAsNumber : field.value.trim();
 export function readDecisionValue(form) {
