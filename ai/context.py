@@ -10,7 +10,8 @@ def model_context(value):
 
 
 def extraction_context(context):
-    return dict(recent_messages=context.get("recent_messages", [])[-20:],
+    return dict(conversation_context=context.get("conversation_context", [])[-20:],
+                reference_region=context.get("config", {}).get("region"), recent_messages=context.get("recent_messages", [])[-20:],
                 members=context.get("members", []), questions=context.get("questions", []),
                 constraints=context.get("constraints", []),
                 items=[{k: i[k] for k in ("id", "item_version", "title")} for i in context.get("items", [])])

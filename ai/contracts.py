@@ -8,6 +8,7 @@ class AgentInput(TypedDict):
     base_versions: dict
     goal: str
     recent_messages: list[dict]
+    conversation_context: NotRequired[list[dict]]
     members: list[dict]
     config: dict
     constraints: list[dict]
@@ -32,6 +33,7 @@ class AgentResult(TypedDict):
     completion: str
     last_processed_message_id: str | None
     candidates: NotRequired[list[dict]]
+    extraction_report: NotRequired[dict]
 
 
 class ModelBackend(Protocol):
