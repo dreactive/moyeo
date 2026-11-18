@@ -85,7 +85,9 @@ export function renderQuestions(snapshot) {
       ? snapshot.constraints.find(item => item.id === question.target_ref)
       : null;
     const input = fields || conditionInput(condition);
-    return `<div class="card"><h3>${e(question.text)}</h3><p>${e(question.field)} / 대상 ${e(question.target_ref)} / ${e(question.owner_id ?? '공유 질문')}</p>
-  <form data-question="${e(question.id)}" data-value-mode="${input ? 'fields' : 'json'}">${input || `<label>응답 (JSON)<textarea name="value" required>${e(JSON.stringify(answerExamples[question.field]))}</textarea></label>`}<button ${question.owner_id && question.owner_id !== getUser()?.id ? 'disabled' : ''}>답변 보내기</button></form></div>`;
+    const owner = question.owner_id;
+    const canAnswer = !owner || owner === getUser()?.id;
+    return `<div class="card"><h3>${e(question.text)}</h3><p>${e(question.field)} / 대상 ${e(question.target_ref)} / ${owner ? e(memberName(snapshot,owner)) : '공유 질문'}</p>
+  ${canAnswer ? `<form data-question="${e(question.id)}" data-value-mode="${input ? 'fields' : 'json'}">${input || `<label>응답 (JSON)<textarea name="value" required>${e(JSON.stringify(answerExamples[question.field]))}</textarea></label>`}<button>답변 보내기</button></form>` : ''}</div>`;
   }).join(''));
 }

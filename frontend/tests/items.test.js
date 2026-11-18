@@ -91,7 +91,9 @@ test('required budgets use a human label, won, and an owner verification status'
 test('condition questions offer a numeric field for a budget target', () => {
   const card = {};
   globalThis.document = {getElementById:() => card};
+  setUser({id:'u1'});
   decisions.renderQuestions(scenarios.questions.snapshot);
+  setUser(null);
   assert.match(card.innerHTML,/data-question="q5" data-value-mode="fields">[^]*name="value" type="number"/);
 });
 
@@ -122,4 +124,14 @@ test('superseded conditions can be read in history without an edit action', () =
   setUser(null);
   assert.match(card.innerHTML,/<summary>이전 조건 보기<\/summary>[^]*200,000원/);
   assert.doesNotMatch(card.innerHTML,/data-constraint=/);
+});
+
+test('another member can read a private question without an answer form', () => {
+  const card = {};
+  globalThis.document = {getElementById:() => card};
+  setUser({id:'u2'});
+  decisions.renderQuestions(scenarios.questions.snapshot);
+  setUser(null);
+  assert.match(card.innerHTML,/constraint_value 입력 확인/);
+  assert.doesNotMatch(card.innerHTML,/data-question="q5"/);
 });
