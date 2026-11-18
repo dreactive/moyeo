@@ -2,7 +2,12 @@ import {html,escapeHtml as e,money} from './ui.js';
 export const safeUrl = value => /^https?:\/\//i.test(value ?? '') ? value : '';
 export function renderPlace(details) {
   if (!details) return html('place','선택한 장소가 없습니다.');
-  html('place', `<h3>${e(details.place.name)}</h3><p>${e(details.place.address)}</p>
+  const plan = displayPlan(getSnapshot() ?? {});
+  const ref = details.place.id;
+  const included = plan?.days.some(day => day.visits.some(visit => visit.place_ref === ref));
+  html('place', `<h3>${e(details.place.name)}</h3>
+  ${included ? `<p class="place-context">표시 여행안에 포함 <button type="button" data-route-place="${e(ref)}">동선에서 보기</button></p>` : ''}
+  <p>${e(details.place.address)}</p>
   <p>${e(details.place.latitude)}, ${e(details.place.longitude)}</p>
   <h3>메뉴</h3>${details.menus.map(menu => `<p>${e(menu.name)} · ${menu.price_krw == null ? e(menu.price_text || '미확인') + ' (금액 미확인)' : money(menu.price_krw)} · ${e(menu.serving_basis ?? '제공 단위 미확인')} · ${e(menu.evidence_id)}</p>`).join('') || '<p>메뉴 미등록 · 가격 미확인</p>'}
   <h3>영업시간 원문</h3><p>${e(details.opening_hours?.raw_text ?? '미확인')} / 휴일 ${e(details.opening_hours?.holiday_text ?? '미확인')}</p>

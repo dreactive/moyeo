@@ -77,3 +77,11 @@ test('revision two price and evidence survive a late revision one response for t
   assert.match(output.place,/price-22222/);
   assert.doesNotMatch(output.place,/price-11111/);
 });
+
+test('place details link back to their visit in the displayed plan', async () => {
+  const {requests,output} = prepare();
+  const pending = selectPlace(room.room_id,place.place.id);
+  requests[0].resolve(Response.json(place));
+  await pending;
+  assert.match(output.place,/data-route-place="fixture:place-a"/);
+});
