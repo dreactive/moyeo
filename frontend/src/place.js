@@ -1,7 +1,7 @@
 import {html,escapeHtml as e,money} from './ui.js';
 export const safeUrl = value => /^https?:\/\//i.test(value ?? '') ? value : '';
 export function renderPlace(details) {
-  if (!details) return html('place','선택한 장소가 없습니다.');
+  if (!details) return html('place','동선에서 장소를 선택해 주세요.');
   const plan = displayPlan(getSnapshot() ?? {});
   const ref = details.place.id;
   const included = plan?.days.some(day => day.visits.some(visit => visit.place_ref === ref));
@@ -11,7 +11,9 @@ export function renderPlace(details) {
   <p>${e(details.place.latitude)}, ${e(details.place.longitude)}</p>
   <h3>메뉴</h3>${details.menus.map(menu => `<p>${e(menu.name)} · ${menu.price_krw == null ? e(menu.price_text || '미확인') + ' (금액 미확인)' : money(menu.price_krw)} · ${e(menu.serving_basis ?? '제공 단위 미확인')} · ${e(menu.evidence_id)}</p>`).join('') || '<p>메뉴 미등록 · 가격 미확인</p>'}
   <h3>영업시간 원문</h3><p>${e(details.opening_hours?.raw_text ?? '미확인')} / 휴일 ${e(details.opening_hours?.holiday_text ?? '미확인')}</p>
-  ${details.evidence.map(item => `<div class="card"><strong>${e(item.provider)} · ${e(item.field)} · ${e(item.status)} · ${e(item.mode)} · ${e(item.match_status)}</strong><p>원문 ${e(JSON.stringify(item.raw_value))}</p><p>조회 ${e(item.retrieved_at)} / 공급자 기준일 ${e(item.provider_updated_at ?? '미확인')}</p><a href="${e(safeUrl(item.source_url))}" target="_blank" rel="noopener noreferrer">출처</a></div>`).join('')}`);
+  <details class="card-details"><summary>장소 정보 출처</summary>
+  ${details.evidence.map(item => `<div class="card"><strong>${e(item.provider)} · ${e(item.field)} · ${e(item.status)} · ${e(item.mode)} · ${e(item.match_status)}</strong><p>원문 ${e(JSON.stringify(item.raw_value))}</p><p>조회 ${e(item.retrieved_at)} / 공급자 기준일 ${e(item.provider_updated_at ?? '미확인')}</p><a href="${e(safeUrl(item.source_url))}" target="_blank" rel="noopener noreferrer">출처</a></div>`).join('') || '<p>등록된 출처가 없습니다.</p>'}
+  </details>`);
 }
 import {requestJson} from './api.js';
 import {setSelectedPlace,getSelectedPlace,getSnapshot} from './state.js';

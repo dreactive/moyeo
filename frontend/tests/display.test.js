@@ -60,3 +60,10 @@ test('personal budget figures distinguish spending now from the balance after pl
   assert.match(card.innerHTML,/<dt>앞으로 쓸 수 있는 금액<\/dt><dd>120,000원/);
   assert.match(card.innerHTML,/<dt>계획 반영 후 여유<\/dt><dd>50,000원/);
 });
+
+test('personal place provenance remains accessible in a collapsible section', () => {
+  const card = {};
+  globalThis.document = {getElementById:() => card};
+  renderPlace(scenarios.market.places[0]);
+  assert.match(card.innerHTML,/<details[^>]*><summary>장소 정보 출처<\/summary>[^]*공급자 기준일 미확인/);
+});
