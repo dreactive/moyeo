@@ -28,3 +28,19 @@ test('a failed room session lookup leaves choices hidden and offers retry', asyn
   await rooms.checkRoomsPage(retry);
   assert.deepEqual([retry.hidden,elements['room-actions'].hidden], [false,true]);
 });
+
+test('the invite form sends the case-sensitive code', async () => {
+  const join = [['invite_code',' AbC ']];
+  const form = {querySelector: () => ({})};
+  join.querySelector = form.querySelector;
+  globalThis.FormData = Map;
+  globalThis.document = {getElementById: () => ({})};
+  let sent;
+  globalThis.fetch = async (path, options) => {
+    sent = [path, JSON.parse(options.body)];
+    return new Response('', {status:404});
+  };
+  rooms.bindRoomForms(form,join);
+  await join.onsubmit({preventDefault() {}});
+  assert.deepEqual(sent, ['/api/rooms/join',{invite_code:'AbC'}]);
+});

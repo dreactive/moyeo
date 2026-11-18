@@ -1,5 +1,6 @@
 import {requestJson} from './api.js';
-import {navigate,requireSession,saveRoomId} from './session.js';
+import {bindEntryForm,navigate,requireSession,saveRoomId} from './session.js';
+import {readTripForm} from './trip-form.js';
 import {showError} from './ui.js';
 
 export async function submitRoom(endpoint, body) {
@@ -32,4 +33,10 @@ export async function checkRoomsPage(retry) {
     showError(error);
     retry.hidden = false;
   }
+}
+
+export function bindRoomForms(trip, join) {
+  bindEntryForm(trip, () => submitRoom('/api/rooms', readTripForm(trip)));
+  bindEntryForm(join, () => submitRoom('/api/rooms/join', {invite_code:new FormData(join).get('invite_code').trim()}),
+    error => showError(error.status === 404 ? new Error('초대 코드를 확인해 주세요.') : error));
 }
