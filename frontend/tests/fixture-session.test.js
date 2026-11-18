@@ -177,3 +177,11 @@ test('fixture overview and chat require usable nested records', async () => {
   await assertRejectedFixtureSnapshot('bad-agent-status', snapshot => snapshot.agent_status = null);
   await assertRejectedFixtureSnapshot('bad-message-author', snapshot => snapshot.messages[0].author_id = null);
 });
+
+test('a stored JSON null discards stale fixture room selection', async () => {
+  const removed = [];
+  globalThis.sessionStorage = {getItem: () => 'null',removeItem: key => removed.push(key)};
+  const {readFixtureSession} = await import('../src/fixture-session.js');
+  assert.equal(readFixtureSession(),null);
+  assert.deepEqual(removed,['trip-fixture-session-v1','trip-fixture-room']);
+});

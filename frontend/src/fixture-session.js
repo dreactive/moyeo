@@ -11,7 +11,9 @@ export function readStoredFixtureSession() {
 
 export function readFixtureSession(stored = readStoredFixtureSession()) {
   try {
-    return JSON.parse(stored);
+    const session = JSON.parse(stored);
+    if (session === null && stored !== null) clearFixtureSession();
+    return session;
   } catch {
     clearFixtureSession();
     return null;
