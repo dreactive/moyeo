@@ -41,3 +41,14 @@ test('created fixture room settings survive a new document', async () => {
   const room = await next.requestFixture('/api/rooms/room-fixture');
   assert.deepEqual([room.title,room.config.region], ['새 여행방','부산']);
 });
+
+test('an incompatible fixture record requires a fresh fixture login', async () => {
+  const removed = [];
+  globalThis.sessionStorage = {
+    getItem: () => '{"authenticated":true}',
+    removeItem: key => removed.push(key)
+  };
+  const next = await import('../src/fixture-api.js?incompatible');
+  await assert.rejects(next.requestFixture('/api/auth/me'), {status:401});
+  assert.deepEqual(removed,['trip-fixture-session-v1','trip-fixture-room']);
+});

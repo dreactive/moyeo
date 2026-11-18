@@ -1,6 +1,6 @@
 import initial from '../fixtures/room-snapshot.json' with {type:'json'};
 import {fixturePlaces,resetFixturePlaces} from './fixture-places.js';
-import {readFixtureSession,saveFixtureSession} from './fixture-session.js';
+import {clearFixtureSession,readFixtureSession,saveFixtureSession} from './fixture-session.js';
 
 export const fixtureRoom = structuredClone(initial);
 let fixtureUser = {id:'u1',name:'참가자1',email:'u1@fixture.test'};
@@ -15,12 +15,25 @@ function persistFixture() {
   saveFixtureSession({authenticated:fixtureAuthenticated,userId:fixtureUser.id,snapshot:fixtureRoom,scenario:fixtureScenario});
 }
 
+function isSavedFixture(saved) {
+  const snapshot = saved.snapshot;
+  return saved.authenticated === true && snapshot?.room_id === initial.room_id
+    && initial.members.some(member => member.user_id === saved.userId)
+    && Object.hasOwn(scenarios, saved.scenario)
+    && Array.isArray(snapshot.config?.fixed_costs);
+}
+
 function hydrateFixture() {
   if (fixtureSessionLoaded) return;
   fixtureSessionLoaded = true;
   const saved = readFixtureSession();
-  fixtureAuthenticated = saved?.authenticated === true;
-  if (fixtureAuthenticated) Object.assign(fixtureRoom, saved.snapshot);
+  if (saved === null) return;
+  if (!isSavedFixture(saved)) {
+    clearFixtureSession();
+    return;
+  }
+  fixtureAuthenticated = true;
+  Object.assign(fixtureRoom, saved.snapshot);
 }
 export async function requestFixture(path, {method = 'GET',body,headers} = {}) {
   const parts = new URL(path,'http://fixture').pathname.split('/').map(decodeURIComponent);
