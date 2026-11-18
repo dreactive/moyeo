@@ -23,3 +23,10 @@ export function chatScroll(before,height,prepended) {
   if (before.height - before.top - before.viewport < 64) return height;
   return before.top + (prepended ? height - before.height : 0);
 }
+function createChatNode(row,members,userId) {
+  const template = document.createElement('template');
+  template.innerHTML = row.date
+    ? `<li id="message-${e(row.id)}" class="chat-date">${e(row.date)}</li>`
+    : messageMarkup(row,members,userId);
+  return template.content.firstElementChild;
+}
