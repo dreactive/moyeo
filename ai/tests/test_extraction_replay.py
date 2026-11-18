@@ -31,3 +31,12 @@ def test_replay_summary_keeps_quality_failures_visible():
     summary = summarize(rows)
     assert summary['passed'] == 0 and summary['unexpected_conditions'] == 1
     assert summary['critical_passed'] is False
+
+def test_generation_measurement_restores_model_method():
+    from ai.eval.extraction_replay import collect_generations
+    from types import SimpleNamespace
+    model = SimpleNamespace(generate=lambda **kwargs: [[0,1,2,3]])
+    original = model.generate
+    with collect_generations(model) as metrics:
+        model.generate(input_ids=SimpleNamespace(shape=(1,2)))
+    assert metrics[0]['tokens'] == 2 and model.generate is original

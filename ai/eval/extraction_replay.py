@@ -60,3 +60,22 @@ def summarize(rows):
                 schema_failures=sum(row['result']['extraction_report']['status'] == 'failed' for row in rows),
                 tool_calls=sum(row['tool_calls'] for row in rows),
                 p50_seconds=median(seconds), p95_seconds=seconds[ceil(len(seconds)*.95)-1])
+
+
+from contextlib import contextmanager
+
+
+@contextmanager
+def collect_generations(model):
+    import time
+    original, metrics = model.generate, []
+    def measured(**kwargs):
+        started = time.perf_counter()
+        output = original(**kwargs)
+        metrics.append(dict(tokens=len(output[0]) - kwargs['input_ids'].shape[-1], seconds=time.perf_counter() - started))
+        return output
+    model.generate = measured
+    try:
+        yield metrics
+    finally:
+        model.generate = original
