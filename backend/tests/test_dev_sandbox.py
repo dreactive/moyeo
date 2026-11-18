@@ -19,3 +19,12 @@ def test_direct_tool_execution_uses_the_real_registry(api):
     body = SearchTool.model_validate(tool_examples('search_places')['fixture']['value'])
     result = api.portal.call(execute_tool, body, 'search_places', {'provider_mode': 'fixture'})
     assert result['result']['places'][0]['id'] == 'fixture:place-a'
+
+
+def test_search_tool_has_editable_swagger_inputs(api):
+    from backend.dev_examples import tool_examples
+    api.app.state.dev_token = 'test-dev'
+    response = api.post('/api/dev/tools/search_places', json=tool_examples('search_places')['fixture']['value'],
+                        headers={'X-Dev-Token': 'test-dev'})
+    assert response.status_code == 200, response.text
+    assert response.json()['result']['places'][0]['id'] == 'fixture:place-a'

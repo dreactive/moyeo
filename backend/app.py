@@ -23,6 +23,7 @@ def create_app(agent_port: AgentPort | None = None, *, database_path=None, setti
         app.state.db = Database(database_path or settings['database_path'])
         app.state.db.trace_enabled = settings['trace_enabled']
         app.state.dev_token = settings['dev_token']
+        app.state.dev_runtime_config = settings['runtime_config']
         app.state.jobs = AgentJobs(app.state.db, app.state.agent)
         worker = asyncio.create_task(app.state.jobs.work())
         try:
@@ -44,6 +45,8 @@ def create_app(agent_port: AgentPort | None = None, *, database_path=None, setti
     app.include_router(plans_router)
     from backend.routes.dev import router as dev_router
     app.include_router(dev_router)
+    from backend.routes.dev_sandbox import router as dev_sandbox_router
+    app.include_router(dev_sandbox_router)
     from backend.routes.places import router as places_router
     app.include_router(places_router)
     from pathlib import Path
