@@ -78,3 +78,12 @@ def test_compact_facts_receive_code_owned_evidence():
     batch = facts_to_batch(dict(places=['오동도'], conditions=[], intents=['place']), value['recent_messages'][0], value)
     assert batch['item_proposals'][0]['evidence'] == dict(message_id='new', quote='오동도 가자')
     assert batch['message_assessments'][0]['message_id'] == 'new'
+
+def test_compact_condition_preserves_owner_and_existing_budget_key():
+    from ai.extraction_projection import facts_to_batch
+    value = task()
+    value['constraints'] = [dict(id='old', owner_id='u1', key='budget')]
+    message = dict(id='fix', author_id='u1', text='내 예산은 15만원')
+    batch = facts_to_batch(dict(places=[], conditions=[dict(key='budget_krw', value=150000)], intents=['condition']), message, value)
+    condition = batch['constraint_proposals'][0]
+    assert (condition['owner_id'],condition['key'],condition['replaces_constraint_id']) == ('u1','budget','old')
