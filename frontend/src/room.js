@@ -55,7 +55,7 @@ export async function startRoomApp() {
   if (!savedRoom) return navigate('/rooms.html');
   if (!roomUiBound) {
     initMaps({routeElement:document.getElementById('route-map'),placeElement:document.getElementById('place-map'),appKey:document.querySelector('meta[name="kakao-map-app-key"]').content});
-    bindSessionActions(); bindChatKeys(); bindFixtureControls(); bindPlanActions(); bindDecisionActions(); bindTripInput(); bindSettingsDialog(); bindHistory();
+    bindSessionActions(); bindChatKeys(); bindFixtureControls(); bindPlanActions(); bindDecisionActions(); bindTripInput(); bindSettingsDialog(); bindRoomLifecycle(); bindHistory();
     subscribeState(snapshot => snapshot && renderRoom(snapshot));
     roomUiBound = true;
   }
@@ -164,6 +164,14 @@ function bindDecisionActions() {
     if (!button) return;
     run(() => button.dataset.conflict ? roomAction('conflicts/' + encodeURIComponent(button.dataset.conflict) + '/select',{option_id:button.dataset.option}) : roomAction('constraints/' + encodeURIComponent(button.dataset.constraintConfirm) + '/confirm'));
   });
+}
+
+function bindRoomLifecycle() {
+  globalThis.addEventListener?.('pagehide',() => closeEvents());
+  document.addEventListener('focusout',() => queueMicrotask(() => {
+    const snapshot = getSnapshot();
+    if (snapshot) renderRoom(snapshot);
+  }));
 }
 
 function bindSettingsDialog() {
