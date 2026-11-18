@@ -202,7 +202,18 @@ async function renderMaps(snapshot) {
   else { renderPlace(null); renderPlaceMap(null); }
 }
 
+function focusRoutePlace(ref) {
+  const snapshot = getSnapshot();
+  const day = displayPlan(snapshot)?.days.find(day => day.visits.some(visit => visit.place_ref === ref));
+  if (!day) return;
+  setSelectedDay(day.date);
+  renderRoom(snapshot);
+  document.getElementById('route-map').scrollIntoView({block:'center',behavior:'smooth'});
+}
+
 document.addEventListener('click',event => {
+  const place = event.target.closest('[data-route-place]');
+  if (place) focusRoutePlace(place.dataset.routePlace);
   const day = event.target.closest('[data-day]');
   if (day) { setSelectedDay(day.dataset.day); renderRoom(getSnapshot()); }
   const button = event.target.closest('[data-place]');
