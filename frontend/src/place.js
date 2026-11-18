@@ -36,6 +36,8 @@ export async function selectPlace(roomId,ref) {
   const requestSequence = ++detailRequestSequence;
   const target = structuredClone(displayPlan(getSnapshot() ?? {})?.confirmation_target ?? null);
   setSelectedPlace(ref);
+  html('place','<p role="status">선택한 장소 정보를 불러오는 중…</p>');
+  renderPlaceMap(null);
   const result = await requestJson('/api/rooms/' + encodeURIComponent(roomId) + '/places/' + encodeURIComponent(ref))
     .then(details => ({details}),error => ({error}));
   if (requestSequence !== detailRequestSequence) return;

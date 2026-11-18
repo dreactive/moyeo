@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import room from '../fixtures/room-snapshot.json' with {type:'json'};
 import place from '../fixtures/place-details.json' with {type:'json'};
+import otherPlace from '../fixtures/place-details-b.json' with {type:'json'};
 import {applySnapshot} from '../src/state.js';
 import {selectPlace} from '../src/place.js';
 import {initMaps} from '../src/map.js';
@@ -16,9 +17,10 @@ function prepare() {
     return request.promise;
   };
   globalThis.document = {getElementById:id => ({set innerHTML(value) { output[id] = value; }})};
-  initMaps({routeElement:{},placeElement:{}});
+  const placeMap = {};
+  initMaps({routeElement:{},placeElement:placeMap});
   applySnapshot(structuredClone(room));
-  return {requests,output};
+  return {requests,output,placeMap};
 }
 function details(price) {
   const result = structuredClone(place);
@@ -41,12 +43,13 @@ test('a changed displayed plan target invalidates an in-flight detail response w
   for (const key of Object.keys(room.current_plan.confirmation_target)) {
     const {requests,output} = prepare();
     const pending = selectPlace(room.room_id,place.place.id);
+    const loading = output.place;
     const next = structuredClone(room);
     next.current_plan.confirmation_target[key] += 'changed';
     applySnapshot(next);
     requests[0].resolve(Response.json(details(11111)));
     await pending;
-    assert.equal(output.place,undefined,key);
+    assert.equal(output.place,loading,key);
   }
 });
 test('a new draft does not invalidate details for the unchanged pinned review', async () => {
@@ -110,4 +113,16 @@ test('menu IDs remain available to answer the room menu question', async () => {
   requests[0].resolve(Response.json(place));
   await pending;
   assert.match(output.place,/장소 정보 출처<\/summary>[^]*메뉴 ID <code>fixture:menu-a<\/code>/);
+});
+
+test('selecting a new place immediately replaces the previous card and map with loading', async () => {
+  const {requests,output,placeMap} = prepare();
+  const first = selectPlace(room.room_id,place.place.id);
+  requests[0].resolve(Response.json(place));
+  await first;
+  const next = selectPlace(room.room_id,otherPlace.place.id);
+  assert.match(output.place,/불러오는 중/);
+  assert.match(placeMap.innerHTML,/장소를 선택하세요/);
+  requests[1].resolve(Response.json(otherPlace));
+  await next;
 });
