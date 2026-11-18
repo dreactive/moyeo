@@ -148,3 +148,14 @@ def test_utterance_endpoint_delivers_text_to_agent(api):
                         headers={'X-Dev-Token': 'test-dev'})
     assert response.status_code == 200, response.text
     assert response.json()['result']['constraint_proposals'][0]['value'] == 150000
+
+
+def test_missing_runtime_dependency_returns_safe_unavailable(api, monkeypatch):
+    from backend.dev_examples import utterance_examples
+    async def fail():
+        raise ImportError('secret-model-path')
+    monkeypatch.setattr(api.app.state.dev_agent, 'start', fail)
+    api.app.state.dev_token = 'test-dev'
+    response = api.post('/api/dev/agent/utterance', json=utterance_examples()['extract']['value'],
+                        headers={'X-Dev-Token': 'test-dev'})
+    assert response.status_code == 503 and 'secret' not in response.text

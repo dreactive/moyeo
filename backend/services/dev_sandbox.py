@@ -20,6 +20,8 @@ async def sandbox_errors():
         raise HTTPException(422, {'error': type(error).__name__, 'message': 'Invalid sandbox arguments or context'}) from None
     except HTTPError:
         raise HTTPException(502, 'Provider request failed; check server configuration and connectivity') from None
+    except (ImportError, OSError, RuntimeError):
+        raise HTTPException(503, 'AI runtime unavailable; check server dependencies and configuration') from None
 
 
 async def tool_result(body, name, settings):
