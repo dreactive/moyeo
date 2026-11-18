@@ -64,5 +64,5 @@ Interfaces: lazy `app.state.dev_agent` reuses `LocalAIBridge`; utterance respons
 - [x] Document Swagger login/Authorize, all operations, context chaining and fake/live behavior in `backend/README.md`.
 - [x] Run full Backend and AI suites and independent code review; fix material findings.
 - [x] Check staged files exclude personal instructions and unrelated documents.
-- [ ] Push `develop` without force and create/update the `master <- develop` PR.
-- [ ] Report tests, commit range, push and PR; distinguish offline coverage from unrun live calls.
+- [x] Push `develop` without force and create/update the `master <- develop` PR.
+- [x] Report tests, commit range, push and PR; distinguish offline coverage from unrun live calls.

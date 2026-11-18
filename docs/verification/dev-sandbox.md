@@ -67,3 +67,11 @@ for this change. Historical product/live evidence is documented separately.
 The implementation follows the local small-commit workflow. The runtime-creation
 fix keeps its lock, thread handoff and concurrency regression in one working
 commit because splitting them would leave the safety property unverified.
+
+## Delivery
+
+Pushed `develop` to `origin` and updated the existing
+[master ← develop PR #1](https://github.com/SEMI-CNU/trip-agent/pull/1).
+No merge was performed. Personal agent instructions and the pre-existing
+untracked extraction documents remain outside the commits. Restart the Backend
+and open `/docs`; the Backend README explains login, Authorize and example inputs.
