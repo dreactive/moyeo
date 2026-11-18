@@ -72,3 +72,17 @@ test('the Kakao route labels visits by their position within the selected day',a
   renderRouteMap(snapshot.current_plan,places,snapshot.config,'2026-11-21');
   assert.deepEqual(titles,['예시 출발지','예시 숙소','2. 둘째 장소']);
 });
+
+test('Kakao shows a visible visit number when custom overlays are available', () => {
+  const labels = [];
+  const maps = {
+    LatLng:class {},
+    Map:class {setBounds(){}},
+    LatLngBounds:class {extend(){}},
+    Marker:class {},
+    CustomOverlay:class {constructor({content}) { labels.push(content.textContent); }}
+  };
+  const host = {classList:new Set(),ownerDocument:{createElement:() => ({style:{}})},append(){}};
+  drawKakao(maps,host,[{latitude:34.7,longitude:127.6,name:'둘째 장소',visitNumber:2}]);
+  assert.deepEqual(labels,['2']);
+});

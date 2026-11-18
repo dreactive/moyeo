@@ -36,7 +36,15 @@ export function drawKakao(maps,element,points,lines = []) {
     const position = latLng(point);
     const name = point.name ?? point.label;
     const title = point.visitNumber ? `${point.visitNumber}. ${name}` : name;
-    layers.push(new maps.Marker({map,position,title}));
+    if (point.visitNumber && maps.CustomOverlay && element.ownerDocument) {
+      const content = element.ownerDocument.createElement('span');
+      content.textContent = String(point.visitNumber);
+      content.title = title;
+      content.style.cssText = 'display:grid;place-items:center;width:24px;height:24px;border:2px solid white;border-radius:50%;background:#6654f0;color:white;font-weight:700';
+      layers.push(new maps.CustomOverlay({map,position,content}));
+    } else {
+      layers.push(new maps.Marker({map,position,title}));
+    }
     bounds.extend(position);
   });
   lines.forEach((line,index) => {
