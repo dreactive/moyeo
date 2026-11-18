@@ -18,6 +18,10 @@ export function restoreTripForm(snapshot) {
       if (input) input.value = snapshot.config[anchor]?.[field] ?? '';
     }
   }
+  if (snapshot.config.fixed_costs) {
+    document.getElementById('fixed-costs').innerHTML = '';
+    snapshot.config.fixed_costs.forEach(appendCost);
+  }
   const {title,...baseline} = readTripForm(form);
   return baseline;
 }
