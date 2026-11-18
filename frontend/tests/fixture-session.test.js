@@ -96,3 +96,13 @@ test('an unavailable fixture room returns an access status', async () => {
   await requestFixture('/api/auth/login', {method:'POST'});
   await assert.rejects(requestFixture('/api/rooms/missing'), {status:404});
 });
+
+test('fixture room changes remain in the saved snapshot', async () => {
+  let stored;
+  globalThis.sessionStorage = {setItem: (_,value) => stored = value,getItem: () => stored};
+  const path = '/api/rooms/room-fixture/messages';
+  await requestFixture('/api/auth/login', {method:'POST'});
+  const message = await requestFixture(path, {method:'POST',body:{text:'새 대화'}});
+  const next = await import('../src/fixture-api.js?messages');
+  assert.equal((await next.requestFixture(path)).messages.at(-1).id,message.id);
+});

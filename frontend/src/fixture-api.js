@@ -98,6 +98,7 @@ export async function requestFixture(path, {method = 'GET',body,headers} = {}) {
     if (method === 'POST') {
       const message = {id:crypto.randomUUID(),room_id:fixtureRoom.room_id,seq:++fixtureRoom.seq,author_id:fixtureUser.id,text:body.text,created_at:new Date().toISOString()};
       fixtureRoom.messages.push(message);
+      persistFixture();
       emitFixture('onMessage',{room_id:fixtureRoom.room_id,seq:fixtureRoom.seq,message});
       return structuredClone(message);
     }
@@ -113,6 +114,7 @@ export async function requestFixture(path, {method = 'GET',body,headers} = {}) {
     } else if (method === 'PATCH') item.value = body.value;
     else item.status = 'confirmed';
     fixtureRoom.seq++;
+    persistFixture();
     return method === 'PATCH' ? structuredClone(item) : structuredClone(fixtureRoom);
   }
   if (parts[4] === 'plan') {
@@ -121,6 +123,7 @@ export async function requestFixture(path, {method = 'GET',body,headers} = {}) {
       if (!sameTarget(body.target,fixtureRoom.active_target)) throw new Error('fixture: 오래된 대상입니다.');
       fixtureRoom.confirmations = fixtureRoom.confirmations.filter(vote => vote.user_id !== fixtureUser.id);
       fixtureRoom.seq++;
+      persistFixture();
       return structuredClone(fixtureRoom);
     }
     const plan = fixtureRoom.review_plan ?? fixtureRoom.current_plan;
