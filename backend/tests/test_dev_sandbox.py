@@ -127,3 +127,15 @@ def test_utterance_rejects_unknown_author():
     with pytest.raises(HTTPException) as error:
         utterance_task(body)
     assert error.value.status_code == 422
+
+
+def test_utterance_service_returns_agent_result_and_trace(api):
+    from backend.dev_schemas import Utterance
+    from backend.dev_examples import tool_examples
+    from backend.services.dev_sandbox import run_utterance
+    from starlette.requests import Request
+    body = Utterance(context=tool_examples('search_places')['fixture']['value']['context'], text='예산은 15만원', goal='extract')
+    request = Request({'type': 'http', 'app': api.app})
+    result = api.portal.call(run_utterance, request, body)
+    assert result['result']['constraint_proposals']
+    assert result['trace'][0]['event'] == 'decision'

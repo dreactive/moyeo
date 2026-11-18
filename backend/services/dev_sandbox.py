@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import HTTPException
 from httpx import HTTPError
 from uuid import uuid4
+from backend.services.traces import sanitize
 
 
 async def execute_tool(body, name, settings):
@@ -50,3 +51,16 @@ def utterance_task(body):
     task['recent_messages'].append(dict(id=uuid4().hex, author_id=body.author_id,
                                         text=body.text, created_at=datetime.now(timezone.utc).isoformat()))
     return task
+
+
+async def run_utterance(request, body):
+    async with sandbox_errors():
+        task, trace = utterance_task(body), []
+        async def capture(event):
+            trace.append(sanitize(event))
+        bridge = request.app.state.dev_agent
+        await bridge.start()
+        result = await bridge.run(task, capture)
+        settings = request.app.state.dev_runtime_config
+        return dict(model_backend=settings.get('model_backend', 'fake'),
+                    provider_mode=settings.get('provider_mode', 'fixture'), result=result, trace=trace)
