@@ -29,6 +29,22 @@ function isSavedTrip(config) {
     && [config.start_date,config.end_date].every(date => Number.isFinite(Date.parse(date)));
 }
 
+function isSavedDay(day) {
+  return typeof day.date === 'string'
+    && isRecordList(day.route_legs)
+    && isRecordList(day.visits)
+    && day.visits.every(visit => typeof visit.place_ref === 'string' && Array.isArray(visit.assumptions));
+}
+
+function isSavedPlan(plan) {
+  return plan === null || (
+    isRecordList(plan?.days) && plan.days.every(isSavedDay)
+    && isRecordList(plan.item_snapshots)
+    && Array.isArray(plan.selected_item_ids)
+    && Array.isArray(plan.blocking_conflict_ids)
+  );
+}
+
 function isSavedFixture(saved) {
   const snapshot = saved.snapshot;
   return saved.authenticated === true && snapshot?.room_id === initial.room_id
@@ -37,7 +53,8 @@ function isSavedFixture(saved) {
     && isSavedTrip(snapshot.config)
     && Object.entries(initial).every(([key, value]) => Object.hasOwn(snapshot, key)
       && (!Array.isArray(value) || isRecordList(snapshot[key])))
-    && snapshot.members.every(member => typeof member.name === 'string' && typeof member.user_id === 'string');
+    && snapshot.members.every(member => typeof member.name === 'string' && typeof member.user_id === 'string')
+    && [snapshot.current_plan,snapshot.review_plan,snapshot.confirmed_plan].every(isSavedPlan);
 }
 
 function hydrateFixture() {

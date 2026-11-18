@@ -155,3 +155,8 @@ test('a malformed member record cannot enter fixture workspace rendering', async
   await assertRejectedFixtureSnapshot('null-member', snapshot => snapshot.members = [null]);
   await assertRejectedFixtureSnapshot('invalid-member', snapshot => snapshot.members[0].name = 42);
 });
+
+test('saved fixture plans require usable days, visits, and routes', async () => {
+  await assertRejectedFixtureSnapshot('missing-plan-days', snapshot => delete snapshot.current_plan.days);
+  await assertRejectedFixtureSnapshot('invalid-visit', snapshot => snapshot.current_plan.days[0].visits[0].assumptions = null);
+});
