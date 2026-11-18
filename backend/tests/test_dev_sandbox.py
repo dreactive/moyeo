@@ -181,3 +181,10 @@ def test_all_sandbox_operations_require_login_and_token(api, suffix):
     api.cookies.clear()
     assert api.post(path, json={}, headers={'X-Dev-Token': 'test-dev'}).status_code == 401
     assert api.app.state.dev_agent.runtime is None
+
+
+def test_editing_example_does_not_modify_later_requests():
+    from backend.dev_examples import tool_examples
+    first = tool_examples('get_place_details')['fixture']['value']
+    first['arguments']['place_ref'] = 'changed'
+    assert tool_examples('get_place_details')['fixture']['value']['arguments']['place_ref'] == 'fixture:place-a'
