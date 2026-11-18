@@ -87,3 +87,14 @@ def test_compact_condition_preserves_owner_and_existing_budget_key():
     batch = facts_to_batch(dict(places=[], conditions=[dict(key='budget_krw', value=150000)], intents=['condition']), message, value)
     condition = batch['constraint_proposals'][0]
     assert (condition['owner_id'],condition['key'],condition['replaces_constraint_id']) == ('u1','budget','old')
+
+def test_duplicate_message_places_get_distinct_client_refs():
+    from ai.grounding import ground_extraction
+    from ai.extraction_schema import ExtractionBatch
+    from ai.extraction_projection import facts_to_batch
+    value = task()
+    message = dict(id='new', author_id='u1', text='오동도랑 전남대학교 가자')
+    value['recent_messages'] = [message]
+    raw = facts_to_batch(dict(places=['오동도','전남대학교'],conditions=[],intents=['place']),message,value)
+    output = ground_extraction(ExtractionBatch.model_validate(raw), value)
+    assert len({i['client_ref'] for i in output.proposals['item_proposals']}) == 2

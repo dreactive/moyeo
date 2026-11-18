@@ -1,6 +1,7 @@
 """Evidence checks shared by model extraction and deterministic assistance."""
 from dataclasses import dataclass
 import unicodedata
+from collections import Counter
 
 
 @dataclass
@@ -55,6 +56,11 @@ def ground_extraction(batch, task):
     validate_assessments(batch, task)
     raw = batch.model_dump()
     items, item_errors = project_many(raw['item_proposals'], project_item, task)
+    counts = Counter()
+    for item in items:
+        ref = item['client_ref']
+        item['client_ref'] += ':' + str(counts[ref]) if counts[ref] else ''
+        counts[ref] += 1
     conditions, condition_errors = project_many(raw['constraint_proposals'], project_condition, task)
     rejected = list(dict.fromkeys(item_errors + condition_errors))
     return GroundedExtraction(dict(item_proposals=items, constraint_proposals=conditions,
