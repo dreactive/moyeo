@@ -22,12 +22,12 @@
   <div class="workspace-shell">
     <header class="workspace-header">
       <nav class="workspace-nav" aria-label="주 메뉴">
-        <a class="app-brand" aria-label="모여 여행 작업방" href="/" data-app-link>
+        <a class="app-brand" aria-label="모여 여행 작업방" href="/" data-app-link="/">
           <span class="brand-icon"><svg class="app-icon" aria-hidden="true"><use href="#icon-brand"></use></svg></span>
           <span>모여</span>
         </a>
         <span class="nav-current" aria-current="page">여행 작업방</span>
-        <a href="/rooms.html" data-app-link>방 선택</a>
+        <a href="/rooms.html" data-app-link="/rooms.html">방 선택</a>
       </nav>
       <div class="workspace-user">
         <span id="session" class="user-chip">연결 중</span>
@@ -166,13 +166,13 @@
       </button>
     </div>
     <form id="trip" class="entry-form trip-form">
-      <label class="wide">방 이름<input name="title" value="우리의 여수 여행" readonly></label>
-      <label>도시<input name="region" value="여수" required></label>
-      <label>1인 전체 예산 (원)<input name="per_person_budget_krw" type="number" min="0" value="200000" required></label>
-      <label>시작일<input name="start_date" type="date" value="2026-11-21" required></label>
-      <label>종료일<input name="end_date" type="date" value="2026-11-22" required></label>
-      <label>활동 시작<input name="day_start_time" type="time" value="09:00" required></label>
-      <label>활동 종료<input name="day_end_time" type="time" value="18:00" required></label>
+      <label class="wide">방 이름<input name="title" readonly></label>
+      <label>도시<input name="region" required></label>
+      <label>1인 전체 예산 (원)<input name="per_person_budget_krw" type="number" min="0" required></label>
+      <label>시작일<input name="start_date" type="date" required></label>
+      <label>종료일<input name="end_date" type="date" required></label>
+      <label>활동 시작<input name="day_start_time" type="time" required></label>
+      <label>활동 종료<input name="day_end_time" type="time" required></label>
       <p class="wide muted">여행 중 이동수단은 자동차입니다.</p>
       <fieldset class="wide">
         <legend>출발 지점</legend>
@@ -205,10 +205,6 @@
     </form>
   </dialog>
 
-  <div hidden>
-    <form id="auth"><input name="password" type="password"></form>
-    <form id="join"></form>
-  </div>
   <script type="module" src="/src/room.js"></script>
 </body>
 </html>
