@@ -79,3 +79,19 @@ class Utterance(Request):
     text: str = Field(min_length=1, max_length=10000, pattern=r'\S')
     author_id: str = 'u1'
     goal: Literal['new_message', 'manual_replan', 'extract'] = 'new_message'
+
+
+class ToolResponse(Request):
+    tool_name: str
+    provider_mode: Literal['fixture', 'live']
+    arguments: dict
+    result: dict
+    observation: dict
+    context: DevContext
+
+
+class UtteranceResponse(Request):
+    model_backend: str
+    provider_mode: Literal['fixture', 'live']
+    result: dict
+    trace: list[dict]
