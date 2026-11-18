@@ -15,6 +15,8 @@ async def validated_batch(task, model):
             batch = ExtractionBatch.model_validate(raw)
             validate_assessments(batch, task)
             return batch, attempts, None
+        except (RuntimeError, OSError, TypeError, KeyError) as exc:
+            return None, attempts, type(exc).__name__
         except ValueError as exc:
             error = type(exc).__name__
     return None, attempts, error
