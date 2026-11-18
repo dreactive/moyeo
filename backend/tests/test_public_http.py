@@ -24,3 +24,21 @@ def test_request_budget_recovers_after_a_minute():
     assert budget.allow(0)
     assert not budget.allow(59)
     assert budget.allow(60)
+
+
+def test_mutation_limit_rejects_before_handler_and_allows_reads(tmp_path):
+    settings = dict(read_settings(), public_requests_per_minute=1)
+    app = create_app(database_path=':memory:', settings=settings, frontend_path=tmp_path)
+    calls = []
+    @app.post('/api/probe')
+    def probe():
+        calls.append(1)
+        return {'ok': True}
+    with TestClient(app) as client:
+        assert client.post('/api/probe').status_code == 200
+        limited = client.post('/api/probe')
+        assert limited.status_code == 429
+        assert limited.headers['retry-after'] == '60'
+        assert limited.headers['cache-control'] == 'no-store'
+        assert len(calls) == 1
+        assert client.get('/api/auth/me').status_code == 401

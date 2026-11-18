@@ -1,4 +1,6 @@
 from collections import deque
+from time import monotonic
+from fastapi.responses import JSONResponse
 
 
 class RequestBudget:
@@ -19,9 +21,14 @@ class RequestBudget:
 
 
 def configure_public_http(app, settings):
+    budget = RequestBudget(settings.get('public_requests_per_minute', 60))
     @app.middleware('http')
     async def public_http(request, call_next):
-        response = await call_next(request)
-        if request.url.path == '/api' or request.url.path.startswith('/api/'):
+        is_api = request.url.path == '/api' or request.url.path.startswith('/api/')
+        if is_api and request.method in ('POST', 'PUT', 'PATCH', 'DELETE') and not budget.allow(monotonic()):
+            response = JSONResponse({'detail': 'Request limit reached; retry later'}, status_code=429, headers={'Retry-After': '60'})
+        else:
+            response = await call_next(request)
+        if is_api:
             response.headers['Cache-Control'] = 'no-store'
         return response
