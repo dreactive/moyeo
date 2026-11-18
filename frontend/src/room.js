@@ -44,7 +44,7 @@ export async function startRoomApp() {
   const savedRoom = readRoomId();
   if (!savedRoom) return navigate('/rooms.html');
   initMaps({routeElement:document.getElementById('route-map'),placeElement:document.getElementById('place-map'),appKey:document.querySelector('meta[name="kakao-map-app-key"]').content});
-  bindSessionActions(); bindChatKeys(); bindFixtureControls(); bindPlanActions(); bindDecisionActions(); bindTripInput(); bindHistory();
+  bindSessionActions(); bindChatKeys(); bindFixtureControls(); bindPlanActions(); bindDecisionActions(); bindTripInput(); bindSettingsDialog(); bindHistory();
   html('mode', getDataMode() === 'fixture' ? '개발용 fixture · 실제 API 조회 아님' : 'LIVE · Backend 연결');
   subscribeState(snapshot => snapshot && renderRoom(snapshot));
   setUser(user);
@@ -144,6 +144,15 @@ function bindDecisionActions() {
   });
 }
 
+function bindSettingsDialog() {
+  const dialog = document.getElementById('trip-settings');
+  document.getElementById('open-settings').onclick = () => {
+    restoreTrip(getSnapshot());
+    dialog.showModal();
+  };
+  dialog.querySelector('[data-close-settings]').onclick = () => dialog.close();
+}
+
 function bindTripInput() {
   bindFixedCostControls();
   bindForm('trip',async (data,action,form) => {
@@ -152,9 +161,10 @@ function bindTripInput() {
       delete body.title;
       const baseline = tripBaseline;
       const patch = tripPatch(body,baseline,getSnapshot().config);
-      if (!Object.keys(patch).length) return;
+      if (!Object.keys(patch).length) { document.getElementById('trip-settings').close(); return; }
       await roomAction('trip',patch,'PATCH');
       if (tripBaseline === baseline) tripBaseline = structuredClone(body);
+      document.getElementById('trip-settings').close();
     }
   });
 }
