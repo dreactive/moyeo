@@ -47,3 +47,12 @@ def test_car_route_endpoint_preserves_units(api):
     assert response.status_code == 200, response.text
     result = response.json()['result']
     assert (result['distance_m'], result['duration_seconds']) == (4000, 600)
+
+
+def test_tool_response_context_can_be_reused(api):
+    from backend.dev_examples import tool_examples
+    api.app.state.dev_token = 'test-dev'
+    result = api.post('/api/dev/tools/search_places', json=tool_examples('search_places')['fixture']['value'],
+                      headers={'X-Dev-Token': 'test-dev'}).json()
+    assert result['context']['observations'][-1] == result['observation']
+    assert result['observation']['result'] == result['result']

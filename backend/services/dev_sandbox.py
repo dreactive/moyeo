@@ -1,4 +1,5 @@
 """Read-only developer calls; results never enter the room application pipeline."""
+from datetime import datetime, timezone
 
 
 async def execute_tool(body, name, settings):
@@ -6,4 +7,12 @@ async def execute_tool(body, name, settings):
     tools = RegisteredTools(body.context.model_dump(), settings.get('provider_mode', 'fixture'), settings)
     arguments = body.arguments.model_dump()
     result = await tools.execute(name, arguments)
-    return dict(tool_name=name, provider_mode=tools.mode, arguments=arguments, result=result)
+    context = body.context.model_dump()
+    observation = dict(tool_name=name, arguments=arguments, result=result,
+                       observed_at=datetime.now(timezone.utc).isoformat(),
+                       source_refs=[e['id'] for e in result.get('evidence', [])])
+    if result.get('evidence_id'):
+        observation['source_refs'].append(result['evidence_id'])
+    context['observations'].append(observation)
+    return dict(tool_name=name, provider_mode=tools.mode, arguments=arguments, result=result,
+                observation=observation, context=context)
