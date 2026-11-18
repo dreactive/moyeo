@@ -43,13 +43,19 @@ export function renderConstraints(snapshot) {
     current.set(item.id,value);
     const changed = !old && previous && previous.get(item.id) !== value;
     const input = conditionInput(item);
+    const canEdit = !old && item.owner_id === getUser()?.id;
     const row = `<div class="card">
   <strong>${e(constraintLabels[item.key] ?? item.key)} · ${e(conditionValue(item))}</strong>
   ${changed ? '<span class="badge condition-change">최근 변경</span>' : ''}
   <p class="constraint-meta">${e(memberName(snapshot,item.owner_id))} · ${item.kind === 'hard' ? '필수' : '선호'} · ${e(constraintStatuses[item.status] ?? item.status)}</p>
   ${sourceLinks(item.source_message_ids)}
-  ${!old && item.owner_id === getUser()?.id ? `<form data-constraint="${e(item.id)}" data-value-mode="${input ? 'scalar' : 'json'}">${input || `<label>값 (JSON)<input name="value" value="${e(JSON.stringify(item.value))}" required></label>`}<button>수정</button>
-  ${item.status === 'needs_owner_confirmation' ? `<button type="button" data-constraint-confirm="${e(item.id)}">본인 확인</button>` : ''}</form>` : ''}</div>`;
+  ${canEdit ? `<details class="card-details"><summary>조건 수정</summary>
+    <form data-constraint="${e(item.id)}" data-value-mode="${input ? 'scalar' : 'json'}">
+      ${input || `<label>값 (JSON)<input name="value" value="${e(JSON.stringify(item.value))}" required></label>`}
+      <button>수정 저장</button>
+    </form>
+  </details>` : ''}
+  ${canEdit && item.status === 'needs_owner_confirmation' ? `<button type="button" data-constraint-confirm="${e(item.id)}">본인 확인</button>` : ''}</div>`;
     (old ? history : active).push(row);
   }
   html('constraints', (active.join('') || '<p>아직 등록된 조건이 없습니다.</p>') +

@@ -165,3 +165,14 @@ test('visit questions identify the actual place in the open questions section', 
   assert.match(card.innerHTML,/확인 질문/);
   assert.match(card.innerHTML,/가상 A식당 · 공유 질문/);
 });
+
+test('a pending verification stays visible beside the collapsed owner edit', () => {
+  const card = {};
+  globalThis.document = {getElementById:() => card};
+  const room = structuredClone(scenarios.ready.snapshot);
+  room.constraints[0].status = 'needs_owner_confirmation';
+  setUser({id:'u1'});
+  decisions.renderConstraints(room);
+  setUser(null);
+  assert.match(card.innerHTML,/<details[^>]*><summary>조건 수정<\/summary>[\s\S]*<\/details>\s*<button[^>]+data-constraint-confirm/);
+});
