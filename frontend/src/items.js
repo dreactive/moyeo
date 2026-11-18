@@ -27,6 +27,13 @@ export function renderConstraints(snapshot) {
 export function renderConflicts(snapshot) {
   html('conflicts', snapshot.conflicts.filter(item => item.status === 'open').map(item => `<div class="card conflict"><h3>! ${e(item.type)} · ${item.blocking ? '확정 차단' : '선호 선택'}</h3><p>${e(item.explanation)}</p>${item.options.map(option => `<p><button data-conflict="${e(item.id)}" data-option="${e(option.id)}" ${option.requires_owner_id && option.requires_owner_id !== getUser()?.id ? 'disabled' : ''}>${e(option.label)}</button> ${e(option.effect_summary)} · ${option.requires_owner_id ? e(option.requires_owner_id) + ' 본인 조건 수정·확인 필요' : '새 초안 생성'}</p>`).join('')}</div>`).join(''));
 }
+export function readDecisionValue(form) {
+  if (form.dataset.valueMode !== 'fields') return JSON.parse(form.elements.value.value);
+  const fields = Array.from(form.elements).filter(field => field.name);
+  return Object.fromEntries(fields.map(field => [
+    field.name, field.type === 'number' ? field.valueAsNumber : field.value.trim()
+  ]));
+}
 const answerExamples = {
   origin:{label:'출발지',latitude:34.76,longitude:127.66},
   destination:{label:'귀가지',latitude:34.76,longitude:127.66},

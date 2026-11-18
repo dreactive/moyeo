@@ -48,3 +48,14 @@ for (const key of ['participant_version','constraint_version','evidence_version'
     assert.deepEqual(room.confirmed_plan,history);
   });
 }
+
+import * as decisions from '../src/items.js';
+
+test('the typed decision reader preserves numeric fields in the submitted payload', () => {
+  const form = {dataset:{valueMode:'fields'},elements:[
+    {name:'menu_id',type:'text',value:'fixture:menu-a'},
+    {name:'quantity',type:'number',value:'2',valueAsNumber:2},
+    {name:'scope',type:'select-one',value:'shared'}
+  ]};
+  assert.deepEqual(decisions.readDecisionValue?.(form),{menu_id:'fixture:menu-a',quantity:2,scope:'shared'});
+});
