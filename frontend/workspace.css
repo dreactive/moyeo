@@ -1250,3 +1250,11 @@ body.auth-page {
 .workspace-page .member-avatar:nth-child(2) { --avatar-bg:#e7efff; --avatar-fg:#4674b2; }
 .workspace-page .member-avatar:nth-child(3) { --avatar-bg:#f8e8ec; --avatar-fg:#aa687c; }
 .workspace-page .member-avatar:nth-child(4) { --avatar-bg:#ebe8ff; --avatar-fg:#6652dc; }
+
+.workspace-page #place .card-facts {
+  grid-template-columns: 64px minmax(0, 1fr);
+}
+.workspace-page #place .card-facts dd {
+  text-align: left;
+  overflow-wrap: anywhere;
+}
