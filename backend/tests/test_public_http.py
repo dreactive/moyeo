@@ -16,3 +16,11 @@ def test_api_errors_are_not_cached():
         response = client.get('/api/auth/me')
         assert response.status_code == 401
         assert response.headers['cache-control'] == 'no-store'
+
+
+def test_request_budget_recovers_after_a_minute():
+    from backend.public_http import RequestBudget
+    budget = RequestBudget(1)
+    assert budget.allow(0)
+    assert not budget.allow(59)
+    assert budget.allow(60)
