@@ -8,6 +8,7 @@ from backend.services.observations import known_place_ids
 from backend.services.observations import merge_observations
 from backend.services.observations import relevant_evidence
 from backend.services.planning import build_plan, validate_effect
+from backend.services.agent_requests import persist_requests, persist_partial_results, active_lookup
 from copy import deepcopy
 
 
@@ -36,17 +37,17 @@ def apply_proposals(room, result):
 
 
 def apply_questions(room, proposals):
-    answered = [q for q in room['questions'] if q['status'] == 'answered']
+    retained = {q['id']:deepcopy(q) for q in room['questions']}
     members = {member['user_id'] for member in room['members']}
     for proposal in proposals:
         if proposal['owner_id'] is not None and proposal['owner_id'] not in members:
             raise ValueError('Unknown question owner')
-        if any(q['id'] == proposal['id'] for q in answered):
+        if retained.get(proposal['id'], {}).get('status') in ('answered','cancelled','closed'):
             continue
         question = deepcopy(proposal)
         question.update(status='open', answer=None, answered_by=None)
-        answered.append(question)
-    room['questions'] = answered
+        retained[question['id']] = question
+    room['questions'] = list(retained.values())
 
 
 
@@ -71,18 +72,25 @@ def prepare_result(room, result, old_observations):
         updated['agent_pending_item_ids'] = list(dict.fromkeys(pending))
     observations = merge_observations(old_observations, mapped['observations'])
     if 'request_states' in mapped:
-        messages = {m['id']: m for m in updated['messages']}
-        places = known_place_ids(observations)
-        for request in mapped['request_states']:
-            message = messages.get(request.get('source_message_id'))
-            if (not message or request.get('owner_id') != message['author_id']
-                    or not set(request.get('target_refs', []) + request.get('excluded_refs', [])) <= places):
-                raise ValueError('Invalid scoped request source or targets')
-        existing = {r['request_id']: r for r in updated.get('agent_requests', [])
-                    if r.get('status') not in ('completed', 'superseded', 'cancelled')}
-        existing.update({r['request_id']: deepcopy(r) for r in mapped['request_states']})
-        updated['agent_requests'] = list(existing.values())
-    validate_questions(updated, mapped['questions'])
+        persist_requests(updated, mapped['request_states'], observations)
+    retired = {r['request_id']:r['status'] for r in updated.get('agent_requests', [])
+               if r.get('status') in ('completed','cancelled','superseded','unsupported')}
+    closed_questions = set()
+    for q in updated['questions']:
+        if q.get('field') in ('target_places','route_departure') and q.get('status')=='open' and q.get('target_ref') in retired:
+            reason = retired[q['target_ref']]
+            q.update(status='cancelled' if reason=='cancelled' else 'closed',closed_reason='request_'+reason)
+            closed_questions.add(q['id'])
+    mapped['questions'] = [q for q in mapped['questions'] if q['id'] not in closed_questions]
+    failures = {str((f.get('tool_name'), f.get('arguments'))):deepcopy(f)
+                for f in updated.get('agent_tool_failures', [])}
+    succeeded = {(o['tool_name'], str(o.get('arguments', {}))) for o in mapped['observations']}
+    failures = {key:f for key,f in failures.items()
+                if (f.get('tool_name'),str(f.get('arguments', {}))) not in succeeded}
+    for failure in mapped.get('tool_failures', []):
+        failures[str((failure.get('tool_name'),failure.get('arguments')))] = deepcopy(failure)
+    updated['agent_tool_failures'] = list(failures.values())
+    validate_questions(updated, mapped['questions'], observations)
     apply_questions(updated, mapped['questions'])
     apply_plan(updated, mapped['plan_draft'], old_observations, observations)
     updated['conflicts'] = deepcopy(mapped['conflicts'])
@@ -92,6 +100,7 @@ def prepare_result(room, result, old_observations):
         for option in conflict['options']:
             validate_effect(updated, option['effect'], observations)
         conflict['base_versions'] = deepcopy(updated['versions'])
+    persist_partial_results(updated, mapped)
     return updated, observations
 
 
@@ -123,7 +132,7 @@ def apply_agent_result(db, result):
     return True
 
 
-def validate_questions(room, questions):
+def validate_questions(room, questions, observations=()):
     items = {item['id'] for item in room['items']}
     members = {member['user_id'] for member in room['members']}
     for question in questions:
@@ -135,6 +144,14 @@ def validate_questions(room, questions):
             targets = {c['id'] for c in room['constraints'] if c['owner_id'] == question['owner_id']}
         elif field == 'support_target':
             targets = items | {None}
+        elif field == 'region':
+            targets = {'config:region'}
+        elif field in ('target_places','route_departure'):
+            request = active_lookup(room, question.get('target_ref'), question.get('owner_id'))
+            targets = {request['request_id']} if request else set()
+            choices = question.get('place_choices', [])
+            if not isinstance(choices, list) or not {c.get('place_ref') for c in choices} <= known_place_ids(observations):
+                raise ValueError('Invalid observed lookup choices')
         elif field not in ('menu_selection','visit_duration'):
             raise ValueError('Unknown question field')
         if question['owner_id'] not in members | {None} or question['target_ref'] not in targets or not set(question['related_item_ids']) <= items:
@@ -151,3 +168,6 @@ def validate_plan_refs(room, draft, observations):
         for visit in day['visits']:
             if visit['item_id'] not in selected or visit['place_ref'] not in places:
                 raise ValueError('Unknown plan visit reference')
+    for item in draft.get('unplaced_items', []):
+        if item.get('item_id') not in selected or item.get('place_ref') not in places | {None}:
+            raise ValueError('Unknown unplaced visit reference')

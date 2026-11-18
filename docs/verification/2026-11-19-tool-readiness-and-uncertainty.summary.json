@@ -1,0 +1,1502 @@
+{
+  "status": "passed",
+  "started_at": "2026-11-18T17:22:34.950804+00:00",
+  "finished_at": "2026-11-18T17:24:08.362581+00:00",
+  "source_report_sha256": "a38b0460eba6f8729595f96af310d820a8de15092e6dedcf1ec3a839f65f6638",
+  "model_mode": "local_qwen",
+  "auxiliary_backend": "external",
+  "aux_model": "gpt-6-luna",
+  "provider_mode": "live",
+  "room_id": "7fefff13cb1c10f93f7291397a970b79",
+  "isolated_database": true,
+  "production_server_restarted": false,
+  "observed_tool_types": [
+    "build_itinerary",
+    "calculate_costs",
+    "get_car_route",
+    "get_place_details",
+    "search_places"
+  ],
+  "clean_staged_tests": {
+    "ai": 458,
+    "backend": 222,
+    "frontend": 191,
+    "total": 871,
+    "failed": 0
+  },
+  "cases": [
+    {
+      "name": "location",
+      "text": "돌산공원하고 자산공원 찾아줘.",
+      "status": "passed",
+      "assertions": [
+        {
+          "name": "each attempt was same-identity and successfully applied through Backend",
+          "passed": true
+        },
+        {
+          "name": "each tool call matches the scored Qwen argmax and exact dispatched arguments",
+          "passed": true
+        },
+        {
+          "name": "selected tool or judge failures are absent",
+          "passed": true
+        },
+        {
+          "name": "work did not exhaust the two allowed round-limit continuations",
+          "passed": true
+        },
+        {
+          "name": "lookup-only messages created no place items, visits, or votes",
+          "passed": true
+        },
+        {
+          "name": "an owned request completed with an actual response",
+          "passed": true
+        },
+        {
+          "name": "both exact places uniquely observed from saved Kakao search results",
+          "passed": true
+        },
+        {
+          "name": "two distinct live Kakao search queries were dispatched",
+          "passed": true
+        },
+        {
+          "name": "location response names and saved result refs cover both exact places",
+          "passed": true
+        }
+      ],
+      "runs": [
+        {
+          "run_id": "8b24735102ca4cd2b221f75d61a962d7",
+          "applied": true,
+          "matching_identity": true,
+          "seconds": 6.6,
+          "dispatch_audit_passed": true,
+          "extraction": [
+            {
+              "status": "ok",
+              "duration_ms": 4826.551,
+              "attempts": 1,
+              "context_completion_calls": 0,
+              "issue_codes": []
+            }
+          ],
+          "decisions": [
+            {
+              "step": 1,
+              "candidate_count": 2,
+              "candidate_types": [
+                "tool",
+                "tool"
+              ],
+              "candidate_tools": [
+                "search_places",
+                "search_places"
+              ],
+              "scores": [
+                2.0446298122406006,
+                1.9014647006988525
+              ],
+              "selected_index": 0,
+              "selected_tool": "search_places",
+              "selected_arguments_sha256": "247c51db4e81804e7c3a03fca76b28b6960ef617fef71d13718b7eecc45f192a",
+              "duration_ms": 1147.498,
+              "input_chars": 2076
+            },
+            {
+              "step": 2,
+              "candidate_count": 1,
+              "candidate_types": [
+                "tool"
+              ],
+              "candidate_tools": [
+                "search_places"
+              ],
+              "scores": [
+                2.005389451980591
+              ],
+              "selected_index": 0,
+              "selected_tool": "search_places",
+              "selected_arguments_sha256": "ee3d00e2677ee164fb007cc83f87fdf414a39e577e25fe6dcd4840c63ed77bb2",
+              "duration_ms": 279.475,
+              "input_chars": 1509
+            }
+          ],
+          "dispatches": [
+            {
+              "step": 1,
+              "tool_name": "search_places",
+              "arguments": {
+                "query": "돌산공원",
+                "region": "여수",
+                "category": null
+              },
+              "execution_source": "http",
+              "success": true,
+              "error_code": null,
+              "arguments_sha256": "247c51db4e81804e7c3a03fca76b28b6960ef617fef71d13718b7eecc45f192a",
+              "duration_ms": 221.69
+            },
+            {
+              "step": 2,
+              "tool_name": "search_places",
+              "arguments": {
+                "query": "자산공원",
+                "region": "여수",
+                "category": null
+              },
+              "execution_source": "http",
+              "success": true,
+              "error_code": null,
+              "arguments_sha256": "ee3d00e2677ee164fb007cc83f87fdf414a39e577e25fe6dcd4840c63ed77bb2",
+              "duration_ms": 97.94
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "details_budget",
+      "text": "자산공원 입장료와 영업시간 알려줘. 내 예산은 15만원이야. 4시까지 귀가한다는 뜻은 아니야.",
+      "status": "passed",
+      "assertions": [
+        {
+          "name": "each attempt was same-identity and successfully applied through Backend",
+          "passed": true
+        },
+        {
+          "name": "each tool call matches the scored Qwen argmax and exact dispatched arguments",
+          "passed": true
+        },
+        {
+          "name": "selected tool or judge failures are absent",
+          "passed": true
+        },
+        {
+          "name": "work did not exhaust the two allowed round-limit continuations",
+          "passed": true
+        },
+        {
+          "name": "lookup-only messages created no place items, visits, or votes",
+          "passed": true
+        },
+        {
+          "name": "an owned request completed with an actual response",
+          "passed": true
+        },
+        {
+          "name": "actual Apify lookup matched the saved exact park identity",
+          "passed": true
+        },
+        {
+          "name": "unknown price or hours are explicitly preserved",
+          "passed": true
+        },
+        {
+          "name": "150000 KRW hard condition belongs to its author and is pending confirmation",
+          "passed": true
+        },
+        {
+          "name": "negated return-by statement created no return-by condition",
+          "passed": true
+        }
+      ],
+      "runs": [
+        {
+          "run_id": "26f8f82da2fd4a7a8ecfe0e0d375817c",
+          "applied": true,
+          "matching_identity": true,
+          "seconds": 57.69,
+          "dispatch_audit_passed": true,
+          "extraction": [
+            {
+              "status": "ok",
+              "duration_ms": 2987.169,
+              "attempts": 1,
+              "context_completion_calls": 0,
+              "issue_codes": []
+            }
+          ],
+          "decisions": [
+            {
+              "step": 1,
+              "candidate_count": 1,
+              "candidate_types": [
+                "tool"
+              ],
+              "candidate_tools": [
+                "get_place_details"
+              ],
+              "scores": [
+                3.5744543075561523
+              ],
+              "selected_index": 0,
+              "selected_tool": "get_place_details",
+              "selected_arguments_sha256": "35e2c42b1c505285033d848dc18af32e26c46ddc4466bd7067e4aa0767827421",
+              "duration_ms": 516.01,
+              "input_chars": 1744
+            }
+          ],
+          "dispatches": [
+            {
+              "step": 1,
+              "tool_name": "get_place_details",
+              "arguments": {
+                "place_ref": "kakao:8059512"
+              },
+              "execution_source": "http",
+              "success": true,
+              "error_code": null,
+              "arguments_sha256": "35e2c42b1c505285033d848dc18af32e26c46ddc4466bd7067e4aa0767827421",
+              "duration_ms": 54171.07
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "current_route",
+      "text": "돌산공원에서 자산공원까지 지금 자동차 경로 알려줘.",
+      "status": "passed",
+      "assertions": [
+        {
+          "name": "each attempt was same-identity and successfully applied through Backend",
+          "passed": true
+        },
+        {
+          "name": "each tool call matches the scored Qwen argmax and exact dispatched arguments",
+          "passed": true
+        },
+        {
+          "name": "selected tool or judge failures are absent",
+          "passed": true
+        },
+        {
+          "name": "work did not exhaust the two allowed round-limit continuations",
+          "passed": true
+        },
+        {
+          "name": "lookup-only messages created no place items, visits, or votes",
+          "passed": true
+        },
+        {
+          "name": "an owned request completed with an actual response",
+          "passed": true
+        },
+        {
+          "name": "actual current route is Dolsan to Jasan with null departure",
+          "passed": true
+        }
+      ],
+      "runs": [
+        {
+          "run_id": "9ef35ec1ec864df896865157722bf7ea",
+          "applied": true,
+          "matching_identity": true,
+          "seconds": 4.53,
+          "dispatch_audit_passed": true,
+          "extraction": [
+            {
+              "status": "ok",
+              "duration_ms": 3700.469,
+              "attempts": 1,
+              "context_completion_calls": 0,
+              "issue_codes": []
+            }
+          ],
+          "decisions": [
+            {
+              "step": 1,
+              "candidate_count": 1,
+              "candidate_types": [
+                "tool"
+              ],
+              "candidate_tools": [
+                "get_car_route"
+              ],
+              "scores": [
+                3.0628108978271484
+              ],
+              "selected_index": 0,
+              "selected_tool": "get_car_route",
+              "selected_arguments_sha256": "1fd3c774aee4a0c6b927bca3a6f423f77d3d8a3ff2b840187e8fb8f19bcc9125",
+              "duration_ms": 632.116,
+              "input_chars": 2833
+            }
+          ],
+          "dispatches": [
+            {
+              "step": 1,
+              "tool_name": "get_car_route",
+              "arguments": {
+                "from_ref": "kakao:7843359",
+                "to_ref": "kakao:8059512",
+                "departure_at": null
+              },
+              "execution_source": "http",
+              "success": true,
+              "error_code": null,
+              "arguments_sha256": "1fd3c774aee4a0c6b927bca3a6f423f77d3d8a3ff2b840187e8fb8f19bcc9125",
+              "duration_ms": 176.75
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "partial_plan",
+      "text": "자산공원 가자. 확인된 비용부터 계산하고 가능한 일정도 보여줘.",
+      "status": "passed",
+      "assertions": [
+        {
+          "name": "each attempt was same-identity and successfully applied through Backend",
+          "passed": true
+        },
+        {
+          "name": "each tool call matches the scored Qwen argmax and exact dispatched arguments",
+          "passed": true
+        },
+        {
+          "name": "selected tool or judge failures are absent",
+          "passed": true
+        },
+        {
+          "name": "work did not exhaust the two allowed round-limit continuations",
+          "passed": true
+        },
+        {
+          "name": "explicit visit was saved using this message as its source",
+          "passed": true
+        },
+        {
+          "name": "the explicit own visit support is preserved without confirming the plan",
+          "passed": true
+        },
+        {
+          "name": "trip schedule uses an actual future Kakao route rather than the current-route result",
+          "passed": true
+        },
+        {
+          "name": "selected cost calculation retains the known 40000 KRW advance and unknown final total",
+          "passed": true
+        },
+        {
+          "name": "selected itinerary publishes at least one timeable Jasan visit",
+          "passed": true
+        },
+        {
+          "name": "room publishes both current selected partial results with a valid version basis",
+          "passed": true
+        },
+        {
+          "name": "pending explicit budget and uncertain facts do not confirm the plan",
+          "passed": true
+        }
+      ],
+      "runs": [
+        {
+          "run_id": "108b1a5cd0314485baf75f3f873d515d",
+          "applied": true,
+          "matching_identity": true,
+          "seconds": 10.12,
+          "dispatch_audit_passed": true,
+          "extraction": [
+            {
+              "status": "ok",
+              "duration_ms": 3528.598,
+              "attempts": 1,
+              "context_completion_calls": 0,
+              "issue_codes": [],
+              "repairs": [
+                "opinion_completed_from_source"
+              ]
+            }
+          ],
+          "decisions": [
+            {
+              "step": 1,
+              "candidate_count": 2,
+              "candidate_types": [
+                "tool",
+                "tool"
+              ],
+              "candidate_tools": [
+                "calculate_costs",
+                "get_car_route"
+              ],
+              "scores": [
+                1.5946521759033203,
+                0.7221991419792175
+              ],
+              "selected_index": 0,
+              "selected_tool": "calculate_costs",
+              "selected_arguments_sha256": "1faff39ba2f5bf0042c2a898ed247b1796503c91207677b6c60ea07aa219f61a",
+              "duration_ms": 1411.207,
+              "input_chars": 4497
+            },
+            {
+              "step": 2,
+              "candidate_count": 1,
+              "candidate_types": [
+                "tool"
+              ],
+              "candidate_tools": [
+                "get_car_route"
+              ],
+              "scores": [
+                0.8812524676322937
+              ],
+              "selected_index": 0,
+              "selected_tool": "get_car_route",
+              "selected_arguments_sha256": "10aaf1643f6c84ae5f8538e8707d04418cb9a1b5587da8522e92271232a82c69",
+              "duration_ms": 465.233,
+              "input_chars": 3637
+            },
+            {
+              "step": 3,
+              "candidate_count": 2,
+              "candidate_types": [
+                "tool",
+                "tool"
+              ],
+              "candidate_tools": [
+                "calculate_costs",
+                "build_itinerary"
+              ],
+              "scores": [
+                0.49090713262557983,
+                -0.6093169450759888
+              ],
+              "selected_index": 0,
+              "selected_tool": "calculate_costs",
+              "selected_arguments_sha256": "fbca10c90b8de42a21253dd1472cad8bbdf900aa373c8411bb7644080f32cd12",
+              "duration_ms": 2571.483,
+              "input_chars": 4429
+            },
+            {
+              "step": 4,
+              "candidate_count": 1,
+              "candidate_types": [
+                "tool"
+              ],
+              "candidate_tools": [
+                "build_itinerary"
+              ],
+              "scores": [
+                -0.6090369820594788
+              ],
+              "selected_index": 0,
+              "selected_tool": "build_itinerary",
+              "selected_arguments_sha256": "1955d6a5d93df11282a9a6cf14416cc89f0ba8bafb31a0f69c416a56016f1683",
+              "duration_ms": 1909.848,
+              "input_chars": 3958
+            }
+          ],
+          "dispatches": [
+            {
+              "step": 1,
+              "tool_name": "calculate_costs",
+              "arguments": {
+                "lines": [
+                  {
+                    "id": "probe:advance",
+                    "category": "other",
+                    "scope": "shared",
+                    "owner_id": null,
+                    "description": "검증용 선결제 비용",
+                    "unit_price_krw": 40000,
+                    "quantity": 1,
+                    "subtotal_krw": 40000,
+                    "paid": true,
+                    "evidence_id": null,
+                    "assumption": null
+                  },
+                  {
+                    "id": "visit:client:03718fe534e54abf957484f097548ccf:b5994e8af943",
+                    "category": "admission",
+                    "scope": "per_person",
+                    "owner_id": null,
+                    "description": "visit:client:03718fe534e54abf957484f097548ccf:b5994e8af943",
+                    "unit_price_krw": null,
+                    "quantity": 1,
+                    "subtotal_krw": null,
+                    "paid": false,
+                    "evidence_id": null,
+                    "assumption": "입장료/메뉴 확인 필요"
+                  },
+                  {
+                    "id": "car:extras",
+                    "category": "car",
+                    "scope": "shared",
+                    "owner_id": null,
+                    "description": "car:extras",
+                    "unit_price_krw": null,
+                    "quantity": 1,
+                    "subtotal_krw": null,
+                    "paid": false,
+                    "evidence_id": null,
+                    "assumption": "유류/주차 비용 확인 필요"
+                  },
+                  {
+                    "id": "toll:unobserved:2026-11-21:anchor:origin:kakao:8059512:client:03718fe534e54abf957484f097548ccf:b5994e8af943",
+                    "category": "car",
+                    "scope": "shared",
+                    "owner_id": null,
+                    "description": "toll:unobserved:2026-11-21:anchor:origin:kakao:8059512:client:03718fe534e54abf957484f097548ccf:b5994e8af943",
+                    "unit_price_krw": null,
+                    "quantity": 1,
+                    "subtotal_krw": null,
+                    "paid": false,
+                    "evidence_id": null,
+                    "assumption": "이동 구간 통행료 미조회"
+                  },
+                  {
+                    "id": "toll:unobserved:2026-11-21:kakao:8059512:anchor:destination",
+                    "category": "car",
+                    "scope": "shared",
+                    "owner_id": null,
+                    "description": "toll:unobserved:2026-11-21:kakao:8059512:anchor:destination",
+                    "unit_price_krw": null,
+                    "quantity": 1,
+                    "subtotal_krw": null,
+                    "paid": false,
+                    "evidence_id": null,
+                    "assumption": "이동 구간 통행료 미조회"
+                  }
+                ],
+                "member_ids": [
+                  "c2b92263e72b0cfa5fc9359b43403549"
+                ],
+                "budget_by_user": {
+                  "c2b92263e72b0cfa5fc9359b43403549": 200000
+                }
+              },
+              "execution_source": "local_calculation",
+              "success": true,
+              "error_code": null,
+              "arguments_sha256": "1faff39ba2f5bf0042c2a898ed247b1796503c91207677b6c60ea07aa219f61a",
+              "duration_ms": 0.86
+            },
+            {
+              "step": 2,
+              "tool_name": "get_car_route",
+              "arguments": {
+                "from_ref": "anchor:origin",
+                "to_ref": "kakao:8059512",
+                "departure_at": "2026-11-21T09:00:00+09:00"
+              },
+              "execution_source": "http",
+              "success": true,
+              "error_code": null,
+              "arguments_sha256": "10aaf1643f6c84ae5f8538e8707d04418cb9a1b5587da8522e92271232a82c69",
+              "duration_ms": 124.76
+            },
+            {
+              "step": 3,
+              "tool_name": "calculate_costs",
+              "arguments": {
+                "lines": [
+                  {
+                    "id": "probe:advance",
+                    "category": "other",
+                    "scope": "shared",
+                    "owner_id": null,
+                    "description": "검증용 선결제 비용",
+                    "unit_price_krw": 40000,
+                    "quantity": 1,
+                    "subtotal_krw": 40000,
+                    "paid": true,
+                    "evidence_id": null,
+                    "assumption": null
+                  },
+                  {
+                    "id": "visit:client:03718fe534e54abf957484f097548ccf:b5994e8af943",
+                    "category": "admission",
+                    "scope": "per_person",
+                    "owner_id": null,
+                    "description": "visit:client:03718fe534e54abf957484f097548ccf:b5994e8af943",
+                    "unit_price_krw": null,
+                    "quantity": 1,
+                    "subtotal_krw": null,
+                    "paid": false,
+                    "evidence_id": null,
+                    "assumption": "입장료/메뉴 확인 필요"
+                  },
+                  {
+                    "id": "car:extras",
+                    "category": "car",
+                    "scope": "shared",
+                    "owner_id": null,
+                    "description": "car:extras",
+                    "unit_price_krw": null,
+                    "quantity": 1,
+                    "subtotal_krw": null,
+                    "paid": false,
+                    "evidence_id": null,
+                    "assumption": "유류/주차 비용 확인 필요"
+                  },
+                  {
+                    "id": "toll:kakao:route:53b4d8ab6ff73bee3eb1",
+                    "category": "car",
+                    "scope": "shared",
+                    "owner_id": null,
+                    "description": "toll:kakao:route:53b4d8ab6ff73bee3eb1",
+                    "unit_price_krw": 0,
+                    "quantity": 1,
+                    "subtotal_krw": null,
+                    "paid": false,
+                    "evidence_id": "kakao:route:53b4d8ab6ff73bee3eb1",
+                    "assumption": "통행료만; 유류·주차 별도"
+                  },
+                  {
+                    "id": "toll:unobserved:2026-11-21:kakao:8059512:anchor:destination",
+                    "category": "car",
+                    "scope": "shared",
+                    "owner_id": null,
+                    "description": "toll:unobserved:2026-11-21:kakao:8059512:anchor:destination",
+                    "unit_price_krw": null,
+                    "quantity": 1,
+                    "subtotal_krw": null,
+                    "paid": false,
+                    "evidence_id": null,
+                    "assumption": "이동 구간 통행료 미조회"
+                  }
+                ],
+                "member_ids": [
+                  "c2b92263e72b0cfa5fc9359b43403549"
+                ],
+                "budget_by_user": {
+                  "c2b92263e72b0cfa5fc9359b43403549": 200000
+                }
+              },
+              "execution_source": "local_calculation",
+              "success": true,
+              "error_code": null,
+              "arguments_sha256": "fbca10c90b8de42a21253dd1472cad8bbdf900aa373c8411bb7644080f32cd12",
+              "duration_ms": 1.39
+            },
+            {
+              "step": 4,
+              "tool_name": "build_itinerary",
+              "arguments": {
+                "visits": [
+                  {
+                    "item_id": "client:03718fe534e54abf957484f097548ccf:b5994e8af943",
+                    "place_ref": "kakao:8059512",
+                    "date": "2026-11-21",
+                    "preferred_start_at": null,
+                    "stay_minutes": null,
+                    "selected_menu_ids": [],
+                    "input_basis": {
+                      "item_version": 1,
+                      "opening_hours_evidence_id": "apify:37609918:hours",
+                      "opening_hours_fingerprint": "ce312b975fa1c1b9a773"
+                    }
+                  }
+                ],
+                "trip_schedule": {
+                  "start_date": "2026-11-21",
+                  "end_date": "2026-11-21",
+                  "day_start_time": "09:00",
+                  "day_end_time": "18:00"
+                },
+                "anchors": {
+                  "origin": {
+                    "label": "돌산공원",
+                    "address": "전남광주통합특별시 여수시 돌산읍 우두리 799-76",
+                    "latitude": 34.7305471491985,
+                    "longitude": 127.739927808873,
+                    "source_ref": "kakao:7843359"
+                  },
+                  "destination": {
+                    "label": "돌산공원",
+                    "address": "전남광주통합특별시 여수시 돌산읍 우두리 799-76",
+                    "latitude": 34.7305471491985,
+                    "longitude": 127.739927808873,
+                    "source_ref": "kakao:7843359"
+                  },
+                  "lodging": null
+                },
+                "constraints": [
+                  {
+                    "owner_id": "c2b92263e72b0cfa5fc9359b43403549",
+                    "key": "budget",
+                    "value": 150000,
+                    "kind": "hard",
+                    "source_message_ids": [
+                      "6ca0664d28314eb18077397fe4a9f93d"
+                    ],
+                    "id": "de3df62cbb2543a4b42aed4119d3ac23",
+                    "status": "needs_owner_confirmation"
+                  }
+                ],
+                "route_legs": [
+                  {
+                    "from_ref": "anchor:origin",
+                    "to_ref": "kakao:8059512",
+                    "distance_m": 4635,
+                    "duration_seconds": 842,
+                    "toll_krw": 0,
+                    "polyline": [
+                      {
+                        "latitude": 34.73090957318704,
+                        "longitude": 127.74040272076058
+                      },
+                      {
+                        "latitude": 34.730963546778845,
+                        "longitude": 127.74034795353664
+                      },
+                      {
+                        "latitude": 34.73105346390389,
+                        "longitude": 127.74023847528085
+                      },
+                      {
+                        "latitude": 34.73113438923025,
+                        "longitude": 127.74013994464794
+                      },
+                      {
+                        "latitude": 34.73120627618225,
+                        "longitude": 127.74003052239307
+                      },
+                      {
+                        "latitude": 34.73124203313063,
+                        "longitude": 127.73988845392252
+                      },
+                      {
+                        "latitude": 34.73126856493106,
+                        "longitude": 127.73964813662644
+                      },
+                      {
+                        "latitude": 34.731114399219955,
+                        "longitude": 127.73922275113623
+                      },
+                      {
+                        "latitude": 34.730969457692666,
+                        "longitude": 127.73889561547405
+                      },
+                      {
+                        "latitude": 34.73092407840647,
+                        "longitude": 127.73875380220599
+                      },
+                      {
+                        "latitude": 34.73088759678658,
+                        "longitude": 127.73855736265834
+                      },
+                      {
+                        "latitude": 34.73086036431048,
+                        "longitude": 127.73847009095346
+                      },
+                      {
+                        "latitude": 34.73083320211729,
+                        "longitude": 127.73841557811788
+                      },
+                      {
+                        "latitude": 34.730779041830786,
+                        "longitude": 127.73838298973115
+                      },
+                      {
+                        "latitude": 34.73064377007424,
+                        "longitude": 127.73836157663362
+                      },
+                      {
+                        "latitude": 34.73050859211751,
+                        "longitude": 127.73838384184914
+                      },
+                      {
+                        "latitude": 34.730373531378845,
+                        "longitude": 127.73846070470817
+                      },
+                      {
+                        "latitude": 34.730265656157584,
+                        "longitude": 127.73860299933213
+                      },
+                      {
+                        "latitude": 34.73016674892194,
+                        "longitude": 127.73872342618922
+                      },
+                      {
+                        "latitude": 34.73010390153078,
+                        "longitude": 127.73884373934604
+                      },
+                      {
+                        "latitude": 34.72991566243693,
+                        "longitude": 127.73934663101831
+                      },
+                      {
+                        "latitude": 34.72965546450787,
+                        "longitude": 127.73992618252352
+                      },
+                      {
+                        "latitude": 34.729457880099524,
+                        "longitude": 127.74027622528253
+                      },
+                      {
+                        "latitude": 34.729359134038305,
+                        "longitude": 127.74047308486233
+                      },
+                      {
+                        "latitude": 34.72931457058817,
+                        "longitude": 127.74071345267438
+                      },
+                      {
+                        "latitude": 34.72931457058817,
+                        "longitude": 127.74071345267438
+                      },
+                      {
+                        "latitude": 34.72926038765526,
+                        "longitude": 127.74066994397526
+                      },
+                      {
+                        "latitude": 34.72924224143487,
+                        "longitude": 127.74061540330047
+                      },
+                      {
+                        "latitude": 34.72923308693001,
+                        "longitude": 127.74054991508822
+                      },
+                      {
+                        "latitude": 34.72924182279684,
+                        "longitude": 127.74041885416341
+                      },
+                      {
+                        "latitude": 34.7292503722654,
+                        "longitude": 127.74020043803287
+                      },
+                      {
+                        "latitude": 34.729222884672545,
+                        "longitude": 127.73999305416906
+                      },
+                      {
+                        "latitude": 34.72916788508696,
+                        "longitude": 127.7395673674741
+                      },
+                      {
+                        "latitude": 34.729122389791925,
+                        "longitude": 127.73937096000513
+                      },
+                      {
+                        "latitude": 34.72915784206532,
+                        "longitude": 127.73908694283136
+                      },
+                      {
+                        "latitude": 34.72928330311791,
+                        "longitude": 127.73873712544757
+                      },
+                      {
+                        "latitude": 34.729417918825334,
+                        "longitude": 127.73845279511667
+                      },
+                      {
+                        "latitude": 34.729507318074745,
+                        "longitude": 127.73810308942126
+                      },
+                      {
+                        "latitude": 34.72962416074421,
+                        "longitude": 127.73793892811999
+                      },
+                      {
+                        "latitude": 34.72979511663931,
+                        "longitude": 127.73778551500935
+                      },
+                      {
+                        "latitude": 34.729957221935344,
+                        "longitude": 127.73770856616717
+                      },
+                      {
+                        "latitude": 34.7301553871397,
+                        "longitude": 127.73763150308267
+                      },
+                      {
+                        "latitude": 34.73029950939095,
+                        "longitude": 127.73757644965504
+                      },
+                      {
+                        "latitude": 34.73038062078134,
+                        "longitude": 127.73756527369027
+                      },
+                      {
+                        "latitude": 34.730650905796594,
+                        "longitude": 127.73748798185588
+                      },
+                      {
+                        "latitude": 34.730650905796594,
+                        "longitude": 127.73748798185588
+                      },
+                      {
+                        "latitude": 34.73065940288934,
+                        "longitude": 127.73724772259068
+                      },
+                      {
+                        "latitude": 34.73066827655202,
+                        "longitude": 127.73718217657628
+                      },
+                      {
+                        "latitude": 34.73081075937576,
+                        "longitude": 127.73223511340639
+                      },
+                      {
+                        "latitude": 34.73081059134528,
+                        "longitude": 127.73215867623814
+                      },
+                      {
+                        "latitude": 34.73081059134528,
+                        "longitude": 127.73215867623814
+                      },
+                      {
+                        "latitude": 34.73089146207005,
+                        "longitude": 127.73203829885199
+                      },
+                      {
+                        "latitude": 34.7309633897724,
+                        "longitude": 127.73195070918376
+                      },
+                      {
+                        "latitude": 34.73106238639942,
+                        "longitude": 127.73187395165523
+                      },
+                      {
+                        "latitude": 34.73117948506211,
+                        "longitude": 127.73182989463491
+                      },
+                      {
+                        "latitude": 34.73135964051325,
+                        "longitude": 127.73176379430785
+                      },
+                      {
+                        "latitude": 34.73147666698195,
+                        "longitude": 127.73168697792404
+                      },
+                      {
+                        "latitude": 34.7317647615363,
+                        "longitude": 127.73151133017072
+                      },
+                      {
+                        "latitude": 34.73202583495019,
+                        "longitude": 127.73134668845982
+                      },
+                      {
+                        "latitude": 34.73240383778125,
+                        "longitude": 127.73106154842543
+                      },
+                      {
+                        "latitude": 34.73267402200946,
+                        "longitude": 127.73094055416196
+                      },
+                      {
+                        "latitude": 34.7329715164073,
+                        "longitude": 127.73093959008587
+                      },
+                      {
+                        "latitude": 34.73310681347975,
+                        "longitude": 127.7309719115538
+                      },
+                      {
+                        "latitude": 34.7336482185573,
+                        "longitude": 127.73119947817383
+                      },
+                      {
+                        "latitude": 34.7349927022373,
+                        "longitude": 127.73176297667152
+                      },
+                      {
+                        "latitude": 34.73557915658192,
+                        "longitude": 127.73197948780752
+                      },
+                      {
+                        "latitude": 34.73589477691816,
+                        "longitude": 127.73202215019609
+                      },
+                      {
+                        "latitude": 34.73605697444541,
+                        "longitude": 127.73198886553327
+                      },
+                      {
+                        "latitude": 34.73605697444541,
+                        "longitude": 127.73198886553327
+                      },
+                      {
+                        "latitude": 34.736336630927696,
+                        "longitude": 127.73207532587831
+                      },
+                      {
+                        "latitude": 34.73636367585967,
+                        "longitude": 127.73207523859337
+                      },
+                      {
+                        "latitude": 34.736679224075715,
+                        "longitude": 127.73208514062745
+                      },
+                      {
+                        "latitude": 34.73745463211554,
+                        "longitude": 127.73213724081849
+                      },
+                      {
+                        "latitude": 34.737490692018355,
+                        "longitude": 127.73213712446058
+                      },
+                      {
+                        "latitude": 34.737923458861545,
+                        "longitude": 127.73215756921132
+                      },
+                      {
+                        "latitude": 34.73866278281344,
+                        "longitude": 127.73219886648505
+                      },
+                      {
+                        "latitude": 34.738987345876446,
+                        "longitude": 127.73220874012112
+                      },
+                      {
+                        "latitude": 34.73934799282062,
+                        "longitude": 127.73222941821372
+                      },
+                      {
+                        "latitude": 34.73934799282062,
+                        "longitude": 127.73222941821372
+                      },
+                      {
+                        "latitude": 34.73933940980706,
+                        "longitude": 127.73242602020827
+                      },
+                      {
+                        "latitude": 34.73924280630365,
+                        "longitude": 127.73359485532026
+                      },
+                      {
+                        "latitude": 34.739218049739726,
+                        "longitude": 127.73464332959782
+                      },
+                      {
+                        "latitude": 34.739166381379455,
+                        "longitude": 127.73575741361184
+                      },
+                      {
+                        "latitude": 34.738855011473596,
+                        "longitude": 127.73768045372555
+                      },
+                      {
+                        "latitude": 34.73885531711933,
+                        "longitude": 127.73782242228613
+                      },
+                      {
+                        "latitude": 34.738882597052395,
+                        "longitude": 127.73793154348756
+                      },
+                      {
+                        "latitude": 34.738882597052395,
+                        "longitude": 127.73793154348756
+                      },
+                      {
+                        "latitude": 34.73792815936967,
+                        "longitude": 127.73846966666565
+                      },
+                      {
+                        "latitude": 34.73776619445097,
+                        "longitude": 127.73861214461141
+                      },
+                      {
+                        "latitude": 34.737667357640895,
+                        "longitude": 127.7387653439061
+                      },
+                      {
+                        "latitude": 34.73760462736652,
+                        "longitude": 127.73894027041383
+                      },
+                      {
+                        "latitude": 34.737416878626654,
+                        "longitude": 127.73967253730495
+                      },
+                      {
+                        "latitude": 34.73732775474042,
+                        "longitude": 127.74015332022827
+                      },
+                      {
+                        "latitude": 34.73715114660631,
+                        "longitude": 127.74189023407466
+                      },
+                      {
+                        "latitude": 34.73716980097405,
+                        "longitude": 127.7421850299073
+                      },
+                      {
+                        "latitude": 34.73719698458335,
+                        "longitude": 127.74225046857866
+                      },
+                      {
+                        "latitude": 34.737487309485886,
+                        "longitude": 127.7431232114802
+                      },
+                      {
+                        "latitude": 34.73763198659558,
+                        "longitude": 127.74333025467936
+                      },
+                      {
+                        "latitude": 34.73872500407888,
+                        "longitude": 127.74437526388746
+                      },
+                      {
+                        "latitude": 34.7389869196224,
+                        "longitude": 127.74460379310584
+                      },
+                      {
+                        "latitude": 34.739997786932825,
+                        "longitude": 127.74516856883784
+                      },
+                      {
+                        "latitude": 34.74045823594079,
+                        "longitude": 127.74549478357707
+                      },
+                      {
+                        "latitude": 34.740611832774086,
+                        "longitude": 127.7456581271074
+                      },
+                      {
+                        "latitude": 34.74075650555381,
+                        "longitude": 127.74586518251117
+                      },
+                      {
+                        "latitude": 34.74081089155895,
+                        "longitude": 127.74600698889584
+                      },
+                      {
+                        "latitude": 34.740983086300176,
+                        "longitude": 127.74644330257513
+                      },
+                      {
+                        "latitude": 34.740983086300176,
+                        "longitude": 127.74644330257513
+                      },
+                      {
+                        "latitude": 34.740713545406656,
+                        "longitude": 127.74688096517829
+                      },
+                      {
+                        "latitude": 34.740659682406175,
+                        "longitude": 127.74699033916606
+                      },
+                      {
+                        "latitude": 34.74061494764652,
+                        "longitude": 127.74715429003493
+                      },
+                      {
+                        "latitude": 34.74061494764652,
+                        "longitude": 127.74715429003493
+                      },
+                      {
+                        "latitude": 34.74066020387807,
+                        "longitude": 127.7472415199582
+                      },
+                      {
+                        "latitude": 34.74069658096959,
+                        "longitude": 127.74739430287401
+                      },
+                      {
+                        "latitude": 34.740732822047754,
+                        "longitude": 127.7474815604412
+                      },
+                      {
+                        "latitude": 34.74113077014122,
+                        "longitude": 127.74810284875286
+                      },
+                      {
+                        "latitude": 34.741401941794564,
+                        "longitude": 127.74845150004828
+                      },
+                      {
+                        "latitude": 34.74141104698174,
+                        "longitude": 127.7484951567424
+                      },
+                      {
+                        "latitude": 34.74140214473521,
+                        "longitude": 127.7485497890736
+                      },
+                      {
+                        "latitude": 34.74127647577656,
+                        "longitude": 127.74881227510167
+                      },
+                      {
+                        "latitude": 34.741213528524874,
+                        "longitude": 127.7488889129267
+                      },
+                      {
+                        "latitude": 34.741060408893134,
+                        "longitude": 127.74895490233355
+                      },
+                      {
+                        "latitude": 34.740817049377895,
+                        "longitude": 127.74897748038401
+                      },
+                      {
+                        "latitude": 34.7406729446691,
+                        "longitude": 127.74904344205119
+                      },
+                      {
+                        "latitude": 34.74055597483773,
+                        "longitude": 127.74915300530769
+                      },
+                      {
+                        "latitude": 34.74027684758649,
+                        "longitude": 127.7493176627189
+                      },
+                      {
+                        "latitude": 34.740123660280524,
+                        "longitude": 127.74935088807463
+                      },
+                      {
+                        "latitude": 34.7399522632097,
+                        "longitude": 127.74929680124183
+                      },
+                      {
+                        "latitude": 34.73987097098993,
+                        "longitude": 127.74922060068377
+                      },
+                      {
+                        "latitude": 34.7397080938607,
+                        "longitude": 127.7489262298699
+                      },
+                      {
+                        "latitude": 34.739328788778685,
+                        "longitude": 127.7485997532272
+                      },
+                      {
+                        "latitude": 34.73920253391188,
+                        "longitude": 127.74857829404903
+                      },
+                      {
+                        "latitude": 34.73916667679916,
+                        "longitude": 127.74867668965119
+                      },
+                      {
+                        "latitude": 34.73947437911165,
+                        "longitude": 127.74925456133593
+                      },
+                      {
+                        "latitude": 34.73956560688975,
+                        "longitude": 127.74977848558389
+                      }
+                    ],
+                    "evidence_id": "kakao:route:53b4d8ab6ff73bee3eb1",
+                    "departure_at": "2026-11-21T09:00:00+09:00",
+                    "retrieved_at": "2026-11-18T17:23:56.264520+00:00"
+                  }
+                ]
+              },
+              "execution_source": "local_calculation",
+              "success": true,
+              "error_code": null,
+              "arguments_sha256": "1955d6a5d93df11282a9a6cf14416cc89f0ba8bafb31a0f69c416a56016f1683",
+              "duration_ms": 2.31
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "begin_pending_lookup",
+      "text": "오동도하고 여수세계박람회장 찾아줘.",
+      "status": "passed",
+      "assertions": [
+        {
+          "name": "each attempt was same-identity and successfully applied through Backend",
+          "passed": true
+        },
+        {
+          "name": "each tool call matches the scored Qwen argmax and exact dispatched arguments",
+          "passed": true
+        },
+        {
+          "name": "selected tool or judge failures are absent",
+          "passed": true
+        },
+        {
+          "name": "one selected search ran over HTTP before the intentional one-round limit",
+          "passed": true
+        },
+        {
+          "name": "exactly one source-owned lookup scope remains active",
+          "passed": true
+        }
+      ],
+      "runs": [
+        {
+          "run_id": "f6d59a6af9804a178cf4f4b078033b80",
+          "applied": true,
+          "matching_identity": true,
+          "seconds": 3.83,
+          "dispatch_audit_passed": true,
+          "extraction": [
+            {
+              "status": "ok",
+              "duration_ms": 2756.27,
+              "attempts": 1,
+              "context_completion_calls": 0,
+              "issue_codes": []
+            }
+          ],
+          "decisions": [
+            {
+              "step": 1,
+              "candidate_count": 2,
+              "candidate_types": [
+                "tool",
+                "tool"
+              ],
+              "candidate_tools": [
+                "search_places",
+                "search_places"
+              ],
+              "scores": [
+                1.8935502767562866,
+                2.106950521469116
+              ],
+              "selected_index": 1,
+              "selected_tool": "search_places",
+              "selected_arguments_sha256": "2fa033afa14c854d820fb85b39b2597f6083c16a05a8d792c22b2009e00da849",
+              "duration_ms": 917.969,
+              "input_chars": 2594
+            }
+          ],
+          "dispatches": [
+            {
+              "step": 1,
+              "tool_name": "search_places",
+              "arguments": {
+                "query": "여수세계박람회장",
+                "region": "여수",
+                "category": null
+              },
+              "execution_source": "http",
+              "success": true,
+              "error_code": null,
+              "arguments_sha256": "2fa033afa14c854d820fb85b39b2597f6083c16a05a8d792c22b2009e00da849",
+              "duration_ms": 115.96
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "cancel_pending_lookup",
+      "text": "남은 장소 조회는 취소해줘.",
+      "status": "passed",
+      "assertions": [
+        {
+          "name": "each attempt was same-identity and successfully applied through Backend",
+          "passed": true
+        },
+        {
+          "name": "each tool call matches the scored Qwen argmax and exact dispatched arguments",
+          "passed": true
+        },
+        {
+          "name": "selected tool or judge failures are absent",
+          "passed": true
+        },
+        {
+          "name": "work did not exhaust the two allowed round-limit continuations",
+          "passed": true
+        },
+        {
+          "name": "local Qwen selected an acknowledgement that referenced the pending request",
+          "passed": true
+        },
+        {
+          "name": "Backend stored the cancellation and source-owned response",
+          "passed": true
+        },
+        {
+          "name": "cancelling the lookup did not dispatch any provider/tool call for that scope",
+          "passed": true
+        }
+      ],
+      "runs": [
+        {
+          "run_id": "646a179757ea4dfebdea70a3feb89bb9",
+          "applied": true,
+          "matching_identity": true,
+          "seconds": 3.43,
+          "dispatch_audit_passed": true,
+          "extraction": [
+            {
+              "status": "ok",
+              "duration_ms": 2766.519,
+              "attempts": 1,
+              "context_completion_calls": 0,
+              "issue_codes": []
+            }
+          ],
+          "decisions": [
+            {
+              "step": 1,
+              "candidate_count": 1,
+              "candidate_types": [
+                "direct"
+              ],
+              "candidate_tools": [
+                null
+              ],
+              "scores": [
+                -7.832206726074219
+              ],
+              "selected_index": 0,
+              "selected_tool": null,
+              "selected_arguments_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+              "duration_ms": 616.505,
+              "input_chars": 2577
+            }
+          ],
+          "dispatches": []
+        }
+      ]
+    }
+  ],
+  "persisted_outcome": {
+    "items": [
+      {
+        "title": "자산공원",
+        "state": "supported",
+        "item_version": 1,
+        "support_threshold": 1,
+        "supporter_count": 1,
+        "opponent_count": 0
+      }
+    ],
+    "constraints": [
+      {
+        "key": "budget",
+        "value": 150000,
+        "kind": "hard",
+        "status": "needs_owner_confirmation"
+      }
+    ],
+    "has_current_plan": true,
+    "has_confirmed_plan": false,
+    "selected_partial_tools": [
+      "build_itinerary",
+      "calculate_costs"
+    ]
+  },
+  "preservation": {
+    "base_weights": {
+      "sha256": "dd924a11b4c220f385b51ffa522daea7c9f3d850e31b162bb5661df483c6d3ee",
+      "bytes": 3087467144
+    },
+    "adapter_weights": {
+      "sha256": "3e3822a23a7fe781778c3b49d5fdf6cfb8f24245c7120517c6a216efce56a0f8",
+      "bytes": 147770496
+    },
+    "production_database": {
+      "sha256": "63e235ea380c16c81262b66a5101e8fc7dd0cdb9c1eb28a1539a5e2d79639d2f",
+      "bytes": 73728
+    }
+  },
+  "limitations": [
+    "Six selected scenarios do not estimate general language or tool-selection accuracy.",
+    "Single-candidate rounds are scored but do not demonstrate discrimination.",
+    "Raw yes/no logit differences are not probabilities.",
+    "Visual smoke used saved live observations in a read-only copy; map SDK unavailable on the test origin.",
+    "Weights and original database hashes match the pre-implementation baseline."
+  ]
+}

@@ -1,6 +1,18 @@
 export const displayPlan = snapshot => snapshot.review_plan ?? snapshot.current_plan;
 const targetKeys = ['participant_version','constraint_version','evidence_version','plan_revision','content_hash'];
 export const sameTarget = (a,b) => !!a && !!b && targetKeys.every(key => a[key] === b[key]);
+export const isOfficialPlan = (snapshot,plan) => hasCurrentBasis(snapshot,plan?.confirmation_target)
+  && sameTarget(plan.confirmation_target,snapshot.confirmed_plan?.confirmation_target);
+export function planAgreement(snapshot,plan) {
+  const target = plan?.confirmation_target;
+  const currentBasis = hasCurrentBasis(snapshot,target);
+  const votes = new Map((currentBasis ? snapshot.confirmations ?? [] : [])
+    .filter(vote => sameTarget(vote.target,target)).map(vote => [vote.user_id,vote.stance]));
+  const count = snapshot.members.filter(member => votes.get(member.user_id) === 'confirm').length;
+  const official = isOfficialPlan(snapshot,plan);
+  const status = official ? '공식 확정' : snapshot.review_plan ? '검토 중' : '초안';
+  return {currentBasis,votes,count,official,status};
+}
 import {html,escapeHtml as e} from './ui.js';
 import {getUser} from './state.js';
 const validationLabels = {ready:'검증 완료',needs_input:'추가 입력 필요',conflict:'충돌 해결 필요'};
@@ -21,16 +33,13 @@ function confirmationNote(plan,currentBasis,pendingHard) {
 export function renderPlan(snapshot) {
   const plan = displayPlan(snapshot);
   const target = plan?.confirmation_target;
-  const currentBasis = hasCurrentBasis(snapshot,target);
-  const currentVotes = currentBasis ? snapshot.confirmations : [];
-  const votes = new Map(currentVotes.filter(vote => sameTarget(vote.target,target)).map(vote => [vote.user_id,vote.stance]));
+  const {currentBasis,votes,count,official} = planAgreement(snapshot,plan);
   const pendingHard = snapshot.constraints.some(item => item.kind === 'hard' && item.status === 'needs_owner_confirmation');
-  const count = snapshot.members.filter(member => votes.get(member.user_id) === 'confirm').length;
-  const official = currentBasis && sameTarget(target,snapshot.confirmed_plan?.confirmation_target);
   const status = official ? '공식 확정' : count && count === snapshot.members.length ? '모두 동의 · 확정 확인 중' : '검토 중';
   const members = snapshot.members.map(({user_id,name}) => {
-    const voted = votes.get(user_id) === 'confirm';
-    return `<li class="${voted ? 'has-vote' : ''}">${e(name)} · ${voted ? '동의' : '아직'}</li>`;
+    const stance = votes.get(user_id);
+    const label = {confirm:'동의',withdraw:'동의 철회'}[stance] ?? '아직';
+    return `<li class="${stance === 'confirm' ? 'has-vote' : ''}">${e(name)} · ${label}</li>`;
   }).join('');
   const canWithdraw = sameTarget(snapshot.active_target,target) && votes.get(getUser()?.id) === 'confirm';
   const note = confirmationNote(plan,currentBasis,pendingHard);
@@ -51,4 +60,4 @@ export function renderPlan(snapshot) {
     ${planContent(archive)}</details>` : '');
 }
 const basisKeys = ['participant_version','constraint_version','evidence_version'];
-export const hasCurrentBasis = (snapshot,target) => !!target && basisKeys.every(key => snapshot.versions[key] === target[key]);
+export const hasCurrentBasis = (snapshot,target) => !!target && basisKeys.every(key => snapshot.versions?.[key] === target[key]);

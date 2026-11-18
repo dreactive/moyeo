@@ -1,10 +1,11 @@
-# FE·BE·AI 공통 계약 v0.2
+# FE·BE·AI 공통 계약 v0.3
 
 - 기준: [MVP 설계](../superpowers/specs/2026-11-18-travel-agent-design.md), 2026-11-18 사용자 확정 사항.
 - 상태: 구현할 계약. 실제 배포된 endpoint나 생성된 OpenAPI가 아니다.
 - 규칙: JSON snake_case, ID 문자열, 시간 ISO 8601(타임존 포함), 날짜 YYYY-MM-DD, 금액 KRW 정수/미확인 null, 이동시간 초·거리 m, 좌표 latitude/longitude.
 - 로그인 세션은 같은 origin cookie. 브라우저가 user_id를 임의 지정해 타인의 지지/확인 표를 작성하지 않는다.
 - v0.2 변경: HTTP·SSE·제품 DTO는 유지하고 BE/AI 연결을 JSON AgentPort로 분리한다. 각 세션은 상대 폴더 import 없이 개발한다. [3세션 계획](../superpowers/plans/2026-11-18-three-session-plan.md)의 소유권과 통합 절차가 기존 BE·AI 합본 실행 순서보다 우선한다.
+- v0.3 변경: 2026-11-19 [도구 준비조건·불확실성 설계](../superpowers/specs/2026-11-19-tool-readiness-and-uncertainty-design.md)를 적용한다. 아래 기존 3세션 동결과 후보 생성 전용 브랜치 설명은 이전 구현의 경계이며, 이번 확장 범위에서는 7절을 따른다. 문서의 endpoint·타입 설명 자체는 실제 검증을 대신하지 않는다.
 
 ## 0. 세션 독립성과 계약 동결
 
@@ -218,10 +219,54 @@ constraint_proposals의 항목은 `{owner_id,key,value,kind,source_message_ids,r
 | search_places | query:str,region:str,category:str/null | {places:PlaceRef[]} |
 | get_place_details | place_ref:str | PlaceDetails. 같은 매장 메뉴·영업시간 매칭 |
 | get_car_route | from_ref:str,to_ref:str,departure_at:str/null | RouteLeg |
-| build_itinerary | visits:dict[],anchors:dict,constraints:dict[],route_legs:RouteLeg[] | {days:TravelDay[],conflicts:Conflict[],questions:Question[]}. 실제 구간 값으로 시간표 조립 |
+| build_itinerary | visits:dict[],anchors:dict,constraints:dict[],route_legs:RouteLeg[],trip_schedule:dict | {days:TravelDay[],conflicts:Conflict[],questions:Question[],unplaced_items:dict[],missing_observations:dict[]}. 실제 구간 값으로 부분 시간표 조립 |
 | calculate_costs | lines:CostLine[],member_ids:str[],budget_by_user:dict | CostSummary |
 
 get_car_route의 고정 거점 참조는 anchor:origin, anchor:destination, anchor:lodging이다. 그 외에는 PlaceRef.id를 쓰며 ToolExecutor가 일관되게 해석한다. build_itinerary의 visit은 `{item_id,place_ref,date,preferred_start_at:null|string,stay_minutes,selected_menu_ids}`이며 기존 후보만 참조한다. 기본 체류시간은 assumption에 남기고 사용자가 바꿀 수 있게 한다. 위치·가격 사실은 도구 결과나 사용자 확인값에서만 가져온다.
+
+## 7. 도구별 준비·부분 결과·요청 상태 확장
+
+### 7.1 선택과 계산
+
+외부 보조 출력은 기존 LangChain JSON Schema strict + Pydantic 검증을 유지한다. 보조 모델이 의도·사실·근거를 제공하고, 코드는 실제 인자를 조립하며, 제공 Qwen+LoRA judge가 실제 후보를 최종 선택한다. 없는 후보로 4개를 채우거나 채점 오류 뒤 임의 실행하지 않는다.
+
+`build_itinerary.trip_schedule`은 `{start_date,end_date,day_start_time,day_end_time}`다. canonical 방문에는 `input_basis`로 항목 버전과 영업시간 근거의 식별·지문을 포함한다. 미해소 방문의 `place_ref=null`은 부분 계산의 명시적인 입력이며, 해당 방문을 시간표에 가짜 시각으로 배치하지 않는다. 이 입력들은 환경·근거 변경 후 예전 계산을 재사용하지 않도록 실제 채점·실행 인자에 함께 포함한다.
+
+`unplaced_items`는 `{item_id,place_ref:null|string,reason}` 목록이다. `missing_observations`는 `{field,reason,...}` 목록이며 경로에는 from_ref/to_ref/date/departure_at, 장소 정보에는 item_id/place_ref를 연결할 수 있다. 이 목록은 사람의 질문을 뜻하지 않는다. PlanSnapshot의 같은 이름 선택 필드는 의미 해시와 함께 보존된다.
+
+비용은 `known_total_krw`, `unknown_line_count`, `total_krw=null`의 기존 의미를 유지한다. 미조회 필수 통행료와 방문 비용을 누락하거나 0원으로 바꾸지 않는다. 완전한 일정 없이도 알려진 비용을 계산할 수 있고, 실제로 선택·실행된 현재 canonical 계산만 결과로 발행한다. 최종 여행안의 `ready`·전원 확정 조건은 완화하지 않는다.
+
+### 7.2 요청과 응답
+
+`AgentResult.request_states`와 방의 `agent_requests`는 원문·작성자·목적별 작업 기록이다. 기존 상세 조회 요청을 호환하며, 위치 조회·자동차 경로·일정·비용·미지원 부분·취소를 독립적으로 처리한다. 요청의 이름/참조, 완료/대기 대상, `response`, `result_refs`, `missing_fields`, 오류·취소·대체 사유를 보존한다. 완료·취소 기록은 다음 실행 대상에서 제외하되 기록에서 삭제하지 않는다.
+
+부분 완료는 완료·대기 대상에서 계산한다. 그룹 요청의 한 대상이 실패해도 다른 대상이 진행할 수 있다. `failed_targets`는 실패한 대상의 재시도·진행 구분에 사용한다. 미지원 응답·직접 응답 하나가 다른 요청의 완료를 대신하지 않는다. 조회가 끝났어도 실제 가격·영업시간은 미확인일 수 있다.
+
+`AgentResult.partial_results`는 선택 필드이며 실제 실행된 현재 계산의 `{build_itinerary?:result,calculate_costs?:result}`다. Backend는 대응하는 ToolObservation을 확인해 방의 `agent_results={run_id,versions,...partial_results}`로 제공한다. 유효 계산이 남지 않은 명시적 빈 결과는 이전 부분 결과를 현재 결과로 재발행하지 않도록 비운다. 화면은 모든 기반 버전이 맞는 부분 결과만 현재 비용·일정에 사용하고, 이전 결과는 이전 입력 기준으로 표시한다. 검토 중인 frozen snapshot을 대체하지 않는다.
+
+### 7.3 질문
+
+기존 Question 계약에 다음을 추가한다.
+
+| field | target_ref | answer | 적용 |
+| --- | --- | --- | --- |
+| target_places | 소유한 활성 request_id | `{target_names:string[],place_ref?:string}` | 새 이름 입력 또는 실제 제공된 관측 후보 선택. 찬성표를 생성하지 않음 |
+| route_departure | 소유한 활성 request_id | `{value:ISO8601}` | 타임존을 포함한 미래 출발시각. 현재 경로는 원래 발화의 명시적 현재 요청으로 구분 |
+| region | config:region | `{value:string}` | 누락된 실제 검색 지역 입력 |
+
+target_places의 선택지 `place_choices`는 `{place_ref,name,address}`이며 관측된 장소만 제시한다. 방향성 요청의 대상 답변은 기존 출발·도착 순서를 유지한다. 입력·선택은 질문 소유자에게만 허용한다. 검색 결과 없음·문맥 조회 실패·도구 오류를 무조건 같은 사용자 질문으로 바꾸지 않는다.
+
+열린 질문은 새 결과 목록이 비어도 보존한다. 연결된 요청이 취소되면 질문은 `status=cancelled`, 완료·대체되면 필요에 따라 `status=closed`와 `closed_reason`을 기록할 수 있다. 기존 answered 기록은 보존하고, 닫힌 질문에는 답변할 수 없다. 실제 사용자가 답하지 않았는데 answered로 만들지 않는다.
+
+### 7.4 화면과 조회 경계
+
+언급·과반 지지·전원 확정은 사람의 동의 상태다. 조회 완료·정보 미확인·추정·이전 입력 기준과 독립적으로 표시한다. 현재 항목과 버전을 일치시키며, 지금의 표를 과거 확정안의 당시 표처럼 표현하지 않는다.
+
+방 snapshot은 관측에서 유일하게 해소된 공유 항목의 `place_ref`와 출처 참조를 읽기용으로 제공할 수 있다. 이름만 검색한 조회 결과를 방문 제안이나 지지로 바꾸지 않는다. 지도에서는 미배치·언급 장소와 번호가 매겨진 실제 방문을 구분한다.
+
+`GET /api/rooms/{room_id}/places/{place_ref}?location_only=true`는 저장된 위치만 읽고 상세 도구를 실행하지 않는다. 지도 좌표 로딩은 이 경로를 사용한다. 기존 명시적인 개인 상세 보기와 개발자 수동 도구 조회는 Agent의 Qwen 선택 실행과 구분한다.
+
+전역 agent_status는 기존 idle/running/done/needs_input 외에 waiting/failed/held를 사용할 수 있다. needs_input은 실제 질문이 있는 경우, waiting은 미처리·후속 작업, failed는 실패, held는 변경된 상태 등으로 선택을 보류한 경우다. 상세 이유와 결과는 요청별 기록에서 확인한다.
 
 설계자가 정한 초기 체류시간은 관광지60분, 식사60분, 카페40분이다. 이는 실제 관측이 아닌 사용자 변경 가능한 일정 가정이다. route_legs는 이전 get_car_route 관측에서 참조·해결한 값이며 모델이 이동 초를 생성해 넣지 않는다. detail 질문의 답변과 선택 메뉴/수량은 CostLine 구성의 근거로 사용한다.
 

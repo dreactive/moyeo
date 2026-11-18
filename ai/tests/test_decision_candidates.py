@@ -146,8 +146,7 @@ def test_grounded_non_tool_responses_are_used_without_padding():
     value = task()
     assert build_decision_candidates(value, dict(unsupported=True, unsupported_reason="", direct_text=""))["candidates"] == []
     result = build_decision_candidates(value, dict(direct_text="엑스포 검색해줘", source_message_ids=["m1"]))
-    assert [c["action"] for c in result["candidates"]] == ["direct"]
-    assert result["candidates"][0]["reason"] == "엑스포 검색해줘"
+    assert result["candidates"] == []
     assert build_decision_candidates(value, dict(unsupported=True, unsupported_reason="미지원", source_message_ids=["invented"]))["candidates"] == []
 
 

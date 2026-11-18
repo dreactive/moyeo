@@ -97,6 +97,35 @@ test('the place card shows address and hours before the source disclosure', asyn
   assert.match(output.place,/<dt>주소<\/dt><dd>계약 예시용 주소[^]*<dt>영업시간<\/dt><dd>[^]*<summary>장소 정보 출처/);
 });
 
+test('empty Apify hours and holiday fields show uncertainty while the source retains its raw array', async () => {
+  const {requests,output} = prepare();
+  const detail = structuredClone(place);
+  detail.missing_fields = ['price','opening_hours'];
+  detail.menus = [];
+  detail.opening_hours = {raw_text:'[]',intervals:null,holiday_text:'{"closed_dates": [], "descriptions": []}',evidence_id:'apify:sample:hours'};
+  detail.evidence = [{...detail.evidence[1],id:'apify:sample:hours',provider:'apify',raw_value:[],normalized_value:null,status:'missing',mode:'live'}];
+  const pending = selectPlace(room.room_id,place.place.id);
+  requests[0].resolve(Response.json(detail));
+  await pending;
+  assert.match(output.place,/<dt>영업시간<\/dt><dd>영업시간 미확인<\/dd>/);
+  assert.match(output.place,/<dt>휴일<\/dt><dd>휴일 정보 미확인<\/dd>/);
+  assert.match(output.place,/<summary>장소 정보 출처<\/summary>[^]*원문 \[\]/);
+});
+
+test('recorded schedule and closure data are readable for both object and JSON holiday values', async () => {
+  const holidays = {closed_dates:['2026-11-22'],descriptions:[null,'매달 넷째 일요일 휴무','매달 넷째 일요일 휴무']};
+  for (const holiday_text of [holidays,JSON.stringify(holidays)]) {
+    const {requests,output} = prepare();
+    const detail = structuredClone(place);
+    detail.opening_hours = {...detail.opening_hours,raw_text:'[{"schedule":[]}]',holiday_text};
+    const pending = selectPlace(room.room_id,place.place.id);
+    requests[0].resolve(Response.json(detail));
+    await pending;
+    assert.match(output.place,/<dt>영업시간<\/dt><dd>2026-11-21 10:00–20:00<\/dd>/);
+    assert.match(output.place,/<dt>휴일<\/dt><dd>2026-11-22 · 매달 넷째 일요일 휴무<\/dd>/);
+  }
+});
+
 test('an obsolete place failure does not interrupt the newest selection', async () => {
   const {requests} = prepare();
   const older = selectPlace(room.room_id,place.place.id);

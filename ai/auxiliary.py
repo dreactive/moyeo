@@ -54,6 +54,8 @@ def relevant_context(task, queries, requests=()):
         score = sum(len(term) for term in terms if term in haystack)
         if message.get('id') in queries:
             score += 100
+        if eligible is not None and message['id'] in eligible:
+            score += 1
         if score:
             ranked.append((score, index, message))
     chosen, remaining = [], 12000
@@ -77,9 +79,24 @@ def _merge(first, second):
         grouped = {identity(p): p for p in raw[key]}
         grouped.update({identity(p): p for p in following[key]})
         raw[key] = list(grouped.values())
-    requests = {(r['evidence']['message_id'], r['intent']): r for r in raw['analysis']['requests']}
-    requests.update({(r['evidence']['message_id'], r['intent']): r for r in following['analysis']['requests']})
-    raw['analysis'] = dict(following['analysis'], requests=list(requests.values()))
+    def request_key(request):
+        evidence = request['evidence']
+        return (evidence['message_id'], evidence['quote'], request['intent'], request['operation'],
+                tuple(sorted(request['requested_fields'])))
+
+    requests = list(raw['analysis']['requests'])
+    for request in following['analysis']['requests']:
+        matching = [index for index, previous in enumerate(requests) if request_key(previous) == request_key(request)
+                    and (not previous['target_names'] or set(previous['target_names']) <= set(request['target_names']))]
+        if len(matching) == 1:
+            requests[matching[0]] = request
+        elif request not in requests:
+            requests.append(request)
+    missing = {}
+    for field in raw['analysis']['missing_fields'] + following['analysis']['missing_fields']:
+        key = (field['field'], field['target_ref'], field['owner_id'], field['stance'], tuple(field['source_message_ids']))
+        missing[key] = field
+    raw['analysis'] = dict(following['analysis'], requests=requests[:20], missing_fields=list(missing.values())[:20])
     return AuxiliaryBatch.model_validate(raw)
 
 
@@ -107,7 +124,7 @@ async def prepare_auxiliary(task: dict, auxiliary) -> dict:
     started = perf_counter()
     backend = getattr(auxiliary, 'backend', 'provided')
     minimal = minimal_auxiliary_task(task)
-    scope = dict(task, recent_messages=deepcopy(minimal['recent_messages']))
+    scope = dict(task, recent_messages=deepcopy(task['recent_messages'][-20:]))
     elapsed = lambda: round((perf_counter() - started) * 1000, 3)
     if obvious_noop(scope):
         analysis = dict(_empty_analysis(), summary='인사', noop=True, source_message_ids=[m['id'] for m in minimal['recent_messages']])
@@ -135,12 +152,16 @@ async def prepare_auxiliary(task: dict, auxiliary) -> dict:
         except Exception:
             # Valid independent first-pass work is retained; unresolved context is explicit.
             issues.append('auxiliary_context_completion_failed')
-    output, rejected = ground_batch(batch, scope, context)
+    transient = 'auxiliary_context_completion_failed' in issues
+    output, rejected = ground_batch(batch, scope, [] if transient else context)
     if 'auxiliary_context_completion_failed' not in issues:
-        unresolved = [f for f in output['analysis']['missing_fields'] if f.get('source') == 'history' and f.get('field') != 'target_places']
+        for request in output['analysis']['requests']:
+            if request['status'] == 'needs_context':
+                request['status'] = 'needs_input'
+        unresolved = [f for f in output['analysis']['missing_fields'] if f.get('source') == 'history']
         for field in unresolved:
             field['source'] = 'user'
-        if unresolved:
+        if unresolved and not any(r['status'] == 'needs_context' for r in output['analysis']['requests']):
             output['analysis']['needs_context'] = False
             output['analysis']['context_queries'] = []
     if rejected:
@@ -151,4 +172,7 @@ async def prepare_auxiliary(task: dict, auxiliary) -> dict:
     output['extraction_report'] = dict(status=status, issue_codes=issues,
         rejected_message_ids=rejected, attempts=1 + completion_calls, context_completion_calls=completion_calls,
         context_message_ids=[m['id'] for m in context], backend=backend, duration_ms=elapsed())
+    repairs = output['analysis'].pop('source_repairs', [])
+    if repairs:
+        output['extraction_report']['repairs'] = repairs
     return output

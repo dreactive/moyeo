@@ -43,11 +43,29 @@ def relevant_evidence(plan, observations):
 
 
 
-async def fetch_place(db, port, room, place_ref):
+async def fetch_place(db, port, room, place_ref, location_only=False):
     cached = observed_place(db, room['room_id'], place_ref)
-    if cached is not None:
-        return cached
     observations = get_observations(db, room['room_id'])
+    if location_only:
+        place = next((p for p,_ in regional_search_places(room, reversed(observations))
+                      if p['id'] == place_ref), None)
+        if place is None:
+            # A displayed historical plan may explicitly reference another region's observed ID.
+            place = next((p for o in reversed(observations) if o['tool_name']=='search_places'
+                          and o.get('room_id') in (None,room['room_id'])
+                          and o['result'].get('room_id') in (None,room['room_id'])
+                          for p in o['result'].get('places', []) if p['id']==place_ref
+                          and p.get('room_id') in (None,room['room_id'])), None)
+        if place is None and cached:
+            place = cached['place']
+        if place is None:
+            raise HTTPException(404, 'Place not observed in this room')
+        return dict(place=deepcopy(place),menus=[],opening_hours=None,evidence=[],
+                    missing_fields=['price','opening_hours'],match_status='matched')
+    # A user explicitly opening details may reuse the executor's suitable live
+    # cache; route coordinate rendering above never invokes an extra tool.
+    if cached is not None and not any(e.get('mode')=='live' for e in cached.get('evidence', [])):
+        return cached
     allowed = known_place_ids(observations)
     if place_ref not in allowed:
         raise HTTPException(404, 'Place not observed in this room')
@@ -68,3 +86,19 @@ def known_place_ids(observations):
         elif observation['tool_name'] == 'get_place_details':
             refs.add(result['place']['id'])
     return refs
+
+
+def regional_search_places(room, observations):
+    def normalized(text):
+        return ''.join((text or '').split()).casefold()
+    region = normalized(room['config'].get('region'))
+    for obs in observations:
+        result = obs.get('result', {})
+        if (not region or obs.get('tool_name') != 'search_places'
+                or obs.get('room_id') not in (None, room['room_id'])
+                or result.get('room_id') not in (None, room['room_id'])
+                or normalized(obs.get('arguments', {}).get('region')) != region):
+            continue
+        for place in result.get('places', []):
+            if place.get('room_id') in (None, room['room_id']) and place.get('id') and place.get('name'):
+                yield place, obs

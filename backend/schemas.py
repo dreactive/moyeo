@@ -103,3 +103,8 @@ class StayAnswer(Request):
 
 class SupportAnswer(Request):
     item_id: str
+
+
+class LookupAnswer(Request):
+    target_names: list[str] = Field(default_factory=list, max_length=20)
+    place_ref: str | None = Field(default=None, min_length=1, max_length=200)

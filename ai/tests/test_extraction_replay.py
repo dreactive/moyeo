@@ -25,9 +25,11 @@ async def test_fake_extraction_replay_reports_actual_selected_fixture_calls():
         row = await replay_case(runtime,dict(id='island',group='place',text='오동도 가자',places=['오동도'],conditions={}))
     finally:
         await runtime.aclose()
-    assert row['passed'] and row['tool_calls'] == 3
+    assert row['passed'] and row['tool_calls'] == 4
     observations = row['result']['observations']
-    assert [o['tool_name'] for o in observations] == ['search_places', 'get_car_route', 'get_car_route']
+    assert [o['tool_name'] for o in observations] == ['search_places', 'get_car_route', 'get_car_route', 'calculate_costs']
+    assert row['result']['partial_results']['calculate_costs']['known_total_krw'] == 80000
+    assert row['result']['partial_results']['calculate_costs']['total_krw'] is None
     assert observations[0]['arguments'] == dict(query='오동도', region='여수', category=None)
     assert observations[0]['result']['places'] == []
     assert row['result']['plan_draft'] is None and row['result']['completion'] == 'needs_input'

@@ -75,7 +75,7 @@ async def test_unresolved_first_pass_has_no_guessed_observed_place_targets():
     value['conversation_context'] = []
     result = await prepare_auxiliary(value, ScriptedAuxiliary(first))
     pending = result['analysis']['requests'][0]
-    assert pending['status'] == 'needs_context' and pending['target_refs'] == [] and pending['excluded_refs'] == []
+    assert pending['status'] == 'needs_input' and pending['target_refs'] == [] and pending['excluded_refs'] == []
     assert not result['analysis']['noop'] and not result['support_observations']
 
 
@@ -99,7 +99,11 @@ async def test_request_resolution_rejects_unowned_ungrounded_or_ambiguous_place_
     result = await prepare_auxiliary(value, auxiliary)
     pending = result['analysis']['requests'][0]
     assert pending['status'] != 'resolved'
-    assert not pending['target_refs']
+    if fault == 'ambiguous_name':
+        assert pending['target_refs'] == ['p2']
+        assert pending['unresolved_target_names'] == ['한밭수목원']
+    else:
+        assert not pending['target_refs']
     assert not result['support_observations']
 
 

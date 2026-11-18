@@ -95,7 +95,10 @@ async def test_current_exclusion_cannot_reactivate_the_saved_unselected_place(ca
     finally:
         await runtime.aclose()
     if cached:
-        assert not result['observations'] and not result['candidates']
+        assert not result['observations']
+        assert len(result['candidates'])==1 and result['candidates'][0]['action']=='direct'
+        assert '한밭수목원' in result['response']
+        assert 'p2' not in result['candidates'][0].get('result_refs', [])
     else:
         assert [o['arguments'] for o in result['observations']] == [dict(place_ref='p1')]
     states = {r['request_id']: r for r in result['request_states']}

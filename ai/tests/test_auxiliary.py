@@ -359,9 +359,12 @@ async def test_short_reply_can_bind_earlier_current_message_but_not_future_messa
     raw = batch(support_observations=[dict(item_id='hangang', item_version=3, stance='support', evidence=evidence('응'),
                                           context_message_ids=['current-prior'])])
     result = await prepare_auxiliary(value, ScriptedAuxiliary(raw))
-    assert result['support_observations'][0]['author_id'] == 'u2'
+    assert {(o['author_id'],o['source_message_id']) for o in result['support_observations']} == {
+        ('u1','current-prior'),('u2','new')}
     value['recent_messages'].reverse()
-    assert not (await prepare_auxiliary(value, ScriptedAuxiliary(raw)))['support_observations']
+    reversed_batch = await prepare_auxiliary(value, ScriptedAuxiliary(raw))
+    assert [(o['author_id'],o['source_message_id']) for o in reversed_batch['support_observations']] == [
+        ('u1','current-prior')]
 
 async def test_fixture_short_replies_bind_open_question_or_current_new_place():
     from ai.auxiliary import prepare_auxiliary, create_auxiliary

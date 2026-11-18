@@ -50,3 +50,25 @@ def test_explicit_car_extras_resolve_unknown_and_observed_tolls_are_counted_once
     args, _ = build_cost_inputs(value)
     assert not any(l["id"] == "car:extras" for l in args["lines"])
     assert [l["unit_price_krw"] for l in args["lines"] if l["evidence_id"] == "fixture:toll"] == [3000]
+
+
+def test_tolls_are_still_unknown_if_car_price_explicitly_excludes_them():
+    from ai.cost_inputs import build_cost_inputs
+    value = task()
+    value["config"]["fixed_costs"].append(dict(value["config"]["fixed_costs"][0], id="car-input", category="car",
+        description="통행료 별도 유류·주차 포함 차량비", unit_price_krw=10000, quantity=1, paid=False))
+    args, _ = build_cost_inputs(value)
+    assert any(line["id"].startswith("toll:unobserved:") for line in args["lines"])
+
+
+def test_canonical_cost_arguments_reject_numeric_boolean_substitution():
+    import pytest
+    from ai.cost_inputs import build_cost_inputs
+    from ai.tools.registry import RegisteredTools
+    from ai.tools.validation import validate_arguments
+    value = task()
+    value["config"]["fixed_costs"][0]["unit_price_krw"] = 1
+    args, _ = build_cost_inputs(value)
+    args["lines"][0]["unit_price_krw"] = True
+    with pytest.raises(ValueError, match="differ from observed"):
+        validate_arguments("calculate_costs", args, RegisteredTools(value).context)

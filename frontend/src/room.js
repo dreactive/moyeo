@@ -14,12 +14,13 @@ import {getSnapshot,appendMessage,applyRoomResponse} from './state.js';
 import {openRoomEvents} from './events.js';
 import {withPending,runFormAction} from './ui.js';
 import {renderItems,renderConstraints,renderQuestions,renderConflicts,readDecisionValue} from './items.js';
-import {renderPlan,displayPlan} from './plan.js';
+import {renderPlan,displayPlan,planAgreement} from './plan.js';
 import {renderCost} from './cost.js';
 import {scenarios,replayScenario,setFixtureUser,getFixtureScenario} from './fixture-api.js';
 import {tripPatch} from './trip-input.js';
-import {initMaps,renderRouteMap,renderPlaceMap} from './map.js';
-import {selectPlace,renderPlace} from './place.js';
+import {initMaps,renderRouteMap,renderPlaceMap,hasCoordinates,locatedMentions} from './map.js';
+import {selectPlace,renderPlace,renderSelectedPlaceAgreement} from './place.js';
+import {planItemAgreements} from './agreement.js';
 import {getSelectedPlace} from './state.js';
 const run = task => runRoomTask(task,{
   showError,
@@ -39,14 +40,21 @@ function renderDecisionRegions(snapshot) {
 }
 export function renderRoom(snapshot) {
   const shared = sharedRenderData(snapshot);
+  const plan = displayPlan(snapshot);
+  const {count,status} = planAgreement(snapshot,plan);
   renderDecisionRegions(snapshot);
   renderChanged('plan',[shared,getUser()?.id],() => renderPlan(snapshot));
-  renderChanged('cost',[snapshot.room_id,displayPlan(snapshot)?.cost,snapshot.members,getUser()?.id],() => renderCost(displayPlan(snapshot)?.cost,getUser()?.id,snapshot.members));
-  renderChanged('route-panel',[displayPlan(snapshot),getSelectedDay()],() => renderRoutePanel(snapshot,getSelectedDay()));
+  renderChanged('cost',[snapshot.room_id,plan?.confirmation_target,plan?.cost,count,status,snapshot.versions,snapshot.agent_results,snapshot.members,getUser()?.id],
+    () => renderCost(plan?.cost,getUser()?.id,snapshot.members,snapshot));
+  renderChanged('route-panel',[shared,getSelectedDay()],() => renderRoutePanel(snapshot,getSelectedDay()));
+  renderChanged('place-agreement',[snapshot.room_id,plan,snapshot.items,snapshot.confirmed_plan,snapshot.versions,getSelectedPlace()],
+    () => renderSelectedPlaceAgreement(snapshot));
   run(() => renderMaps(snapshot));
   renderChanged('chat',[snapshot.room_id,snapshot.messages,snapshot.members,getUser()?.id],() => renderChat(snapshot,getUser()?.id));
   renderOverview(snapshot);
-  renderAgentBanner(snapshot);
+  const requestMessages = new Set(snapshot.agent_requests?.map(request => request.source_message_id));
+  renderChanged('agent',[shared,snapshot.agent_status,snapshot.messages.filter(message => requestMessages.has(message.id))],
+    () => renderAgentBanner(snapshot));
 }
 export async function startRoomApp() {
   preparePage();
@@ -252,24 +260,37 @@ export async function renderMaps(snapshot, retry = false) {
   const date = getSelectedDay();
   const key = routeKey(snapshot,date);
   const sameRoute = key === routeRenderStamp?.key;
-  if ((!retry && sameRoute) || routeKey(getSnapshot() ?? {},date) !== key) return;
+  if (routeKey(getSnapshot() ?? {},date) !== key) return;
   const plan = displayPlan(snapshot);
+  const mentions = locatedMentions(snapshot,plan);
+  const agreement = JSON.stringify([[...planItemAgreements(snapshot,plan)],mentions]);
+  if (!retry && sameRoute) {
+    if (agreement !== routeRenderStamp.agreement) {
+      routeRenderStamp.agreement = agreement;
+      renderRouteMap(plan,routeRenderStamp.places,snapshot.config,date,snapshot);
+    }
+    return;
+  }
   html('route-load-status','');
-  if (!sameRoute) renderRouteMap(plan,new Map(),snapshot.config,date);
-  const refs = [...new Set(plan?.days.filter(day => day.date === date).flatMap(day => day.visits.map(visit => visit.place_ref)) ?? [])];
-  const stamp = {key};
+  const stamp = {key,agreement,places:sameRoute ? routeRenderStamp.places : new Map()};
+  if (!sameRoute) renderRouteMap(plan,stamp.places,snapshot.config,date,snapshot);
+  const visits = plan?.days.filter(day => day.date === date).flatMap(day => day.visits.map(visit => visit.place_ref)) ?? [];
+  const refs = [...new Set([...visits,...mentions.map(m => m.ref)])];
   routeRenderStamp = stamp;
-  const results = await Promise.allSettled(refs.map(ref => requestJson('/api/rooms/' + encodeURIComponent(snapshot.room_id) + '/places/' + encodeURIComponent(ref))));
-  if (routeRenderStamp !== stamp || routeKey(getSnapshot() ?? {},getSelectedDay()) !== key) return;
+  const results = await Promise.allSettled(refs.map(ref => requestJson('/api/rooms/' + encodeURIComponent(snapshot.room_id) + '/places/' + encodeURIComponent(ref) + '?location_only=true')));
+  const current = getSnapshot();
+  if (routeRenderStamp !== stamp || routeKey(current ?? {},getSelectedDay()) !== key) return;
   const expired = results.find(result => result.status === 'rejected' && result.reason.status === 401);
   if (expired) throw expired.reason;
   const places = results.flatMap(result => result.status === 'fulfilled' && result.value?.place ? [result.value.place] : []);
-  if (places.length) renderRouteMap(plan,new Map(places.map(place => [place.id,place])),snapshot.config,date);
-  if (places.length < refs.length) {
-    const note = places.length ? '일부 장소 좌표를 불러오지 못했어요.' : '장소 좌표를 불러오지 못했어요.';
+  stamp.places = new Map([...stamp.places,...places.map(place => [place.id,place])]);
+  renderRouteMap(displayPlan(current),stamp.places,current.config,date,current);
+  const located = [...stamp.places.values()].filter(hasCoordinates).length;
+  if (located < refs.length) {
+    const note = located ? '일부 장소 좌표를 불러오지 못했어요.' : '장소 좌표를 불러오지 못했어요.';
     html('route-load-status',`<p>${note}</p><button type="button" data-route-retry>좌표 다시 불러오기</button>`);
   }
-  if (getSelectedPlace()) await selectPlace(snapshot.room_id,getSelectedPlace());
+  if (getSelectedPlace()) await selectPlace(current.room_id,getSelectedPlace());
   else { renderPlace(null); renderPlaceMap(null); }
 }
 

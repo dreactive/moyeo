@@ -7,6 +7,15 @@ def test_trace_redacts_credentials_and_private_reasoning():
     assert cleaned['nested']['value'] == 3
 
 
+def test_trace_retains_domain_condition_key_without_revealing_credentials():
+    from backend.services.traces import sanitize
+    condition=dict(owner_id='u1',kind='hard',key='budget_krw',value=150000,status='confirmed')
+    cleaned=sanitize({'arguments':{'constraints':[condition]},'key':'credential',
+                      'nested':{'api_key':'secret'},'reasoning':'private'})
+    assert cleaned['arguments']['constraints']==[condition]
+    assert 'credential' not in str(cleaned) and 'secret' not in str(cleaned) and 'private' not in str(cleaned)
+
+
 def test_trace_storage_links_calls_and_stays_room_scoped():
     from backend.services.traces import store_trace, get_run_traces
     from backend.db import Database

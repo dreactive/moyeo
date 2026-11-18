@@ -22,21 +22,45 @@ async def fetch_rows(client, token, *, keywords=None, urls=None, limit=5):
     return rows[:5]
 
 
-def normalize_place(raw, days, retrieved_at):
+def normalize_place(raw, days, retrieved_at, *, lookup_place=None):
     record_id = str(raw["place_id"])
-    place = dict(id="apify:" + record_id, name=raw["name"],
-                 address=raw.get("roadAddress") or raw.get("address") or "",
-                 latitude=float(raw["y"]), longitude=float(raw["x"]), provider_refs={"apify": record_id})
+    if lookup_place is not None:
+        # A matched record enriches the room's identity without moving its route pin.
+        place = dict(lookup_place, provider_refs={**lookup_place.get("provider_refs", {}), "apify": record_id})
+    else:
+        place = dict(id="apify:" + record_id, name=raw["name"],
+                     address=raw.get("roadAddress") or raw.get("address") or "",
+                     latitude=float(raw["y"]), longitude=float(raw["x"]), provider_refs={"apify": record_id})
     pairs = [normalize_menu(m, record_id, i, retrieved_at) for i, m in enumerate(raw.get("menus") or [])]
     hours = raw.get("businessHours") or []
-    intervals = expand_hours(hours, days) or None
     ref = "apify:" + record_id + ":hours"
+    opening, normalized = normalize_hours(hours, days, ref)
+    menus = [p[0] for p in pairs]
+    return dict(place=place, menus=menus, opening_hours=opening,
+                evidence=[p[1] for p in pairs] + [evidence(record_id, "opening_hours", hours, normalized, retrieved_at, ref)],
+                match_status="matched", missing_fields=missing_fields(menus, opening, days))
+
+
+def normalize_hours(hours, days, ref):
+    intervals = expand_hours(hours, days)
+    closures = closed_dates(hours, days)
+    intervals = intervals or ([] if closures else None)
     opening = dict(raw_text=json.dumps(hours, ensure_ascii=False), intervals=intervals,
-                   holiday_text=json.dumps(dict(closed_dates=closed_dates(hours, days),
+                   holiday_text=json.dumps(dict(closed_dates=closures,
                        descriptions=[s.get("description") for h in hours for s in h.get("schedule") or []]),
                        ensure_ascii=False), evidence_id=ref)
-    return dict(place=place, menus=[p[0] for p in pairs], opening_hours=opening,
-                evidence=[p[1] for p in pairs] + [evidence(record_id, "opening_hours", hours, intervals, retrieved_at, ref)])
+    return opening, intervals
+
+
+def missing_fields(menus, opening, days):
+    missing = []
+    if not any(menu["price_krw"] is not None for menu in menus):
+        missing.append("price")
+    observed_days = {row["day"] for row in opening["intervals"] or []}
+    observed_days.update(json.loads(opening["holiday_text"])["closed_dates"])
+    if not set(days) <= observed_days or not observed_days:
+        missing.append("opening_hours")
+    return missing
 
 
 def evidence(record_id, field, raw, normalized, retrieved_at, evidence_id):

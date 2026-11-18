@@ -81,10 +81,16 @@ async def generate_candidates(context, model, emit_trace, step):
     return candidates
 
 
-async def execute_selected(task, action, tools, emit_trace, step, origin='manual'):
+class StaleExecution(RuntimeError):
+    """The request changed while an execution trace was being emitted."""
+
+
+async def execute_selected(task, action, tools, emit_trace, step, origin='manual', is_current=None):
     name, arguments = action["tool_name"], action["arguments"]
     call_id = f"{task['run_id']}:{step}"
     await emit(emit_trace, task, step, "tool_call", call_id, dict(tool_name=name, arguments=arguments, selection_origin=origin))
+    if is_current is not None and not is_current():
+        raise StaleExecution('Request changed before tool dispatch')
     started = time.perf_counter()
     result = await tools.execute(name, arguments)
     refs = [e["id"] for e in result.get("evidence", [])]

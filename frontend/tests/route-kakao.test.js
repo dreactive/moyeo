@@ -86,3 +86,34 @@ test('Kakao shows a visible visit number when custom overlays are available', ()
   drawKakao(maps,host,[{latitude:34.7,longitude:127.6,name:'둘째 장소',visitNumber:2}]);
   assert.deepEqual(labels,['2']);
 });
+
+test('Kakao draws status text on observed visit markers, while missing coordinates and routes remain in lists',async t => {
+  const labels = [];
+  const paths = [];
+  const maps = {
+    load:callback => callback(),
+    LatLng:class {constructor(lat,lng) { assert.ok(Number.isFinite(lat) && Number.isFinite(lng)); }},
+    Map:class {setBounds(){}},
+    LatLngBounds:class {extend(){}},
+    Marker:class {},
+    CustomOverlay:class {constructor({content}) { labels.push(content); }},
+    Polyline:class {constructor({path}) { paths.push(path); }}
+  };
+  globalThis.kakao = {maps};
+  t.after(() => delete globalThis.kakao);
+  const route = {classList:new Set(),ownerDocument:{createElement:() => ({style:{}})},append(){}};
+  await initMaps({routeElement:route,placeElement:{},appKey:'test-key'});
+  labels.length = 0;
+  paths.length = 0;
+  const room = structuredClone(snapshot);
+  room.items[0].state = 'supported';
+  room.items[0].supporter_ids = ['u1','u2','u3'];
+  room.current_plan.days[0].route_legs = [{from_ref:'anchor:origin',to_ref:'fixture:place-a',polyline:null}];
+  const places = new Map([
+    ['fixture:place-a',{name:'첫째 장소',latitude:34.77,longitude:127.68}],
+    ['fixture:place-b',{name:'둘째 장소',latitude:null,longitude:null}]
+  ]);
+  renderRouteMap(room.current_plan,places,room.config,'2026-11-21',room);
+  assert.deepEqual(labels.map(node => [node.textContent,node.className]),[['1 · 과반 지지','map-visit-pin supported']]);
+  assert.deepEqual(paths,[]);
+});

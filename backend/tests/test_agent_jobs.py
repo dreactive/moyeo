@@ -226,5 +226,5 @@ def test_worker_rejects_another_registered_run_result(room, agent_result):
         await asyncio.wait_for(jobs.queue.join(),2)
         worker.cancel()
         assert not db.get('run:older').get('applied')
-        assert db.get('room:room-fixture')['agent_status']['state'] == 'needs_input'
+        assert db.get('room:room-fixture')['agent_status']['state'] == 'failed'
     asyncio.run(scenario())

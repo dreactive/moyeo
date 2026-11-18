@@ -10,9 +10,8 @@ from ai.questions import valid_questions
 
 class RegisteredTools:
     def __init__(self, context, mode="fixture", settings=None):
-        self.context = build_tool_context(context)
         self.mode, self.settings = mode, settings or {}
-        self.context["_provider_mode"] = mode
+        self.restore(context)
         self.credentials = load_settings(self.settings) if mode == "live" else {}
 
     def remember(self, observation):
@@ -20,25 +19,18 @@ class RegisteredTools:
         self.context = build_tool_context(self.context)
 
     def restore(self, context):
-        self.context = build_tool_context(context)
-        self.context["_provider_mode"] = self.mode
+        self.context = build_tool_context(dict(context, _provider_mode=self.mode))
 
     async def execute(self, name, arguments):
         validate_arguments(name, arguments, self.context)
         self.last_execution_source = 'local_calculation' if name in ('calculate_costs', 'build_itinerary') else 'fixture'
         if self.mode == "live" and name in ("search_places", "get_place_details", "get_car_route"):
+            from ai.providers.live import cached_result, execute
+            cached = cached_result(name, arguments, self.context)
+            if cached is not None:
+                self.last_execution_source = 'cache'
+                return cached
             self.last_execution_source = 'http'
-            if name == 'get_place_details':
-                cached = self.context['details'].get(arguments['place_ref'])
-                if cached and cached.get('evidence') and all(e['mode'] == 'live' for e in cached['evidence']):
-                    self.last_execution_source = 'cache'
-            if name == 'get_car_route':
-                try:
-                    if observed_route(self.context, arguments)['evidence_id'].startswith('kakao:route:'):
-                        self.last_execution_source = 'cache'
-                except ValueError:
-                    pass
-            from ai.providers.live import execute
             return await execute(name, arguments, self.context, self.credentials)
         if name == "calculate_costs":
             return calculate_costs(**arguments)

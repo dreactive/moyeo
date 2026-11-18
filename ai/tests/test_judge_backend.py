@@ -174,3 +174,28 @@ def test_fixture_scores_are_explicit_deterministic_and_prefer_real_tools():
     assert backend.score_candidates({"other_room": True}, candidates) == scores
     with pytest.raises(ValueError, match="candidate"):
         backend.score_candidates({}, [])
+
+
+def test_service_packet_labels_verified_facts_and_keeps_native_candidate(judge_backend):
+    from ai.models.qwen_judge import judge_question
+    backend, _, tokenizer, _ = judge_backend
+    candidate = tool()
+    context = dict(current_messages=[dict(text='오동도 찾아줘')],
+                   facts=dict(places={'p1':dict(id='p1',name='오동도',address='여수')}))
+    backend.score_candidates(context,[candidate])
+    prompt=tokenizer.prompts[-1]
+    assert 'VERIFIED FACTS' in judge_question(context,'readable')
+    assert 'p1' in prompt and '오동도' in prompt
+    assert json.loads(prompt.split('<|im_start|>assistant\n',1)[1].split('<|im_end|>',1)[0]) == {
+        'name':candidate['tool_name'],'arguments':candidate['arguments']}
+
+
+def test_tool_schemas_explain_required_arguments_from_registered_contracts():
+    from ai.tools.definitions import TOOL_DEFINITIONS
+    from ai.tools.validation import PARAMETERS
+    for definition in TOOL_DEFINITIONS:
+        schema=definition['parameters']
+        assert schema['type']=='object'
+        assert set(schema['required'])==set(PARAMETERS[definition['name']])
+        assert set(schema['properties'])==set(schema['required'])
+        assert schema['additionalProperties'] is False

@@ -31,7 +31,7 @@ test('the official confirmed review projects green despite a newer draft support
   assert.equal((output.match(/class="card confirmed"/g) ?? []).length,2);
   room.items[0].item_version++;
   renderItems(room);
-  assert.match(output,/<details class="card supported"><summary>가상 A식당 · 다수 지지/);
+  assert.match(output,/<details class="card supported"><summary>가상 A식당 · 과반 지지/);
   assert.match(output,/가상 B공원 · 확정/);
 });
 for (const key of ['participant_version','constraint_version','evidence_version']) {
@@ -185,5 +185,5 @@ test('the shared item summary shows conflicts while support and sources are fold
   const card = {};
   globalThis.document = {getElementById:() => card};
   renderItems(scenarios.conflict.snapshot);
-  assert.match(card.innerHTML,/<details class="card supported"><summary>가상 B공원 · 다수 지지\s*<strong class="badge">! 충돌<\/strong><\/summary>\s*<p>지지[^]*?data-message="m2"[^]*?<\/details>/);
+  assert.match(card.innerHTML,/<details class="card supported"><summary>가상 B공원 · 과반 지지\s*<strong class="badge">! 충돌<\/strong><\/summary>\s*<p>지지[^]*?data-message="m2"[^]*?<\/details>/);
 });

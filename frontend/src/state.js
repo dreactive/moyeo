@@ -5,9 +5,16 @@ export const getSelectedPlace = () => selectedPlace;
 export function applySnapshot(next) {
   const sameRoom = snapshot?.room_id === next?.room_id;
   snapshot = next;
-  const days = (next?.review_plan ?? next?.current_plan)?.days ?? [];
+  const plan = next?.review_plan ?? next?.current_plan;
+  const days = plan?.days ?? [];
+  const partial = next?.agent_results?.build_itinerary;
   if (!sameRoom || !days.some(day => day.date === selectedDay)) selectedDay = days[0]?.date ?? null;
-  if (!sameRoom || !(next?.review_plan ?? next?.current_plan)?.item_snapshots.some(item => item.place_ref === selectedPlace)) selectedPlace = null;
+  const knownPlace = selectedPlace && (plan?.item_snapshots.some(item => item.place_ref === selectedPlace)
+    || plan?.unplaced_items?.some(item => item.place_ref === selectedPlace)
+    || partial?.unplaced_items?.some(item => item.place_ref === selectedPlace)
+    || partial?.days?.some(day => day.visits.some(visit => visit.place_ref === selectedPlace))
+    || next?.agent_requests?.some(request => request.result_refs?.includes(selectedPlace)));
+  if (!sameRoom || !knownPlace) selectedPlace = null;
   listeners.forEach(listener => listener(snapshot));
 }
 export function setSelectedPlace(ref) { selectedPlace = ref; }

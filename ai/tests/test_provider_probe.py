@@ -134,3 +134,45 @@ def test_township_road_identity_preserves_optional_eup_myeon():
     assert address_key("전남광주통합특별시 여수시 돌산읍 무술목길 50") == address_key(
         "전남광주 여수시 돌산읍 무술목길 50 모이핀 오션점")
     assert address_key("여수시 돌산읍 무술목길 50") != address_key("여수시 다른면 무술목길 50")
+
+
+def test_park_parcel_match_tolerates_distinct_representative_points():
+    from ai.providers.matching import match_record
+    # Recorded Apify/Kakao representative points for 자산공원, ~48 m apart.
+    place = dict(name="자산공원", address="전남광주통합특별시 여수시 종화동 3",
+                 latitude=34.73948628588617, longitude=127.74980447008349, provider_refs={})
+    park = dict(place_id="37609918", name="자산공원", address="전남광주 여수시 종화동 3",
+                roadAddress="전남광주 여수시 자산공원길 86", x="127.7503158", y="34.7395995")
+    monument = dict(park, place_id="32549377", name="자산공원충혼탑")
+    assert match_record(place, [park, monument]) == park
+    assert match_record(place, [park, dict(park, place_id="another")]) is None
+    assert match_record(place, [dict(park, address="전남광주 여수시 종화동 3-1")]) is None
+
+
+def test_matching_does_not_merge_similar_road_numbers_in_different_provinces():
+    from ai.providers.matching import match_record
+    place = dict(name="중앙식당", address="강원특별자치도 고성군 중앙로 12",
+                 latitude=34.7, longitude=127.6, provider_refs={})
+    row = dict(place_id="1", name="중앙식당", roadAddress="경남 고성군 중앙로 12", x="127.6", y="34.7")
+    assert match_record(place, [row]) is None
+
+
+def test_missing_township_annotation_can_match_but_conflicting_townships_cannot():
+    from ai.providers.matching import match_record
+    place = dict(name="가게", address="전남 여수시 중앙길 12", latitude=34.7, longitude=127.6, provider_refs={})
+    row = dict(place_id="1", name="가게", roadAddress="전남 여수시 돌산읍 중앙길 12", x="127.6", y="34.7")
+    assert match_record(place, [row]) == row
+    assert match_record(dict(place, address="전남 여수시 화양면 중앙길 12"), [row]) is None
+
+
+def test_no_regular_closure_and_overnight_provider_hours():
+    from ai.providers.hours import closed_dates, expand_hours
+    hours = [{"schedule": [{"day": "매일", "start": "20:00", "end": "02:00",
+                            "description": "정기휴무 없음"}]}]
+    assert closed_dates(hours, ["2026-11-21"]) == []
+    assert expand_hours(hours, ["2026-11-21"]) == [
+        {"day": "2026-11-21", "start": "00:00", "end": "02:00"},
+        {"day": "2026-11-21", "start": "20:00", "end": "24:00"},
+        {"day": "2026-11-22", "start": "00:00", "end": "02:00"}]
+    assert expand_hours([{"schedule": [{"day": "매일", "start": "00:00", "end": "00:00"}]}],
+                        ["2026-11-21"]) == []

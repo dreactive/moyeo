@@ -1,4 +1,6 @@
 import {html,escapeHtml as e,money} from './ui.js';
+import {displayPlan,planAgreement} from './plan.js';
+import {currentAgentResults,resultBasis} from './agent-results.js';
 const userColumns = {per_person_krw:'1인 전체 계획액',paid_by_user_krw:'개인 기지출',remaining_budget_krw:'앞으로 쓸 수 있는 금액',planned_balance_krw:'계획 반영 후 여유'};
 const costGroup = {intercity_transport:'transport',car:'transport',lodging:'lodging',meal:'meal',admission:'admission',other:'other'};
 const categoryLabels = {transport:'교통',lodging:'숙박',meal:'식사',admission:'입장·체험',other:'기타'};
@@ -18,8 +20,17 @@ function costComposition(cost) {
     ${entries.map(([group,amount]) => `<li data-category="${group}">${categoryLabels[group]} ${money(amount)}</li>`).join('')}
   </ul>`;
 }
-export function renderCost(cost,userId,members = []) {
-  if (!cost) return html('cost','경비 미확인');
+export function renderCost(cost,userId,members = [],snapshot) {
+  const plan = snapshot && displayPlan(snapshot);
+  const agreement = plan && planAgreement(snapshot,plan);
+  const context = agreement ? `<p class="consensus-status ${agreement.official ? 'official' : 'pending'}">여행안 v${e(plan.plan_revision)} · ${agreement.status} · 같은 여행안 동의 ${agreement.count}/${members.length}</p>` : '';
+  const results = currentAgentResults(snapshot);
+  const partial = results?.calculate_costs;
+  const partialMarkup = partial ? `<details class="card-details" id="agent-cost" ${cost ? '' : 'open'}>
+    <summary>부분 비용 계산</summary>${resultBasis(results)}${costContent(partial,userId,members)}</details>` : '';
+  html('cost',`${context}${cost ? costContent(cost,userId,members) : partial ? '' : '경비 미확인'}${partialMarkup}`);
+}
+function costContent(cost,userId,members) {
   const names = new Map(members.map(({user_id,name}) => [user_id,name]));
   const personal = userId ? `<p class="personal-cost">내 전체 계획액 <strong class="cost-amount">${money(cost.per_person_krw[userId])}</strong></p>` : '';
   const budget = userId ? `<dl class="card-facts">
@@ -27,8 +38,8 @@ export function renderCost(cost,userId,members = []) {
     <dt>앞으로 쓸 수 있는 금액</dt><dd>${money(cost.remaining_budget_krw[userId])}</dd>
     <dt>계획 반영 후 여유</dt><dd>${money(cost.planned_balance_krw[userId])}</dd>
   </dl>` : '';
-  html('cost', `${personal}${budget}<p>방 전체 계획액 <strong>${money(cost.total_krw)}</strong> · 알려진 소계 ${money(cost.known_total_krw)} · 전체 기지출 ${money(cost.paid_krw)}</p>
-  <p>미확인 ${cost.unknown_line_count}건 · 추정 ${cost.estimated_line_count}건</p>
+  return `${personal}${budget}<p>방 전체 계획액 <strong>${money(cost.total_krw)}</strong> · 알려진 소계 ${money(cost.known_total_krw)} · 전체 기지출 ${money(cost.paid_krw)}</p>
+  <p>미확인 ${e(cost.unknown_line_count)}건 · 추정 ${e(cost.estimated_line_count)}건</p>
   ${costComposition(cost)}
   <details class="card-details"><summary>참가자별 경비</summary>
   ${Object.keys(cost.per_person_krw).map(id => `<p><strong>${e(names.get(id) ?? id)}</strong></p>
@@ -36,5 +47,5 @@ export function renderCost(cost,userId,members = []) {
   </details>
   <details class="card-details"><summary>방 전체 비용 내역</summary>
   ${cost.lines.map(line => `<div class="card"><strong>${e(line.description)}</strong><p>${e(categoryLabels[costGroup[line.category]] ?? line.category)} · ${e(scopeLabels[line.scope] ?? line.scope)} · ${e(names.get(line.owner_id) ?? line.owner_id ?? '전체')} · ${line.paid ? '기지출' : '예정'}</p><p>단가 ${money(line.unit_price_krw)} × 수량 ${e(line.quantity)} · 방 전체 소계 ${money(line.subtotal_krw)}</p><p>가정 ${e(line.assumption ?? '없음')} · 근거 ${e(line.evidence_id ?? '사용자 입력/미확인')}</p></div>`).join('') || '<p>등록된 비용이 없습니다.</p>'}
-  </details>`);
+  </details>`;
 }

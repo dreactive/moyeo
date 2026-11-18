@@ -13,7 +13,7 @@ import asyncio
 
 DECISION_FIELDS = ('room_id', 'versions', 'members', 'config', 'constraints', 'items', 'questions',
                    'messages', 'current_plan', 'review_plan', 'confirmed_plan', 'active_target',
-                   'confirmations', 'conflicts', 'agent_pending_item_ids', 'agent_requests')
+                   'confirmations', 'conflicts', 'agent_pending_item_ids', 'agent_requests', 'agent_tool_failures')
 
 
 @serialized
@@ -32,7 +32,9 @@ def make_task(room, run_id, goal, observations, selection, processed_id=None, fa
     task['conversation_context'] = room['messages'][:first][-20:]
     task['pending_item_ids'] = list(room.get('agent_pending_item_ids', []))
     task['pending_requests'] = [r for r in room.get('agent_requests', [])
-                                if r.get('status') not in ('completed', 'superseded', 'cancelled')]
+                                if r.get('status') not in ('completed', 'superseded', 'cancelled', 'unsupported')]
+    task['request_history'] = deepcopy(room.get('agent_requests', []))
+    task['tool_failures'] = deepcopy(room.get('agent_tool_failures', []))
     return deepcopy(task)
 
 
@@ -97,12 +99,18 @@ class AgentJobs:
                     await self.enqueue(task['room_id'], 'remaining_messages')
                 if not current and self.pending[task['room_id']] == 0:
                     await self.enqueue(task['room_id'], 'state_changed')
+                elif applied and result.get('decision_report', {}).get('reason')=='round_limit' and self.pending[task['room_id']]==0:
+                    await self.enqueue(task['room_id'], 'continue_pending')
                 step = max((event['step'] for event in self.db.traces.get(task['run_id'], {}).get('events', [])), default=0) + 1
                 await self.emit_trace(dict(run_id=task['run_id'], step=step, event='state_applied', call_id=None, created_at=datetime.now(timezone.utc).isoformat(), payload={'applied':applied, 'summary':'Applied' if applied else 'Stale result' if not current else 'Extraction failed' if result.get('extraction_report', {}).get('status') == 'failed' else 'Stale result', 'versions':self.db.get('room:' + task['room_id'])['versions']}))
-                state = 'done' if applied and result['completion'] == 'done' else 'needs_input'
+                decision = result.get('decision_report', {})
+                state = ('done' if applied and result['completion']=='done' else
+                         'held' if not current or decision.get('status')=='stale' else
+                         'failed' if decision.get('status')=='failed' or result.get('tool_failures') or result.get('extraction_report', {}).get('status')=='failed' else
+                         'needs_input' if result.get('questions') else 'waiting')
                 set_status(self.db, task['room_id'], task['run_id'], state, extraction_label(result) if current else 'State changed; new decision queued')
             except Exception:
-                set_status(self.db, task['room_id'], task['run_id'], 'needs_input', 'Agent run failed')
+                set_status(self.db, task['room_id'], task['run_id'], 'failed', 'Agent run failed')
                 if is_current and not is_current() and self.pending[task['room_id']] == 0:
                     await self.enqueue(task['room_id'], 'state_changed')
             finally:

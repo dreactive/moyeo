@@ -5,6 +5,27 @@ import math
 from ai.tools.definitions import TOOL_DEFINITIONS
 
 
+def judge_question(context, style='json'):
+    """Render supplied facts faithfully; never suggest a winning candidate."""
+    values = {key:value for key,value in context.items() if key != 'tools'}
+    if style == 'json':
+        return json.dumps(values, ensure_ascii=False, allow_nan=False)
+    if style != 'readable':
+        raise ValueError('Unknown service judge input style')
+    sections = [('current_messages','CURRENT USER REQUEST'), ('facts','VERIFIED FACTS SUPPLIED WITH THIS REQUEST'),
+                ('source_messages','RELEVANT EARLIER MESSAGES'), ('requests','SCOPED REQUESTS'),
+                ('missing_fields','UNRESOLVED INFORMATION'), ('open_questions','OPEN QUESTIONS'),
+                ('summary','GROUNDED INTERPRETATION')]
+    lines = ['The following service state is information provided with the user request.',
+             'Known IDs refer to the recorded entities below; unknown values remain unknown.']
+    for key,label in sections:
+        if key in values:
+            lines += [label, json.dumps(values.pop(key), ensure_ascii=False, allow_nan=False)]
+    if values:
+        lines += ['OTHER REQUEST CONTEXT',json.dumps(values, ensure_ascii=False, allow_nan=False)]
+    return '\n'.join(lines)
+
+
 def candidate_reply(candidate):
     if candidate.get("action") == "tool":
         name, arguments = candidate.get("tool_name"), candidate.get("arguments")
@@ -25,8 +46,7 @@ def score_candidates(model, tokenizer, context, candidates):
     if not 1 <= len(candidates) <= 4:
         raise ValueError("Judge requires between one and four real candidates")
     tools = context.get("tools", TOOL_DEFINITIONS)
-    question = json.dumps({k: v for k, v in context.items() if k != "tools"},
-                          ensure_ascii=False, allow_nan=False)
+    question = judge_question(context)
     choices = [candidate_reply(candidate) for candidate in candidates]
     causal = judge.causal_lm(model)
     maximum = min(32768, getattr(causal.config, "max_position_embeddings", 32768))

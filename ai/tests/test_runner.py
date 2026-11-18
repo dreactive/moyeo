@@ -40,7 +40,7 @@ async def test_judge_failure_holds_real_candidates_without_executing_or_claiming
         result = await runtime.run(value, sink)
     finally:
         await runtime.aclose()
-    assert [c["tool_name"] for c in result["candidates"]] == ["get_car_route", "get_car_route"]
+    assert [c["tool_name"] for c in result["candidates"]] == ["get_car_route", "get_car_route", "calculate_costs"]
     assert result["observations"] == [] and result["plan_draft"] is None
     assert result["questions"] == value["questions"]
     assert result["completion"] == "needs_input" and result["decision_report"]["status"] == "failed"
@@ -50,13 +50,17 @@ async def test_judge_failure_holds_real_candidates_without_executing_or_claiming
 
 
 def test_plan_result_uses_only_executed_calculations_and_retains_null():
+    from ai.cost_inputs import build_cost_inputs
     from ai.outcome import assemble_result
+    from ai.planning import itinerary_arguments
     from ai.result import empty_result
     value = task()
     result = empty_result(value)
     result["observations"] = [
-        dict(tool_name="build_itinerary", result={"days": value["current_plan"]["days"], "conflicts": [], "questions": []}),
-        dict(tool_name="calculate_costs", result={"total_krw": None, "planned_balance_krw": {"u1": None}})]
+        dict(tool_name="build_itinerary", arguments=itinerary_arguments(value),
+             result={"days": value["current_plan"]["days"], "conflicts": [], "questions": []}),
+        dict(tool_name="calculate_costs", arguments=build_cost_inputs(value)[0],
+             result={"total_krw": None, "planned_balance_krw": {"u1": None}})]
     assert assemble_result(value, result)
     assert result["completion"] == "needs_input"
     assert set(result["plan_draft"]) == {"selected_item_ids", "days", "cost", "validation", "blocking_conflict_ids"}
@@ -71,13 +75,13 @@ async def test_runtime_executes_exact_judge_selected_alternative_and_holds_later
         decisions.append(deepcopy(candidates))
         if len(decisions) > 1:
             raise RuntimeError("second comparison unavailable")
-        return [0., 10.]
+        return [0., 10.] + [0.] * (len(candidates)-2)
     monkeypatch.setattr(runtime.model.backend, "score_candidates", score)
     try:
         result = await runtime.run(task(), None)
     finally:
         await runtime.aclose()
-    assert len(decisions) == 2 and len(decisions[0]) == 2
+    assert len(decisions) == 2 and len(decisions[0]) == 3
     assert len(result["observations"]) == 1
     selected = decisions[0][1]
     assert selected["arguments"] == dict(from_ref="anchor:lodging", to_ref="anchor:destination",
@@ -138,7 +142,7 @@ async def test_judge_receives_actual_route_time_and_grounded_observed_prices(mon
     received = []
     def score(context, candidates):
         received.append((context, candidates))
-        return [1., 0.]
+        return [1.] + [0.] * (len(candidates)-1)
     monkeypatch.setattr(runtime.model.backend, "score_candidates", score)
     try:
         result = await runtime.run(task(), None)
@@ -162,15 +166,18 @@ def test_code_preparation_keeps_independent_later_day_route_alternatives():
 
 
 def test_budget_overrun_is_blocking_even_when_calculation_is_complete():
+    from ai.cost_inputs import build_cost_inputs
     from ai.outcome import assemble_result
+    from ai.planning import itinerary_arguments
     from ai.result import empty_result
     from ai.tools.costs import calculate_costs
     value = task()
     result = empty_result(value)
     cost = calculate_costs([dict(scope="per_person", unit_price_krw=20000, quantity=1, paid=False)], ["u1"], {"u1": 10000})
     result["observations"] = [
-        dict(tool_name="build_itinerary", result=dict(days=value["current_plan"]["days"], questions=[], conflicts=[])),
-        dict(tool_name="calculate_costs", result=cost)]
+        dict(tool_name="build_itinerary", arguments=itinerary_arguments(value),
+             result=dict(days=value["current_plan"]["days"], questions=[], conflicts=[])),
+        dict(tool_name="calculate_costs", arguments=build_cost_inputs(value)[0], result=cost)]
     assemble_result(value, result)
     assert result["completion"] == "needs_input" and result["plan_draft"]["validation"] == "conflict"
     assert any(c["type"] == "budget" and c["blocking"] and c["options"] for c in result["conflicts"])
@@ -191,17 +198,22 @@ async def test_manual_replan_recalculates_instead_of_reusing_old_ready_plan():
     assert result["plan_draft"]["validation"] == "needs_input" and result["completion"] == "needs_input"
     assert result["plan_draft"]["cost"]["total_krw"] is None
     assert value["current_plan"]["cost"]["total_krw"] == 120000
-    assert any(q["field"] == "menu_selection" and q["target_ref"] == "item-b" for q in result["questions"])
+    assert any(line["id"] == "visit:item-b" and line["subtotal_krw"] is None
+               for line in result["plan_draft"]["cost"]["lines"])
 
 
 def test_unverified_minority_hard_condition_requires_its_owner_without_relaxing():
+    from ai.cost_inputs import build_cost_inputs
     from ai.outcome import assemble_result
+    from ai.planning import itinerary_arguments
     from ai.result import empty_result
     value = task()
     value["constraints"] = [dict(id="diet", owner_id="u4", key="avoid_spicy", value=True, kind="hard", status="confirmed")]
     result = empty_result(value)
-    result["observations"] = [dict(tool_name="build_itinerary", result=dict(days=value["current_plan"]["days"], questions=[], conflicts=[])),
-        dict(tool_name="calculate_costs", result=dict(total_krw=120000, planned_balance_krw={"u1": 170000}))]
+    result["observations"] = [dict(tool_name="build_itinerary", arguments=itinerary_arguments(value),
+                                  result=dict(days=value["current_plan"]["days"], questions=[], conflicts=[])),
+        dict(tool_name="calculate_costs", arguments=build_cost_inputs(value)[0],
+             result=dict(total_krw=120000, planned_balance_krw={"u1": 170000}))]
     assemble_result(value, result)
     assert any(q["field"] == "constraint_value" and q["target_ref"] == "diet" and q["owner_id"] == "u4" for q in result["questions"])
     assert value["constraints"][0]["value"] is True and result["completion"] == "needs_input"

@@ -1,5 +1,7 @@
 from copy import deepcopy
-from ai.planning import planned_visits, selected_route_observations
+import re
+
+from ai.planning import missing_visit_locations, planned_visits, route_inputs, selected_place_items
 from ai.tools.context import build_tool_context
 from ai.questions import question
 
@@ -13,6 +15,7 @@ def cost_line(ref, price, evidence_id=None, scope="shared", assumption=None, cat
 def menu_line(context, visit, menu, questions):
     answer = next((q["answer"] for q in context["questions"] if q["field"] == "menu_selection"
                    and q["target_ref"] == visit["item_id"] and q["status"] == "answered"
+                   and q.get("owner_id") in (None, q.get("answered_by"))
                    and q["answer"].get("menu_id") == menu["id"]), None)
     known_basis = "1인" in (menu.get("serving_basis") or "")
     if not answer and not known_basis:
@@ -25,38 +28,64 @@ def menu_line(context, visit, menu, questions):
 
 
 def car_cost_lines(context, fixed_lines):
-    descriptions = [str(l.get("description", "")) + " " + str(l.get("assumption") or "")
-                    for l in fixed_lines if l.get("category") == "car"]
-    extras = [] if any("유류" in d and "주차" in d for d in descriptions) else [
+    inclusions = [clause for line in fixed_lines if line.get("category") == "car" and line.get("unit_price_krw") is not None
+                  for value in (line.get("description"), line.get("assumption"))
+                  for clause in re.split(r"[.,;]", value or "")
+                  if re.search(r"(?<![미불])포함(?!\s*(?:안|아님|없|되지|하지))", clause)]
+    included = {fee for fee in ("유류", "주차", "통행료") for clause in inclusions
+                if fee in clause and not re.search(fee + r"(?:비|비용)?\s*(?:별도|제외|미포함|불포함)", clause)}
+    extras = [] if {"유류", "주차"} <= included else [
         cost_line("car:extras", None, assumption="유류/주차 비용 확인 필요")]
-    if any("통행료" in d and "포함" in d for d in descriptions):
+    if "통행료" in included:
         return extras
+    extras.extend(cost_line("toll:unobserved:visit:" + item["item_id"], None, assumption="미배치 장소의 이동 구간 통행료 미조회")
+                  for item in missing_visit_locations(context, planned_visits(context)))
+    routes = list(route_inputs(context))
+    if not routes:
+        return extras + [cost_line("toll:unobserved:trip", None, assumption="이동 구간 통행료 미조회")]
     seen = set()
-    for observation in selected_route_observations(context):
+    for day, args, visit, observation in routes:
+        if observation is None:
+            ref = f"toll:unobserved:{day}:{args['from_ref']}:{args['to_ref']}"
+            if visit:
+                ref += ":" + visit["item_id"]
+            extras.append(cost_line(ref, None, assumption="이동 구간 통행료 미조회"))
+            continue
         leg = observation["result"]
-        if leg["evidence_id"] not in seen:
-            extras.append(cost_line("toll:" + leg["evidence_id"], leg.get("toll_krw"), leg["evidence_id"],
-                                    assumption="통행료만; 유류·주차 별도"))
-            seen.add(leg["evidence_id"])
+        evidence_id = leg.get("evidence_id")
+        ref = "toll:" + evidence_id if evidence_id else f"toll:unobserved:{day}:{args['from_ref']}:{args['to_ref']}"
+        if ref in seen:
+            ref += ":" + args["departure_at"]
+        seen.add(ref)
+        extras.append(cost_line(ref, leg.get("toll_krw") if evidence_id else None, evidence_id,
+                                assumption="통행료만; 유류·주차 별도"))
     return extras
 
 
 def build_cost_inputs(context):
-    details = build_tool_context(context)["details"]
+    context = build_tool_context(context)
+    details = context["details"]
     lines = deepcopy(context["config"].get("fixed_costs", []))
     questions = []
-    for visit in planned_visits(context):
+    visits = planned_visits(context)
+    for visit in visits:
         detail = details.get(visit["place_ref"], {})
         selected = [m for m in detail.get("menus", []) if m["id"] in visit["selected_menu_ids"]]
         if not selected:
             free = next((e for e in detail.get("evidence", []) if e["field"] == "admission_fee"
-                         and e["normalized_value"] == 0 and e["status"] == "api_observed"
+                         and type(e["normalized_value"]) is int and e["normalized_value"] == 0
+                         and e["status"] == "api_observed"
                          and e["match_status"] == "matched"), None)
             lines.append(cost_line("visit:" + visit["item_id"], 0 if free else None,
                                    free["id"] if free else None, "per_person", "입장료/메뉴 확인 필요", "admission"))
-            if not free:
+            if not free and detail.get("menus"):
                 questions.append(question("menu_selection", visit["item_id"], "메뉴·이용권 또는 무료 근거를 확인해주세요."))
         lines.extend(menu_line(context, visit, menu, questions) for menu in selected)
+    resolved = {v["item_id"] for v in visits}
+    for item in selected_place_items(context):
+        if item["id"] not in resolved:
+            lines.append(cost_line("visit:" + item["id"], None, scope="per_person",
+                                   assumption="방문 장소 미확인", category="admission"))
     lines.extend(car_cost_lines(context, lines))
     users = [m["user_id"] for m in context["members"]]
     budgets = {u: context["config"].get("per_person_budget_krw") for u in users}
@@ -65,3 +94,14 @@ def build_cost_inputs(context):
                 and constraint["kind"] == "hard" and constraint["owner_id"] in budgets):
             budgets[constraint["owner_id"]] = constraint["value"]
     return dict(lines=lines, member_ids=users, budget_by_user=budgets), questions
+
+
+def cost_inputs_ready(context, arguments=None):
+    args = arguments if arguments is not None else build_cost_inputs(context)[0]
+    users = args["member_ids"]
+    known_amount = any(line["unit_price_krw"] is not None for line in args["lines"])
+    explicit_scope = any(r.get('intent')=='cost_estimate' and r.get('operation')=='request'
+                         and r.get('status') in ('resolved','pending','needs_input')
+                         for r in context.get('_active_requests', []))
+    return bool((known_amount or explicit_scope and args['lines']) and users and len(users) == len(set(users))
+                and all(type(args["budget_by_user"].get(user)) is int and args["budget_by_user"][user] >= 0 for user in users))

@@ -35,5 +35,5 @@ def test_independent_day_routes_are_real_alternatives():
     assert [(r["from_ref"], r["to_ref"]) for r in routes] == [
         ("anchor:origin", "fixture:place-a"), ("anchor:lodging", "anchor:destination")]
     value["observations"].append(dict(tool_name="get_car_route", arguments=routes[0],
-                                     result=dict(duration_seconds=180)))
+        result=dict(from_ref=routes[0]["from_ref"], to_ref=routes[0]["to_ref"], duration_seconds=180)))
     assert pending_routes(value)[0]["from_ref"] == "fixture:place-a"

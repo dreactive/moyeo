@@ -1,0 +1,188 @@
+[
+  {
+    "case": "details_budget",
+    "source": "자산공원 입장료와 영업시간 알려줘. 내 예산은 15만원이야. 4시까지 귀가한다는 뜻은 아니야.",
+    "raw": {
+      "item_proposals": [],
+      "constraint_proposals": [],
+      "support_observations": [],
+      "analysis": {
+        "requests": [
+          {
+            "intent": "place_lookup",
+            "evidence": {
+              "message_id": "50f165fb7ba04b039cde782874a745bf",
+              "quote": "자산공원 입장료"
+            },
+            "target_names": [
+              "자산공원"
+            ],
+            "excluded_names": [],
+            "context_evidence": [],
+            "requested_fields": [
+              "price"
+            ],
+            "operation": "request",
+            "departure_at": null
+          },
+          {
+            "intent": "place_lookup",
+            "evidence": {
+              "message_id": "50f165fb7ba04b039cde782874a745bf",
+              "quote": "자산공원 영업시간"
+            },
+            "target_names": [
+              "자산공원"
+            ],
+            "excluded_names": [],
+            "context_evidence": [],
+            "requested_fields": [
+              "opening_hours"
+            ],
+            "operation": "request",
+            "departure_at": null
+          }
+        ],
+        "summary": "자산공원의 입장료와 영업시간을 조회하고, 개인 예산 15만원을 제시함. 4시 귀가 조건은 명시적으로 부정함.",
+        "needs_context": false,
+        "context_queries": [],
+        "missing_fields": [],
+        "unsupported": false,
+        "unsupported_reason": "",
+        "direct_text": "",
+        "noop": false,
+        "source_message_ids": [
+          "50f165fb7ba04b039cde782874a745bf"
+        ],
+        "source_refs": []
+      }
+    }
+  },
+  {
+    "case": "begin_pending_lookup",
+    "source": "오동도하고 여수세계박람회장 찾아줘.",
+    "raw": {
+      "item_proposals": [],
+      "constraint_proposals": [],
+      "support_observations": [],
+      "analysis": {
+        "requests": [
+          {
+            "intent": "place_lookup",
+            "evidence": {
+              "message_id": "c716986bc07448818260296238cd7ef8",
+              "quote": "오동도 찾아줘."
+            },
+            "target_names": [
+              "오동도"
+            ],
+            "excluded_names": [],
+            "context_evidence": [],
+            "requested_fields": [
+              "location",
+              "details",
+              "price",
+              "opening_hours"
+            ],
+            "operation": "request",
+            "departure_at": null
+          },
+          {
+            "intent": "place_lookup",
+            "evidence": {
+              "message_id": "c716986bc07448818260296238cd7ef8",
+              "quote": "여수세계박람회장 찾아줘."
+            },
+            "target_names": [
+              "여수세계박람회장"
+            ],
+            "excluded_names": [],
+            "context_evidence": [],
+            "requested_fields": [
+              "location",
+              "details",
+              "price",
+              "opening_hours"
+            ],
+            "operation": "request",
+            "departure_at": null
+          }
+        ],
+        "summary": "오동도와 여수세계박람회장 정보를 찾아달라는 요청.",
+        "needs_context": false,
+        "context_queries": [],
+        "missing_fields": [],
+        "unsupported": false,
+        "unsupported_reason": "",
+        "direct_text": "",
+        "noop": false,
+        "source_message_ids": [
+          "c716986bc07448818260296238cd7ef8"
+        ],
+        "source_refs": []
+      }
+    }
+  },
+  {
+    "case": "visit_cost_itinerary",
+    "source": "자산공원 가자. 확인된 비용부터 계산하고 가능한 일정도 보여줘.",
+    "raw": {
+      "item_proposals": [
+        {
+          "title": "자산공원",
+          "mention_text": "자산공원",
+          "evidence": {
+            "message_id": "bfc8165d2784484ab2e8dd5c1da32e2a",
+            "quote": "자산공원 가자"
+          },
+          "client_ref": "proposal_jasan_park",
+          "existing_item_id": null
+        }
+      ],
+      "constraint_proposals": [],
+      "support_observations": [],
+      "analysis": {
+        "requests": [
+          {
+            "intent": "cost_estimate",
+            "evidence": {
+              "message_id": "bfc8165d2784484ab2e8dd5c1da32e2a",
+              "quote": "확인된 비용부터 계산하고"
+            },
+            "target_names": [],
+            "excluded_names": [],
+            "context_evidence": [],
+            "requested_fields": [],
+            "operation": "request",
+            "departure_at": null
+          },
+          {
+            "intent": "itinerary_plan",
+            "evidence": {
+              "message_id": "bfc8165d2784484ab2e8dd5c1da32e2a",
+              "quote": "가능한 일정도 보여줘"
+            },
+            "target_names": [],
+            "excluded_names": [],
+            "context_evidence": [],
+            "requested_fields": [],
+            "operation": "request",
+            "departure_at": null
+          }
+        ],
+        "summary": "자산공원을 제안하고 확인된 비용 계산과 가능한 일정 제시를 요청함.",
+        "needs_context": false,
+        "context_queries": [],
+        "missing_fields": [],
+        "unsupported": false,
+        "unsupported_reason": "",
+        "direct_text": "",
+        "noop": false,
+        "source_message_ids": [
+          "bfc8165d2784484ab2e8dd5c1da32e2a"
+        ],
+        "source_refs": []
+      }
+    }
+  }
+]

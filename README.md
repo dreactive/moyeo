@@ -1,12 +1,14 @@
 # 공동 여행 계획 웹 서비스
 
-이 브랜치(`codex/candidate-generation-only`)의 AI는 후보 행동 생성·검증까지만 수행한다. 계획 요청의 결과 JSON `candidates`에서 후보를 확인하며, 채점·선택·자동 도구 실행·새 일정 생성은 수행하지 않는다. 채팅 추출 동작과 Backend 고정 fixture는 유지된다. 아래의 기존 실모델 시간·통합 검증 기록은 채점 루프가 있던 이전 구현의 결과다.
+이 브랜치(`codex/qwen-judge-tool-execution`)의 AI는 외부 보조 모델의 구조화된 해석을 근거로 실제 후보를 만들고, 제공 Qwen+LoRA judge가 선택한 도구를 같은 인자로 실행한다. 도구별 최소 입력으로 조사·부분 일정·비용 계산을 진행하며, 미확인 값·요청별 진행·사람의 동의를 구분한다. 실제 후보 수와 점수·선택·실행 결과는 trace에서 확인한다.
 
 2026-11-17 서비스 기획과 2026-11-18 확정한 구현 범위를 기준으로 작업한다.
 
 **기준 문서: [서비스 기획서 v1.0](./docs/travel-agent-service-plan.md)**
 
 **최신 구현 기준: [MVP 설계](./docs/superpowers/specs/2026-11-18-travel-agent-design.md) · [공통 API 계약](./docs/contracts/travel-api.md)**
+
+**도구·요청 처리 후속 설계: [도구별 준비조건과 불확실성](./docs/superpowers/specs/2026-11-19-tool-readiness-and-uncertainty-design.md)**. 기존 Qwen 채점 방식·원본 가중치와 전원 확정 정책을 유지한다. 회귀·실제 모델·외부 공급자 검증은 각각 구분해 보고한다.
 
 구현 세부가 기존 기획과 다르면 2026-11-18 설계를 따른다. 구현과 실제 검증 범위는 [Backend 기록](./docs/verification/backend.md), [FE 기록](./docs/verification/frontend.md), [AI 기록](./docs/verification/ai.md), [통합 기록](./docs/verification/integration.md)에서 구분한다. fixture/fake 통과를 실제 API·Qwen 완료로 보지 않는다.
 

@@ -6,7 +6,8 @@ import hashlib
 import json
 
 
-HASH_FIELDS = ('selected_item_ids','item_snapshots','days','cost','evidence','validation','blocking_conflict_ids')
+HASH_FIELDS = ('selected_item_ids','item_snapshots','days','cost','evidence','validation','blocking_conflict_ids',
+               'unplaced_items','missing_observations')
 IGNORED_TIMES = {'retrieved_at','observed_at','provider_updated_at'}
 
 
@@ -102,6 +103,9 @@ DRAFT_FIELDS = ('selected_item_ids','days','cost','validation','blocking_conflic
 
 def build_plan(room, draft, evidence):
     plan = {key:deepcopy(draft[key]) for key in DRAFT_FIELDS}
+    for key in ('unplaced_items','missing_observations'):
+        if key in draft:
+            plan[key] = deepcopy(draft[key])
     plan['item_snapshots'] = item_snapshots(room, plan)
     plan['content_hash'] = semantic_plan_hash(dict(plan, evidence=evidence))
     current = room['current_plan']

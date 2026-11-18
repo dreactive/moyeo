@@ -16,7 +16,7 @@ async def get_car_route(client, key, places, arguments):
     path = "/v1/directions"
     if arguments.get("departure_at"):
         departure = datetime.fromisoformat(arguments["departure_at"])
-        if departure.tzinfo is None or departure <= datetime.now(timezone.utc):
+        if departure.utcoffset() is None or departure.replace(second=0, microsecond=0) <= datetime.now(timezone.utc):
             raise ValueError("Departure must be timezone-aware and in the future")
         path = "/v1/future/directions"
         params["departure_time"] = departure.astimezone(timezone(timedelta(hours=9))).strftime("%Y%m%d%H%M")
@@ -32,7 +32,8 @@ async def get_car_route(client, key, places, arguments):
     ref = route_evidence_id(places, arguments)
     return dict(from_ref=arguments["from_ref"], to_ref=arguments["to_ref"],
                 distance_m=summary["distance"], duration_seconds=summary["duration"],
-                toll_krw=summary.get("fare", {}).get("toll"), polyline=polyline, evidence_id=ref)
+                toll_krw=summary.get("fare", {}).get("toll"), polyline=polyline, evidence_id=ref,
+                departure_at=arguments["departure_at"], retrieved_at=datetime.now(timezone.utc).isoformat())
 
 
 async def search_places(client, key, query, region):
@@ -43,5 +44,6 @@ async def search_places(client, key, query, region):
     response.raise_for_status()
     return {"places": [dict(id="kakao:" + row["id"], name=row["place_name"],
                            address=row.get("road_address_name") or row["address_name"],
+                           road_address=row.get("road_address_name"), parcel_address=row.get("address_name"),
                            latitude=float(row["y"]), longitude=float(row["x"]), provider_refs={"kakao": row["id"]})
                        for row in response.json()["documents"]]}

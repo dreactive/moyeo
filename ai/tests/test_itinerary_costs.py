@@ -46,7 +46,8 @@ def test_itinerary_missing_route_requires_input():
     visit = {"item_id": "a", "place_ref": "p", "date": "2026-11-21", "stay_minutes": 60}
     result = build_itinerary([visit], anchors, [], [], config)
     assert [d["date"] for d in result["days"]] == ["2026-11-21", "2026-11-22"]
-    assert result["questions"]
+    assert not result["questions"]
+    assert result["unplaced_items"] == [dict(item_id="a", place_ref="p", reason="missing_route")]
     assert result["days"][0]["visits"] == []
 
 
@@ -79,8 +80,20 @@ def test_holiday_and_unknown_hours_are_distinct():
     closed = {"opening_hours": {"intervals": [], "holiday_text": "2026-11-21 휴무"}}
     conflicts, questions = validate_hours(visit, closed, {})
     assert conflicts[0]["type"] == "opening_hours" and not questions
-    conflicts, questions = validate_hours(visit, {"opening_hours": None}, {})
-    assert not conflicts and questions[0]["target_ref"] == "a"
+    conflicts, missing = validate_hours(visit, {"opening_hours": None}, {})
+    assert not conflicts and missing == [dict(field="opening_hours", item_id="a", place_ref=None, date="2026-11-21")]
+
+
+def test_overnight_visit_uses_next_calendar_day_hours():
+    from ai.providers.apify import normalize_place
+    from ai.tools.hours import validate_hours
+    raw = {"place_id": "r", "name": "late", "x": "127", "y": "34", "businessHours": [
+        {"schedule": [{"day": "토", "start": "22:00", "end": "02:00"}]}]}
+    detail = normalize_place(raw, ["2026-11-21"], "now")
+    visit = dict(item_id="a", date="2026-11-21", start_at="2026-11-21T23:30:00+09:00",
+                 end_at="2026-11-22T01:30:00+09:00")
+    assert validate_hours(visit, detail, {}) == ([], [])
+    assert validate_hours(dict(visit, end_at="2026-11-22T03:00:00+09:00"), detail, {})[0]
 
 
 def test_confirmed_personal_return_limit_is_enforced_by_builder():

@@ -35,12 +35,15 @@ export function drawKakao(maps,element,points,lines = []) {
   points.forEach(point => {
     const position = latLng(point);
     const name = point.name ?? point.label;
-    const title = point.visitNumber ? `${point.visitNumber}. ${name}` : name;
-    if (point.visitNumber && maps.CustomOverlay && element.ownerDocument) {
+    const agreement = point.agreement;
+    const status = agreement ? [agreement.label,agreement.counts,agreement.conflict ? '! 충돌' : ''].filter(Boolean).join(' · ') : '';
+    const title = `${point.visitNumber ? point.visitNumber + '. ' : ''}${name}${status ? ' · ' + status : ''}`;
+    if ((point.visitNumber || point.mention) && maps.CustomOverlay && element.ownerDocument) {
       const content = element.ownerDocument.createElement('span');
-      content.textContent = String(point.visitNumber);
+      const label = point.mention ? (point.unplaced ? '미배치' : name) : String(point.visitNumber);
+      content.textContent = agreement ? `${label} · ${agreement.label}${agreement.conflict ? ' !' : ''}` : label;
       content.title = title;
-      content.style.cssText = 'display:grid;place-items:center;width:24px;height:24px;border:2px solid white;border-radius:50%;background:#6654f0;color:white;font-weight:700';
+      content.className = `map-visit-pin${agreement ? ' ' + agreement.state : ''}`;
       layers.push(new maps.CustomOverlay({map,position,content}));
     } else {
       layers.push(new maps.Marker({map,position,title}));
@@ -48,7 +51,7 @@ export function drawKakao(maps,element,points,lines = []) {
     bounds.extend(position);
   });
   lines.forEach((line,index) => {
-    layers.push(new maps.Polyline({map,path:line.map(latLng),strokeWeight:4,strokeColor:['#24745b','#b97720'][index % 2]}));
+    layers.push(new maps.Polyline({map,path:line.map(latLng),strokeWeight:4,strokeColor:['#4a5592','#7666b7'][index % 2]}));
   });
   map.setBounds(bounds);
   return {map,latLng};

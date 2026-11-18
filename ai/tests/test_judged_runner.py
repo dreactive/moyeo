@@ -11,6 +11,7 @@ def task():
     value['recent_messages'] = [dict(id='m-new', author_id='u1', text='오동도 가자')]
     for name in ('origin', 'destination', 'lodging'):
         value['config'][name] = None
+    value['config']['fixed_costs'] = []  # isolate the new lookup, no independent partial cost task
     return value
 
 

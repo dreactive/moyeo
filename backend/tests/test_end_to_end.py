@@ -32,16 +32,25 @@ def test_fixture_judge_executes_scored_calls_and_persists_observations(room):
         db = client.app.state.db
         run_id = receipt.json()['run_id']
         assert db.get('run:' + run_id)['applied']
-        assert db.get('room:' + room['room_id'])['current_plan'] == room['current_plan']
-        events = db.traces[run_id]['events']
-        calls, results = scored_tool_calls(events)
+        updated = db.get('room:' + room['room_id'])
+        assert updated['current_plan']['plan_revision'] > room['current_plan']['plan_revision']
+        assert updated['confirmed_plan'] == room['confirmed_plan']
+        runs = [trace for trace in db.traces.values() if trace['room_id']==room['room_id']]
+        checked = [scored_tool_calls(trace['events']) for trace in runs]
+        calls = [call for trace_calls,_ in checked for call in trace_calls]
+        results = {key:value for _,trace_results in checked for key,value in trace_results.items()}
         observations = db.observations[room['room_id']]
-        assert len(observations) == len(calls)
+        assert len(observations) <= len(calls)  # refreshed canonical calculations replace prior values
         assert {'search_places', 'get_place_details', 'get_car_route'} <= {o['tool_name'] for o in observations}
         for call in calls:
-            stored = next(o for o in observations if (o['tool_name'], o['arguments']) ==
-                          (call['payload']['tool_name'], call['payload']['arguments']))
-            assert stored['result'] == results[call['call_id']]['normalized_result']
+            matches = [o for o in observations if (o['tool_name'], o['arguments']) ==
+                       (call['payload']['tool_name'], call['payload']['arguments'])]
+            if matches:
+                assert matches[-1]['result'] == results[call['call_id']]['normalized_result']
+        for observation in observations:
+            assert any((observation['tool_name'],observation['arguments'],observation['result']) ==
+                       (call['payload']['tool_name'],call['payload']['arguments'],results[call['call_id']]['normalized_result'])
+                       for call in calls)
 
 
 @pytest.mark.integration
@@ -55,14 +64,18 @@ def test_empty_four_person_room_executes_grounded_search_and_preserves_support_o
         assert len(snapshot['members']) == 4
         assert len(snapshot['items']) == 1
         assert snapshot['items'][0]['state'] == 'mentioned'
-        assert snapshot['current_plan'] is None
+        assert snapshot['confirmed_plan'] is None
+        if snapshot['current_plan']:
+            assert snapshot['current_plan']['selected_item_ids'] == [snapshot['items'][0]['id']]
         db = clients[0].app.state.db
         observations = db.observations[snapshot['room_id']]
         traces = [trace for trace in db.traces.values() if trace['room_id'] == snapshot['room_id']]
-        assert len(traces) == 1
-        assert db.get('run:' + traces[0]['run_id'])['applied'] is True
+        assert traces
+        assert all(db.get('run:' + trace['run_id'])['applied'] for trace in traces)
         assert db.get('processed-message:' + snapshot['room_id']) == response.json()['id']
-        calls, results = scored_tool_calls(traces[0]['events'])
+        checked = [scored_tool_calls(trace['events']) for trace in traces]
+        calls = [call for trace_calls,_ in checked for call in trace_calls]
+        results = {key:value for _,trace_results in checked for key,value in trace_results.items()}
         search = next(o for o in observations if o['tool_name'] == 'search_places')
         assert search['arguments'] == {'query': snapshot['items'][0]['title'], 'region': room['config']['region'], 'category': None}
         assert search['result']['places'][0]['id'] == 'fixture:place-a'
@@ -115,7 +128,9 @@ def test_late_visit_recalculates_confirmed_deadline_without_changing_confirmatio
         clients[0].portal.call(clients[0].app.state.jobs.queue.join)
         snapshot = clients[0].get(path).json()
         assert receipt.status_code == 202
-        assert snapshot['current_plan'] == room['current_plan']
+        assert snapshot['current_plan']['plan_revision'] > room['current_plan']['plan_revision']
+        assert snapshot['current_plan']['selected_item_ids'] == room['current_plan']['selected_item_ids']
+        assert snapshot['current_plan']['days'][1]['visits'][0]['start_at'] == late['start_at']
         historical = snapshot['confirmed_plan']
         clients[3].post(path+'/messages', json={'text':'나는 16시까지 귀가해야 해'})
         clients[0].portal.call(clients[0].app.state.jobs.queue.join)

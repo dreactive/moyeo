@@ -2,7 +2,8 @@
 import hashlib
 import re
 from ai.condition_grounding import condition_value
-from ai.auxiliary_requests import ground_requests
+from ai.auxiliary_requests import (EXCLUSION_CUE, LOOKUP_INTENTS, ROUTE_INTENT, assign_request_ids, bind_batch_cancellations, cancel_requested, explicit_lookup_clauses,
+                                  ground_requests, source_clauses)
 from ai.grounding import normalized, project_item, source_message
 
 GENERIC = {'점심', '저녁', '아침', '밥', '식사', '식당', '카페', '공원', '역', '여행'}
@@ -107,6 +108,7 @@ def scoped_stance(quote):
         return None
     affirmative = re.sub(r'(?:반대|싫어)(?:하)?지\s*않(?:아|아요|습니다|는다|음)?(?=$|[.!?\s])', ' 찬성 ', quote)
     scoped = re.sub(r'(?:좋아|찬성|동의)(?:하)?지\s*않(?:아|아요|습니다|는다|음)?(?=$|[.!?\s])', ' 반대 ', affirmative)
+    scoped = re.sub(r'(?<!\w)안\s*(?:좋아|찬성|동의)', ' 반대 ', scoped)
     if re.search(STANCE['withdraw'], scoped):
         return 'withdraw'
     positive, negative = bool(re.search(STANCE['support'], scoped)), bool(re.search(STANCE['oppose'], scoped))
@@ -140,11 +142,54 @@ def third_party_opinion(message, item, task):
     return subject not in {'우리', '본인', '거기', '여기', '저기', '그곳', '이곳', '저곳', '그것', '이것', '저것', '그거', '이거', '저거', normalized(item['title']), normalized(item['title'].split()[-1])} | own_names
 
 
-def ground_opinions(raw, task, items, aliases, context, reject):
+def quoted_target_stance(message, quote, item, known):
+    """Use adjacent source text to reject a quote clipped before negation or correction."""
+    others = {other['title'] for other in known.values() if other['id'] != item['id']}
+    boundary = re.compile(r'[.!?;\n]' + ''.join('|' + re.escape(title) for title in sorted(others)))
+    occurrences = re.finditer(re.escape(quote), message)
+    scopes = []
+    for match in occurrences:
+        suffix = message[match.end():]
+        stop = boundary.search(suffix)
+        prefix = re.search(r'안\s*$', message[:match.start()])
+        scopes.append((prefix.group() if prefix else '') + quote + (suffix[:stop.start()] if stop else suffix))
+    if not scopes or not all(scoped_stance(scope) == scoped_stance(quote) for scope in scopes):
+        return None
+    return scoped_stance(quote)
+
+
+def omitted_direct_opinions(raw, task, known, aliases):
+    supplied = {(p['evidence']['message_id'], aliases.get(p['item_id'],p['item_id'])) for p in raw}
+    for message in task['recent_messages']:
+        if message.get('room_id') not in (None,task.get('room_id')) or re.search(
+                r'만약|라면|다들|모두|했대|라고|라더|말했|["“”‘’\'`]',message['text']):
+            continue
+        claims = {}
+        for clause in re.finditer(r'(?:^|(?<=[.!;\n]))\s*([^.!?;\n]+?)(?=\s*(?:[.!;\n]|$))',message['text']):
+            quote = clause[1].strip()
+            matches = [item for item in known.values() if re.fullmatch(
+                r'(?:(?:나는|난|저는|우리)\s+)?' + re.escape(item['title']) +
+                r'(?:은|는|이|가|을|를)?\s+(?:가자|가보자|좋아(?:요)?|안\s*좋아(?:요)?|좋아하지\s*않아(?:요)?|싫어(?:요)?|찬성|반대)',quote)]
+            if len(matches)!=1:
+                continue
+            item = matches[0]
+            if (message['id'],item['id']) in supplied:
+                continue
+            stance = scoped_stance(quote)
+            if stance:
+                claims.setdefault(item['id'], {})[stance] = dict(item_id=item['id'],item_version=item['item_version'],
+                    stance=stance,evidence=dict(message_id=message['id'],quote=quote))
+        for stances in claims.values():
+            if len(stances)==1:
+                yield next(iter(stances.values()))
+
+
+def ground_opinions(raw, task, items, aliases, context, reject, repairs):
     result = []
     known = {i['id']: i for i in task.get('items', [])}
     known.update({i['client_ref']: dict(i, id=i['client_ref'], item_version=1) for i in items})
-    for proposal in raw:
+    recovered = list(omitted_direct_opinions(raw, task, known, aliases))
+    for proposal in raw + recovered:
         evidence = proposal['evidence']
         message = source_message(evidence, task)
         ref = aliases.get(proposal['item_id'], proposal['item_id'])
@@ -172,11 +217,11 @@ def ground_opinions(raw, task, items, aliases, context, reject):
             if matching != {item['id']} or not contextual_target(proposal, item, references):
                 reject(evidence)
                 continue
-        # Check only the quoted target span, never rerun the old whole-text stance rule.
         short_reply = indirect and re.fullmatch(r'\s*(?:응|네|예|아니|아니요)[.!?\s]*', quote)
         reference_texts = [question['text']] if question else [m['text'] for m in references
                            if m['id'] in proposal.get('context_message_ids', []) and title_in(m['text'], item)]
-        supported = reply_stance(quote, reference_texts) if short_reply else scoped_stance(quote)
+        supported = (reply_stance(quote, reference_texts) if short_reply and message['text'].strip() == quote.strip()
+                     else quoted_target_stance(message['text'], quote, item, known))
         if supported != stance:
             reject(evidence)
             continue
@@ -186,6 +231,8 @@ def ground_opinions(raw, task, items, aliases, context, reject):
             claim['question_id'] = question['id']
         if claim not in result:
             result.append(claim)
+            if proposal in recovered:
+                repairs.append('opinion_completed_from_source')
     return result
 
 
@@ -201,23 +248,40 @@ ROUTE_REQUEST = re.compile(r'알려\s*줘|알려주세요|알려줄래|찾아\s*
 NON_CAR_TRANSPORTS = {'walk', 'walking', 'transit', 'public', 'public_transport', 'train', 'bus', 'bicycle', 'bike', 'flight'}
 
 
-def canonical_unsupported(task):
-    """Only clear current unsupported requests receive code-owned service reasons."""
+def unsupported_clauses(text):
+    for clause in re.split(r'[.!?;\n]', text):
+        clause = EXCLUSION_CUE.split(clause)[-1].strip()
+        if re.search(r'만약|라면|라고|했대|말했|["“”‘’`]', clause) or cancel_requested(clause):
+            continue
+        code = None
+        if TRANSACTION_REQUEST.search(clause) or re.search(r'(?:표|티켓)\s*(?:좀\s*)?(?:사\s*줘|사주세요|끊어\s*줘|끊어주세요)(?=$|\s)', clause):
+            code = 'transaction'
+        elif NON_CAR_MODE.search(clause) and ROUTE_TOPIC.search(clause) and ROUTE_REQUEST.search(clause):
+            code = 'non_car_route'
+        if code:
+            yield clause, code
+
+
+def unsupported_requests(task):
     members = {m['user_id'] for m in task.get('members', [])}
     for message in task.get('recent_messages', []):
         if message.get('author_id') not in members:
             continue
-        for clause in re.split(r'[.!?;\n]', message.get('text', '')):
-            if re.search(r'만약|라면|라고|했대|말했|["“”‘’`]', clause):
-                continue
-            code = None
-            if TRANSACTION_REQUEST.search(clause) or re.search(r'(?:표|티켓)\s*(?:좀\s*)?(?:사\s*줘|사주세요|끊어\s*줘|끊어주세요)(?=$|\s)', clause):
-                code = 'transaction'
-            elif NON_CAR_MODE.search(clause) and ROUTE_TOPIC.search(clause) and ROUTE_REQUEST.search(clause):
-                code = 'non_car_route'
-            if code:
-                return dict(unsupported=True, unsupported_reason=UNSUPPORTED_REASONS[code], unsupported_code=code,
-                            source_message_ids=[message['id']], source_refs=[])
+        for clause, code in unsupported_clauses(message.get('text', '')):
+            yield dict(request_id='request:' + message['id'] + ':service_request',
+                       intent='service_request', operation='request', requested_fields=[],
+                       owner_id=message['author_id'], source_message_id=message['id'],
+                       evidence=dict(message_id=message['id'], quote=clause),
+                       target_names=[], excluded_names=[], target_refs=[], excluded_refs=[], unresolved_target_names=[],
+                       context_evidence=[], status='resolved', unsupported_code=code, unsupported_reason=UNSUPPORTED_REASONS[code])
+
+
+def canonical_unsupported(task):
+    """Only clear current unsupported requests receive code-owned service reasons."""
+    request = next(unsupported_requests(task), None)
+    if request:
+        return dict(unsupported=True, unsupported_reason=request['unsupported_reason'], unsupported_code=request['unsupported_code'],
+                    source_message_ids=[request['source_message_id']], source_refs=[])
     if (not task.get('recent_messages') and task.get('goal') in ('manual_replan', 'replan')
             and task.get('config', {}).get('transport') in NON_CAR_TRANSPORTS):
         return dict(unsupported=True, unsupported_reason=UNSUPPORTED_REASONS['non_car_route'], unsupported_code='non_car_route',
@@ -252,8 +316,8 @@ def ground_analysis(raw, task, aliases, has_effects):
             missing.append(field)
     result['missing_fields'] = missing
     # Direct responses are exact confirmed values/quotes; paraphrases need a separate validated response boundary.
-    confirmed = {m['text'] for m in task.get('recent_messages', []) if m['id'] in ids}
-    confirmed |= {v for v in task.get('config', {}).values() if isinstance(v, str)}
+    confirmed = {v for v in task.get('config', {}).values() if isinstance(v, str)}
+    confirmed |= {str(c['value']) for c in task.get('constraints', []) if c.get('status') == 'confirmed' and c.get('value') is not None}
     confirmed |= {i['title'] for i in task.get('items', [])}
     if result['direct_text'] not in confirmed:
         result['direct_text'] = ''
@@ -275,23 +339,72 @@ def ground_batch(batch, task, context=()):
     def reject(evidence):
         if evidence['message_id'] not in rejected:
             rejected.append(evidence['message_id'])
-    items, aliases = ground_items(raw['item_proposals'], task, reject)
-    constraints = ground_conditions(raw['constraint_proposals'], task, reject)
-    opinions = ground_opinions(raw['support_observations'], task, items, aliases, context, reject)
-    requests, invalid_source = ground_requests(raw['analysis'].get('requests', []), task, context, reject)
+    repairs = []
+    domain_requests = list(raw['analysis'].get('requests', []))
+    for proposal in raw['item_proposals']:
+        message = source_message(proposal['evidence'], task)
+        if not message or not project_item(proposal, task) or any(
+            r['evidence']['message_id']==message['id'] and r['intent'] in LOOKUP_INTENTS for r in domain_requests):
+            continue
+        title = proposal['title']
+        for clause in explicit_lookup_clauses(message):
+            if re.fullmatch(re.escape(title) + r'(?:을|를)?\s*(?:찾아|검색해)\s*(?:줘(?:요)?|주세요)', clause):
+                domain_requests.append(dict(intent='place_lookup', target_names=[title], requested_fields=['location'],
+                    evidence=dict(message_id=message['id'], quote=clause)))
+                repairs.append('lookup_aligned_to_source')
+    requests, invalid_source = ground_requests(domain_requests, task, context, reject, repairs)
+    requests = assign_request_ids(requests + list(unsupported_requests(task)))
+    bind_batch_cancellations(task, requests)
+    lookup_intents = (*LOOKUP_INTENTS, ROUTE_INTENT)
+    lookup_sources = {r['source_message_id'] for r in requests if r['intent'] in lookup_intents}
+    proposals = []
+    for proposal in raw['item_proposals']:
+        evidence = proposal['evidence']
+        message = source_message(evidence, task)
+        if message and message['id'] in lookup_sources and not any(
+                title_in(clause, proposal) and scoped_stance(clause) in ('support', 'oppose')
+                for clause in source_clauses(message['text'], evidence['quote'])):
+            reject(evidence)
+            continue
+        proposals.append(proposal)
+    items, aliases = ground_items(proposals, task, reject)
+    conditions = list(raw['constraint_proposals'])
+    for message in task['recent_messages']:
+        if (not re.search(r'(?:^|[.!?;\n])\s*(?:내|제|나의|저의|저는|나는|난)\s*(?:개인\s*)?예산',message['text'])
+                or any(c['key'] in ('budget','budget_krw') and c['evidence']['message_id']==message['id']
+                       for c in conditions)):
+            continue
+        value = condition_value('budget_krw',message['text'])
+        evidence = dict(message_id=message['id'],quote=message['text'])
+        if value is not None and source_message(evidence,task) and message.get('room_id') in (None,task.get('room_id')):
+            conditions.append(dict(key='budget_krw',value=value,kind='hard',evidence=evidence))
+            repairs.append('budget_completed_from_source')
+    constraints = ground_conditions(conditions, task, reject)
+    opinions = ground_opinions(raw['support_observations'], task, items, aliases, context, reject, repairs)
     analysis = ground_analysis(raw['analysis'], task, aliases, bool(items or constraints or opinions or requests))
     analysis['requests'] = requests
+    analysis['lookup_scope_rejected'] = not requests and any(
+        r['intent'] in lookup_intents for r in raw['analysis'].get('requests', []))
     analysis['request_grounding_failed'] = invalid_source
-    resolved_owners = {r['owner_id'] for r in requests if r['status'] == 'resolved'}
-    analysis['missing_fields'] = [f for f in analysis['missing_fields'] if f['field'] != 'target_places' or f['owner_id'] not in resolved_owners]
-    for request in requests:
-        if request['status'] != 'resolved' and not any(f['field'] == 'target_places' and f['owner_id'] == request['owner_id'] for f in analysis['missing_fields']):
-            analysis['missing_fields'].append(dict(field='target_places', target_ref=request['request_id'], text='상세 정보를 볼 장소는 어디인가요?',
+    analysis['source_repairs'] = list(dict.fromkeys(repairs))
+    resolved_support = {(o['author_id'], o['source_message_id'], o['stance']) for o in opinions}
+    analysis['missing_fields'] = [f for f in analysis['missing_fields']
+        if f['field'] != 'support_target' or not any(
+            (f['owner_id'], source, f['stance']) in resolved_support for source in f['source_message_ids'])]
+    lookup_requests = [r for r in requests if r['intent'] in lookup_intents or r['operation'] == 'cancel']
+    analysis['missing_fields'] = [f for f in analysis['missing_fields']
+        if f['field'] != 'target_places' or not any(r['owner_id'] == f['owner_id']
+            and r['source_message_id'] in f['source_message_ids']
+            and f['target_ref'] in (None, r['request_id']) for r in lookup_requests)]
+    for request in lookup_requests:
+        if request['status'] in ('needs_context', 'needs_input'):
+            text = '어떤 요청을 취소할까요?' if request['operation'] == 'cancel' else '어느 장소를 조회할까요?'
+            analysis['missing_fields'].append(dict(field='target_places', target_ref=request['request_id'], text=text,
                 owner_id=request['owner_id'], source_message_ids=[request['source_message_id']],
                 source='history' if request['status'] == 'needs_context' else 'user', stance=None))
     if any(r['status'] == 'needs_context' for r in requests):
         analysis['needs_context'] = True
-    elif requests and all(r['status'] == 'resolved' for r in requests) and not any(f.get('source') == 'history' for f in analysis['missing_fields']):
+    elif requests and not any(f.get('source') == 'history' for f in analysis['missing_fields']):
         analysis['needs_context'], analysis['context_queries'] = False, []
     return dict(item_proposals=items, constraint_proposals=constraints, support_observations=opinions, questions=[],
                 analysis=analysis), rejected

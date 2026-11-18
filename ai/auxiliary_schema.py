@@ -52,11 +52,14 @@ class MissingField(StrictModel):
 
 
 class AuxiliaryRequest(StrictModel):
-    intent: Literal['place_details']
+    intent: Literal['place_details', 'place_lookup', 'route_lookup', 'cost_estimate', 'itinerary_plan', 'service_request']
     evidence: Evidence
     target_names: Annotated[list[Text], Field(max_length=20)] = Field(default_factory=list)
     excluded_names: Annotated[list[Text], Field(max_length=20)] = Field(default_factory=list)
     context_evidence: Annotated[list[Evidence], Field(max_length=8)] = Field(default_factory=list)
+    requested_fields: Annotated[list[Literal['location', 'details', 'price', 'opening_hours']], Field(max_length=4)] = Field(default_factory=list)
+    operation: Literal['request', 'cancel'] = 'request'
+    departure_at: Annotated[str, Field(min_length=1, max_length=64)] | None = None
 
 
 class AuxiliaryAnalysis(StrictModel):

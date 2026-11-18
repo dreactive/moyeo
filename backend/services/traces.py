@@ -8,7 +8,11 @@ URL_SECRET = re.compile(r'([?&](?:api_?key|token|servicekey)=)[^&\s]+', re.I)
 
 def sanitize(value):
     if isinstance(value, dict):
-        return {key:sanitize(item) for key,item in value.items() if not PRIVATE.search(key)}
+        condition = (isinstance(value.get('owner_id'), str) and value.get('kind') in ('hard','preference')
+                     and 'value' in value)
+        return {key:sanitize(item) for key,item in value.items()
+                if not PRIVATE.search(key) or (key=='key' and condition and isinstance(item,str)
+                                               and not PRIVATE.search(item))}
     if isinstance(value, list):
         return [sanitize(item) for item in value]
     if isinstance(value, str):
