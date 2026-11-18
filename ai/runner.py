@@ -65,25 +65,9 @@ async def run_agent(task, model, tools, emit_trace):
 
 
 async def run_steps(task, model, tools, emit_trace, result):
-    if reuse_current_plan(task, result):
-        return
     task = build_context(task, [])
     task["observations"] = [o for o in task["observations"] if o["tool_name"] not in ("build_itinerary", "calculate_costs")]
-    if hasattr(tools, "restore"):
-        tools.restore(task)
-    for step in range(1, 21):
-        context = build_context(task, result["observations"])
-        action = await choose_action(context, model, emit_trace, step)
-        if action["action"] != "tool":
-            result["completion"] = "unsupported" if action["action"] == "unsupported" else "needs_input"
-            result["questions"].extend(build_cost_inputs(context)[1])
-            break
-        observation = await execute_selected(task, action, tools, emit_trace, step)
-        result["observations"].append(observation)
-        if assemble_result(task, result):
-            break
-    else:
-        await terminate(emit_trace, task, 20, model, "action_limit")
+    result["candidates"] = await generate_candidates(task, model, emit_trace, 1)
 
 
 async def generate_candidates(context, model, emit_trace, step):

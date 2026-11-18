@@ -1,5 +1,5 @@
 """Internal structural boundaries. Backend imports none of these types."""
-from typing import Awaitable, Callable, Protocol, TypedDict
+from typing import Awaitable, Callable, NotRequired, Protocol, TypedDict
 
 
 class AgentInput(TypedDict):
@@ -31,6 +31,7 @@ class AgentResult(TypedDict):
     questions: list[dict]
     completion: str
     last_processed_message_id: str | None
+    candidates: NotRequired[list[dict]]
 
 
 class ModelBackend(Protocol):

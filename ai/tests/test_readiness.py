@@ -55,9 +55,9 @@ async def test_same_run_new_hard_proposal_cannot_be_ready_before_owner_confirmat
         id="car", category="car", description="유류·주차 포함", unit_price_krw=10000, paid=False))
     runtime = create_runtime({"model_backend": "fake", "provider_mode": "fixture"})
     control = await runtime.run(value, None)
-    assert control["completion"] == "done"
+    assert control["completion"] == "needs_input" and control["candidates"]
     value["recent_messages"] = [dict(id="new", author_id="u1", text="내 예산은 1만원")]
     result = await runtime.run(value, None)
     await runtime.aclose()
-    assert result["completion"] == "needs_input" and result["plan_draft"]["validation"] != "ready"
+    assert result["completion"] == "needs_input" and result["plan_draft"] is None
     assert result["constraint_proposals"][0]["value"] == 10000

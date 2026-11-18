@@ -28,7 +28,7 @@ async def test_initial_fixture_search_and_details_need_no_prior_room_observation
     assert detail["menus"][0]["price_krw"] == 10000
 
 
-async def test_empty_room_first_mention_creates_initial_plan():
+async def test_empty_room_first_mention_generates_initial_search_candidate():
     from ai.runtime import create_runtime
     value = task()
     value.update(items=[], current_plan=None, observations=[], questions=[])
@@ -38,17 +38,15 @@ async def test_empty_room_first_mention_creates_initial_plan():
     runtime = create_runtime({"model_backend": "fake", "provider_mode": "fixture"})
     result = await runtime.run(value, None)
     await runtime.aclose()
-    assert result["plan_draft"]["selected_item_ids"] == ["client:new"]
-    assert {"search_places", "get_place_details", "get_car_route", "build_itinerary", "calculate_costs"} <= {
-        o["tool_name"] for o in result["observations"]}
+    assert result["plan_draft"] is None and result["observations"] == []
+    assert result["candidates"][0]["tool_name"] == "search_places"
+    assert result["candidates"][0]["arguments"]["query"] == "가상 A식당"
     assert result["item_proposals"][0]["client_ref"] == "client:new"
 
 
-async def test_first_plan_reaches_ready_after_explicit_menu_and_car_inputs():
-    from copy import deepcopy
+async def test_repeated_generation_does_not_create_plan_or_observations():
     from ai.runtime import create_runtime
     value = task()
-    template = deepcopy(value["current_plan"])
     value.update(items=[], current_plan=None, observations=[], questions=[], goal="message_created")
     value["recent_messages"] = [dict(value["recent_messages"][0], id="new", text="가상 A식당 가자")]
     value["config"]["day_start_time"] = "10:00"
@@ -57,16 +55,7 @@ async def test_first_plan_reaches_ready_after_explicit_menu_and_car_inputs():
     runtime = create_runtime({"model_backend": "fake", "provider_mode": "fixture"})
     first = await runtime.run(value, None)
     assert first["completion"] == "needs_input"
-    visit = first["plan_draft"]["days"][0]["visits"][0]
-    value.update(goal="question_answered", recent_messages=[], observations=first["observations"],
-        items=[dict(id="client:new", item_version=1, kind="place", title="가상 A식당", source_message_ids=["new"])])
-    value["current_plan"] = dict(template, **first["plan_draft"], item_snapshots=[
-        dict(id="client:new", place_ref=visit["place_ref"], title="가상 A식당")])
-    value["questions"] = [dict(q, status="answered", answered_by="u1",
-        answer={"menu_id": "fixture:menu-a", "quantity": 1, "scope": "per_person"})
-        for q in first["questions"] if q["field"] == "menu_selection"]
     second = await runtime.run(value, None)
     await runtime.aclose()
-    assert second["completion"] == "done" and second["plan_draft"]["validation"] == "ready"
-    assert second["plan_draft"]["cost"]["total_krw"] == 130000
-    assert not second["questions"] and not second["conflicts"]
+    assert second["candidates"] == first["candidates"]
+    assert second["plan_draft"] is None and second["observations"] == []

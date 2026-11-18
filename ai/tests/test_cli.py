@@ -10,7 +10,9 @@ def test_cli_labels_fixture_mode(tmp_path):
                               "--providers", "fixture", "--output", str(path)],
                              capture_output=True, text=True)
     assert process.returncode == 0, process.stderr
-    assert json.loads(path.read_text(encoding="utf-8"))["completion"] == "needs_input"
+    result = json.loads(path.read_text(encoding="utf-8"))
+    assert result["completion"] == "needs_input" and result["candidates"]
+    assert result["observations"] == [] and result["plan_draft"] is None
     assert "fake/fixture" in process.stdout
 
 

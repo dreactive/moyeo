@@ -31,7 +31,7 @@ async def test_observation_changes_next_selected_action():
     assert second["arguments"]["place_ref"] == "new-b"
 
 
-async def test_twenty_action_limit_does_not_fake_completion():
+async def test_candidate_generation_does_not_execute_or_fake_completion():
     from ai.runner import run_steps
     from ai.result import empty_result
     from ai.models.fake_actions import tool
@@ -49,7 +49,8 @@ async def test_twenty_action_limit_does_not_fake_completion():
     value, tools = task(), Tools()
     result = empty_result(value)
     await run_steps(value, Model(), tools, None, result)
-    assert tools.calls == 20 and len(result["observations"]) == 20
+    assert tools.calls == 0 and result["observations"] == []
+    assert result["candidates"][0]["tool_name"] == "search_places"
     assert result["completion"] == "needs_input" and not result["questions"]
 
 
@@ -102,18 +103,19 @@ async def test_rule_assistance_is_labeled_and_does_not_skip_base_generation():
     assert events[0]["payload"]["model_mode"] == "local_qwen"
 
 
-async def test_ready_unchanged_plan_finishes_without_judge_or_lookup():
+async def test_ready_unchanged_plan_still_generates_candidates():
     from ai.runner import run_steps
     from ai.result import empty_result
+    from ai.models.fake import FakeModelBackend
     value = task()
     value["recent_messages"] = []
     value["current_plan"]["validation"] = "ready"
     value["questions"] = []
     value["current_plan"].update(value["base_versions"])
     result = empty_result(value)
-    await run_steps(value, None, None, None, result)
-    assert result["completion"] == "done" and not result["questions"]
-    assert result["plan_draft"]["selected_item_ids"] == ["item-a", "item-b"]
+    await run_steps(value, FakeModelBackend(), None, None, result)
+    assert result["completion"] == "needs_input" and result["candidates"]
+    assert result["plan_draft"] is None
 
 
 async def test_action_model_receives_code_derived_calculations_and_route_time():
@@ -164,7 +166,8 @@ async def test_manual_replan_does_not_reuse_old_ready_plan():
     runtime = create_runtime({"model_backend": "fake", "provider_mode": "fixture"})
     result = await runtime.run(value, None)
     await runtime.aclose()
-    assert {"calculate_costs", "build_itinerary"} <= {o["tool_name"] for o in result["observations"]}
+    assert result["candidates"] and result["observations"] == []
+    assert result["plan_draft"] is None
 
 
 def test_unverified_minority_hard_condition_requires_its_owner_without_relaxing():

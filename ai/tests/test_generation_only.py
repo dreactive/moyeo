@@ -13,3 +13,14 @@ async def test_generation_returns_candidates_without_selecting():
     assert candidates[0]["tool_name"] == "get_car_route"
     assert events[0]["payload"]["selected_index"] is None
     assert events[0]["payload"]["scores"] == []
+
+
+async def test_runtime_returns_candidates_without_scoring_or_tool_execution():
+    from ai.runner import run_agent
+    from ai.models.fake import FakeModelBackend
+
+    result = await run_agent(task(), FakeModelBackend(), None, None)
+    assert result["candidates"][0]["tool_name"] == "get_car_route"
+    assert result["observations"] == []
+    assert result["plan_draft"] is None
+    assert result["completion"] == "needs_input"
