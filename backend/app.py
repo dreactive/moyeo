@@ -21,6 +21,7 @@ def create_app(agent_port: AgentPort | None = None, *, database_path=None, setti
         if isinstance(app.state.agent, LocalAIBridge):
             await app.state.agent.start()
         app.state.dev_agent = app.state.agent if isinstance(app.state.agent, LocalAIBridge) else LocalAIBridge(settings['runtime_config'])
+        app.state.dev_agent_lock = asyncio.Lock()
         app.state.db = Database(database_path or settings['database_path'])
         app.state.db.trace_enabled = settings['trace_enabled']
         app.state.dev_token = settings['dev_token']

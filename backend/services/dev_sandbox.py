@@ -7,6 +7,7 @@ from uuid import uuid4
 from backend.services.traces import sanitize
 from decimal import DecimalException
 import httpx
+import asyncio
 
 
 async def execute_tool(body, name, settings):
@@ -80,8 +81,7 @@ async def run_utterance(request, body):
         task, trace = utterance_task(body), []
         async def capture(event):
             trace.append(sanitize(event))
-        bridge = request.app.state.dev_agent
-        await bridge.start()
+        bridge = await start_agent(request)
         result = await bridge.run(task, capture)
         raise_termination_error(trace)
         settings = request.app.state.dev_runtime_config
@@ -95,3 +95,19 @@ def raise_termination_error(trace):
         error_type = getattr(httpx, reason, None)
         if isinstance(error_type, type) and issubclass(error_type, HTTPError):
             raise HTTPException(502, 'Agent provider request failed')
+
+
+def load_dev_runtime(config):
+    from ai.runtime import create_runtime
+    return create_runtime(config)
+
+
+async def start_agent(request):
+    bridge = request.app.state.dev_agent
+    async with request.app.state.dev_agent_lock:
+        if bridge.runtime is None:
+            try:
+                bridge.runtime = await asyncio.to_thread(load_dev_runtime, bridge.config)
+            except ValueError:
+                raise HTTPException(503, 'Invalid local model configuration') from None
+    return bridge

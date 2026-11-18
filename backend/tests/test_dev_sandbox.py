@@ -195,10 +195,11 @@ def test_utterance_endpoint_delivers_text_to_agent(api):
 
 
 def test_missing_runtime_dependency_returns_safe_unavailable(api, monkeypatch):
+    from backend.services import dev_sandbox
     from backend.dev_examples import utterance_examples
-    async def fail():
+    def fail(config):
         raise ImportError('secret-model-path')
-    monkeypatch.setattr(api.app.state.dev_agent, 'start', fail)
+    monkeypatch.setattr(dev_sandbox, 'load_dev_runtime', fail, raising=False)
     api.app.state.dev_token = 'test-dev'
     response = api.post('/api/dev/agent/utterance', json=utterance_examples()['extract']['value'],
                         headers={'X-Dev-Token': 'test-dev'})
@@ -269,3 +270,21 @@ def test_invalid_money_is_a_validation_error(api):
     body['context']['config']['fixed_costs'][0]['unit_price_krw'] = 'unknown'
     response = api.post('/api/dev/tools/calculate_costs', json=body, headers={'X-Dev-Token': 'test-dev'})
     assert response.status_code == 422
+
+
+def test_developer_runtime_creation_is_offthread_and_serialized(api, monkeypatch):
+    import asyncio
+    import threading
+    from backend.services import dev_sandbox
+    from starlette.requests import Request
+    calls = []
+    def factory(config):
+        calls.append(threading.get_ident())
+        return object()
+    monkeypatch.setattr(dev_sandbox, 'load_dev_runtime', factory, raising=False)
+    async def scenario():
+        request = Request({'type': 'http', 'app': api.app})
+        await asyncio.gather(dev_sandbox.start_agent(request), dev_sandbox.start_agent(request))
+        assert len(calls) == 1 and calls[0] != threading.get_ident()
+    api.portal.call(scenario)
+    api.app.state.dev_agent.runtime = None
