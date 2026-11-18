@@ -62,9 +62,10 @@ def ground_extraction(batch, task):
         item['client_ref'] += ':' + str(counts[ref]) if counts[ref] else ''
         counts[ref] += 1
     conditions, condition_errors = project_many(raw['constraint_proposals'], project_condition, task)
-    rejected = list(dict.fromkeys(item_errors + condition_errors))
+    supports, questions, support_errors = support_results(raw['support_observations'], task, items)
+    rejected = list(dict.fromkeys(item_errors + condition_errors + support_errors))
     return GroundedExtraction(dict(item_proposals=items, constraint_proposals=conditions,
-        support_observations=[], questions=[]), ['ungrounded_proposal'] if rejected else [], rejected)
+        support_observations=supports, questions=questions), ['ungrounded_proposal'] if rejected else [], rejected)
 
 
 def validate_assessments(batch, task):
@@ -79,3 +80,13 @@ def project_support(proposal, task):
     item = next((item for item in task['items'] if item['id'] == proposal['item_id']), None)
     claim = dict({k: v for k, v in proposal.items() if k != 'evidence'}, source_message_id=proposal['evidence']['message_id'])
     return validate_support(claim, message, item)[0]
+
+
+def support_results(raw, task, items):
+    from ai.assistance import explicit_support
+    from ai.extraction import validate_extraction
+    scope = dict(task, items=task['items'] + [dict(i, id=i['client_ref'], item_version=1) for i in items])
+    claims, questions = explicit_support(scope, scope['items'])
+    modeled, rejected = project_many(raw, project_support, scope)
+    valid = validate_extraction(dict(support_observations=claims + modeled), scope)
+    return valid['support_observations'], questions + valid['questions'], rejected

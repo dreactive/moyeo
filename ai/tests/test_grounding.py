@@ -98,3 +98,12 @@ def test_duplicate_message_places_get_distinct_client_refs():
     raw = facts_to_batch(dict(places=['오동도','전남대학교'],conditions=[],intents=['place']),message,value)
     output = ground_extraction(ExtractionBatch.model_validate(raw), value)
     assert len({i['client_ref'] for i in output.proposals['item_proposals']}) == 2
+
+def test_batch_keeps_support_and_asks_about_ambiguous_target():
+    from ai.grounding import ground_extraction
+    from ai.extraction_schema import ExtractionBatch
+    value = task()
+    raw = dict(message_assessments=[dict(message_id=m['id'],intents=['support']) for m in value['recent_messages']],
+               item_proposals=[],constraint_proposals=[],support_observations=[])
+    output = ground_extraction(ExtractionBatch.model_validate(raw),value)
+    assert any(s['author_id'] == 'u3' for s in output.proposals['support_observations'])
