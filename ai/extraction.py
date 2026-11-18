@@ -1,5 +1,6 @@
 """Validate provenance before accepting model-generated proposals."""
 from ai.questions import question
+from ai.condition_grounding import condition_value
 
 
 def validate_support(claim, message, item):
@@ -26,6 +27,8 @@ def validate_extraction(output, task):
     for proposal in output.get("constraint_proposals", []):
         sources = proposal.get("source_message_ids", [])
         if not sources or any(m not in messages or messages[m]["author_id"] != proposal.get("owner_id") for m in sources):
+            continue
+        if not any(condition_value(proposal.get("key"), messages[m]["text"]) == proposal.get("value") and type(condition_value(proposal.get("key"), messages[m]["text"])) is type(proposal.get("value")) for m in sources):
             continue
         old = constraints.get(proposal.get("replaces_constraint_id"))
         if proposal.get("replaces_constraint_id") and (not old or old["owner_id"] != proposal["owner_id"] or old["key"] != proposal["key"]):

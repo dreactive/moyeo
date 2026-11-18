@@ -107,3 +107,10 @@ def test_batch_keeps_support_and_asks_about_ambiguous_target():
                item_proposals=[],constraint_proposals=[],support_observations=[])
     output = ground_extraction(ExtractionBatch.model_validate(raw),value)
     assert any(s['author_id'] == 'u3' for s in output.proposals['support_observations'])
+
+def test_legacy_validation_also_rejects_greeting_deadline():
+    from ai.extraction import validate_extraction
+    value = task()
+    value['recent_messages'] = [dict(id='greeting',author_id='u1',text='안녕')]
+    proposal = dict(owner_id='u1',key='return_by',value='12:00',kind='hard',source_message_ids=['greeting'],replaces_constraint_id=None)
+    assert validate_extraction(dict(constraint_proposals=[proposal]),value)['constraint_proposals'] == []
