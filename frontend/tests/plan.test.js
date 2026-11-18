@@ -74,3 +74,15 @@ test('the consensus marks each traveler by their vote on the displayed plan', ()
   assert.match(output,/참가자1 · 동의/);
   assert.match(output,/참가자2 · 아직/);
 });
+
+import {setUser} from '../src/state.js';
+test('a traveler who already voted is offered withdrawal for the active target', () => {
+  const room = structuredClone(fixture);
+  room.active_target = room.current_plan.confirmation_target;
+  room.confirmations = [{user_id:'u1',stance:'confirm',target:room.active_target}];
+  setUser({id:'u1'});
+  const output = renderConsensus(room);
+  setUser(null);
+  assert.match(output,/data-plan="withdraw">내 동의 철회/);
+  assert.doesNotMatch(output,/data-plan="confirm"/);
+});
