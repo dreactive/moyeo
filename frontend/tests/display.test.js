@@ -84,3 +84,11 @@ test('room cost details identify subtotals separately from traveler totals', () 
   assert.match(card.innerHTML,/<summary>방 전체 비용 내역<\/summary>[^]*방 전체 소계 320,000원/);
   assert.match(card.innerHTML,/<summary>참가자별 경비<\/summary>[^]*u1/);
 });
+
+test('cost lines describe categories and sharing in ordinary language', () => {
+  const card = {};
+  globalThis.document = {getElementById:() => card};
+  renderCost(scenarios.ready.snapshot.current_plan.cost);
+  assert.match(card.innerHTML,/숙박 · 공동 분담 · 전체 · 기지출/);
+  assert.match(card.innerHTML,/식사 · 1인 기준 · 전체 · 예정/);
+});

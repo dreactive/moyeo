@@ -1,5 +1,8 @@
 import {html,escapeHtml as e,money} from './ui.js';
 const userColumns = {per_person_krw:'1인 전체 계획액',paid_by_user_krw:'개인 기지출',remaining_budget_krw:'앞으로 쓸 수 있는 금액',planned_balance_krw:'계획 반영 후 여유'};
+const costGroup = {intercity_transport:'transport',car:'transport',lodging:'lodging',meal:'meal',admission:'admission',other:'other'};
+const categoryLabels = {transport:'교통',lodging:'숙박',meal:'식사',admission:'입장·체험',other:'기타'};
+const scopeLabels = {shared:'공동 분담',per_person:'1인 기준'};
 export function renderCost(cost,userId) {
   if (!cost) return html('cost','경비 미확인');
   const personal = userId ? `<p class="personal-cost">내 전체 계획액 <strong class="cost-amount">${money(cost.per_person_krw[userId])}</strong></p>` : '';
@@ -15,6 +18,6 @@ export function renderCost(cost,userId) {
     <dl class="card-facts">${Object.entries(userColumns).map(([key,label]) => `<dt>${label}</dt><dd>${money(cost[key][id])}</dd>`).join('')}</dl>`).join('')}
   </details>
   <details class="card-details"><summary>방 전체 비용 내역</summary>
-  ${cost.lines.map(line => `<div class="card"><strong>${e(line.description)}</strong><p>${e(line.category)} / ${e(line.scope)} / ${e(line.owner_id ?? '전체')} · ${line.paid ? '기지출' : '예정'}</p><p>단가 ${money(line.unit_price_krw)} × 수량 ${e(line.quantity)} · 방 전체 소계 ${money(line.subtotal_krw)}</p><p>가정: ${e(line.assumption ?? '없음')} · 근거 ${e(line.evidence_id ?? '사용자 입력/미확인')}</p></div>`).join('') || '<p>등록된 비용이 없습니다.</p>'}
+  ${cost.lines.map(line => `<div class="card"><strong>${e(line.description)}</strong><p>${e(categoryLabels[costGroup[line.category]] ?? line.category)} · ${e(scopeLabels[line.scope] ?? line.scope)} · ${e(line.owner_id ?? '전체')} · ${line.paid ? '기지출' : '예정'}</p><p>단가 ${money(line.unit_price_krw)} × 수량 ${e(line.quantity)} · 방 전체 소계 ${money(line.subtotal_krw)}</p><p>가정 ${e(line.assumption ?? '없음')} · 근거 ${e(line.evidence_id ?? '사용자 입력/미확인')}</p></div>`).join('') || '<p>등록된 비용이 없습니다.</p>'}
   </details>`);
 }
