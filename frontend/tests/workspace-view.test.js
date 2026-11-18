@@ -11,3 +11,8 @@ test('unchanged data does not redraw regions and deferred input gets another cha
 test('room summary uses the configured region and whole travel dates', () => {
   assert.equal(view.roomMeta?.({region:'여수',start_date:'2026-11-21',end_date:'2026-11-22'}),'2026-11-21 — 2026-11-22 · 1박 2일 · 여수');
 });
+test('route dependency ignores chat but follows day and plan changes', () => {
+  const room={room_id:'r',current_plan:{confirmation_target:{plan_revision:1}},config:{},messages:[]};
+  assert.equal(view.routeKey?.(room,'a'),view.routeKey?.({...room,messages:[{id:'m'}]},'a'));
+  assert.notEqual(view.routeKey?.(room,'a'),view.routeKey?.(room,'b'));
+});
