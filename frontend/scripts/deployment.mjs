@@ -7,3 +7,8 @@ export function backendOrigin(value) {
   }
   return url.origin;
 }
+
+export function publicHtml(html, key = '') {
+  const escaped = key.replace(/[&"<>]/g, character => ({'&': '&amp;', '"': '&quot;', '<': '&lt;', '>': '&gt;'}[character]));
+  return html.replace('<meta name="kakao-map-app-key" content="">', `<meta name="kakao-map-app-key" content="${escaped}">`);
+}
