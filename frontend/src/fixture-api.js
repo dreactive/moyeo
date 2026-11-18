@@ -19,8 +19,12 @@ function persistFixture() {
   lastFixtureRecord = saveFixtureSession({authenticated:fixtureAuthenticated,userId:fixtureUser.id,snapshot:fixtureRoom,scenario:fixtureScenario});
 }
 
+function isRecord(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 function isRecordList(rows) {
-  return Array.isArray(rows) && rows.every(row => row && typeof row === 'object' && !Array.isArray(row));
+  return Array.isArray(rows) && rows.every(isRecord);
 }
 
 function isSavedTrip(config) {
@@ -36,12 +40,20 @@ function isSavedDay(day) {
     && day.visits.every(visit => typeof visit.place_ref === 'string' && Array.isArray(visit.assumptions));
 }
 
+function isSavedCost(cost) {
+  return cost === null || (
+    isRecordList(cost?.lines)
+    && [cost.per_person_krw,cost.paid_by_user_krw,cost.remaining_budget_krw,cost.planned_balance_krw].every(isRecord)
+  );
+}
+
 function isSavedPlan(plan) {
   return plan === null || (
     isRecordList(plan?.days) && plan.days.every(isSavedDay)
     && isRecordList(plan.item_snapshots)
     && Array.isArray(plan.selected_item_ids)
     && Array.isArray(plan.blocking_conflict_ids)
+    && isSavedCost(plan.cost)
   );
 }
 
