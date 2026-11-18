@@ -16,9 +16,10 @@ export function renderPlace(details) {
     <dt>영업시간</dt><dd>${e(details.opening_hours?.raw_text ?? '미확인')}</dd>
     <dt>휴일</dt><dd>${e(details.opening_hours?.holiday_text ?? '미확인')}</dd>
   </dl>
-  <h3>메뉴</h3>${details.menus.map(menu => `<p>${e(menu.name)} · ${menu.price_krw == null ? e(menu.price_text || '미확인') + ' (금액 미확인)' : money(menu.price_krw)} · ${e(menu.serving_basis ?? '제공 단위 미확인')} · ${e(menu.evidence_id)}</p>`).join('') || '<p>메뉴 미등록 · 가격 미확인</p>'}
+  <h3>메뉴</h3>${details.menus.map(menu => `<p>${e(menu.name)} · ${menu.price_krw == null ? e(menu.price_text || '미확인') + ' (금액 미확인)' : money(menu.price_krw)} · ${e(menu.serving_basis ?? '제공 단위 미확인')}</p>`).join('') || '<p>메뉴 미등록 · 가격 미확인</p>'}
   <details class="card-details"><summary>장소 정보 출처</summary>
   <p>좌표 ${e(details.place.latitude)}, ${e(details.place.longitude)}</p>
+  ${details.menus.map(menu => `<p>${e(menu.name)} · 메뉴 ID <code>${e(menu.id)}</code> · 근거 ${e(menu.evidence_id)}</p>`).join('')}
   ${details.evidence.map(item => `<div class="card"><strong>${e(item.provider)} · ${e(item.field)} · ${e(item.status)} · ${e(item.mode)} · ${e(item.match_status)}</strong><p>원문 ${e(JSON.stringify(item.raw_value))}</p><p>조회 ${e(item.retrieved_at)} / 공급자 기준일 ${e(item.provider_updated_at ?? '미확인')}</p>${evidenceLink(item.source_url)}</div>`).join('') || '<p>등록된 출처가 없습니다.</p>'}
   </details>`);
 }

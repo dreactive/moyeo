@@ -92,6 +92,7 @@ const questionFields = {
   destination: anchorFields,
   lodging: anchorFields,
   menu_selection: `<label>메뉴 ID<input name="menu_id" required></label>
+    <small>장소 카드의 정보 출처에서 메뉴 ID를 확인할 수 있어요.</small>
     <label>수량<input name="quantity" type="number" min="0" step="any" value="1" required></label>
     <label>분담 방식<select name="scope"><option value="shared">함께 나누기</option><option value="per_person">각자 주문</option></select></label>`,
   visit_duration: '<label>체류시간 (분)<input name="stay_minutes" type="number" min="1" step="1" required></label>'

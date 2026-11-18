@@ -103,3 +103,11 @@ test('an obsolete place failure does not interrupt the newest selection', async 
   requests[0].reject(new Error('Earlier detail failed'));
   await assert.doesNotReject(older);
 });
+
+test('menu IDs remain available to answer the room menu question', async () => {
+  const {requests,output} = prepare();
+  const pending = selectPlace(room.room_id,place.place.id);
+  requests[0].resolve(Response.json(place));
+  await pending;
+  assert.match(output.place,/장소 정보 출처<\/summary>[^]*메뉴 ID <code>fixture:menu-a<\/code>/);
+});
