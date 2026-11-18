@@ -233,11 +233,12 @@ def test_utterance_endpoint_delivers_text_to_agent(api):
     assert response.json()['result']['constraint_proposals'][0]['value'] == 150000
 
 
-def test_missing_runtime_dependency_returns_safe_unavailable(api, monkeypatch):
+@pytest.mark.parametrize('error_type', [ImportError, ValueError])
+def test_missing_runtime_dependency_returns_safe_unavailable(api, monkeypatch, error_type):
     from backend.services import dev_sandbox
     from backend.dev_examples import utterance_examples
     def fail(config):
-        raise ImportError('secret-model-path')
+        raise error_type('secret-model-path')
     monkeypatch.setattr(dev_sandbox, 'load_dev_runtime', fail, raising=False)
     api.app.state.dev_token = 'test-dev'
     response = api.post('/api/dev/agent/utterance', json=utterance_examples()['extract']['value'],
