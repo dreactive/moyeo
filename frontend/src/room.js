@@ -1,4 +1,4 @@
-import {renderOverview,renderAgentBanner} from './workspace-view.js';
+import {renderOverview,renderAgentBanner,renderChanged} from './workspace-view.js';
 import {renderChat,isSendKey} from './chat.js';
 import {getUser} from './state.js';
 import {requireSession,readRoomId,saveRoomId,clearRoomId,navigate,preparePage,signOut} from './session.js';
@@ -18,8 +18,15 @@ import {appendCost,readFixedCosts} from './fixed-costs.js';
 import {initMaps,renderRouteMap,renderPlaceMap} from './map.js';
 import {selectPlace,renderPlace} from './place.js';
 import {getSelectedPlace} from './state.js';
+function renderDecisionRegions(snapshot) {
+  const {messages,agent_status,...shared} = snapshot;
+  renderChanged('decisions',[shared,getUser()?.id],() => {
+    if (document.activeElement?.closest('#constraints form,#questions form')) return false;
+    renderItems(snapshot); renderConstraints(snapshot); renderQuestions(snapshot); renderConflicts(snapshot);
+  });
+}
 export function renderRoom(snapshot) {
-  renderItems(snapshot); renderConstraints(snapshot); renderQuestions(snapshot); renderConflicts(snapshot);
+  renderDecisionRegions(snapshot);
   renderPlan(snapshot); renderCost(displayPlan(snapshot)?.cost,getUser()?.id); run(() => renderMaps(snapshot));
   renderChat(snapshot,getUser()?.id);
   renderOverview(snapshot);
