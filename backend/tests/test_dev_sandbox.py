@@ -37,3 +37,13 @@ def test_place_details_endpoint_returns_observed_prices(api):
                         headers={'X-Dev-Token': 'test-dev'})
     assert response.status_code == 200, response.text
     assert response.json()['result']['menus'][0]['price_krw'] == 10000
+
+
+def test_car_route_endpoint_preserves_units(api):
+    from backend.dev_examples import tool_examples
+    api.app.state.dev_token = 'test-dev'
+    response = api.post('/api/dev/tools/get_car_route', json=tool_examples('get_car_route')['fixture']['value'],
+                        headers={'X-Dev-Token': 'test-dev'})
+    assert response.status_code == 200, response.text
+    result = response.json()['result']
+    assert (result['distance_m'], result['duration_seconds']) == (4000, 600)
