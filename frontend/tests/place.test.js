@@ -127,10 +127,21 @@ test('selecting a new place immediately replaces the previous card and map with 
   await next;
 });
 
-test('a failed place lookup offers a retry for the selected place', async () => {
-  const {requests,output} = prepare();
+test('a failed place lookup offers a retry that restores the latest card and map', async () => {
+  const {requests,output,placeMap} = prepare();
+  const stale = selectPlace(room.room_id,place.place.id);
   const pending = selectPlace(room.room_id,otherPlace.place.id);
-  requests[0].resolve(new Response(null,{status:503}));
+  requests[0].resolve(Response.json(place));
+  await stale;
+  assert.match(output.place,/불러오는 중/);
+
+  requests[1].resolve(new Response(null,{status:503}));
   await assert.rejects(pending);
   assert.match(output.place,/불러오지 못했어요[^]*data-place="fixture:place-b">장소 정보 다시 시도/);
+
+  const retry = selectPlace(room.room_id,otherPlace.place.id);
+  requests[2].resolve(Response.json(otherPlace));
+  await retry;
+  assert.match(output.place,/가상 B공원/);
+  assert.match(placeMap.innerHTML,/가상 B공원/);
 });
