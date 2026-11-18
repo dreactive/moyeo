@@ -10,3 +10,10 @@ test('a pending control suppresses duplicate actions and becomes usable after fa
   await assert.rejects(first,/offline/);
   assert.equal(button.disabled,false);
 });
+test('keyboard form submission shares the real button pending lock', async () => {
+  const button={disabled:false}; const event={submitter:null,target:{querySelector:() => button}};
+  const load=Promise.withResolvers(); let calls=0;
+  const action=() => { calls++; return load.promise; };
+  const first=ui.runFormAction?.(event,action),second=ui.runFormAction?.(event,action);
+  assert.equal(calls,1); load.resolve(); await Promise.all([first,second]);
+});

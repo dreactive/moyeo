@@ -9,3 +9,7 @@ export async function withPending(control,task) {
   try { return await task(); }
   finally { if (control) control.disabled = false; }
 }
+export function runFormAction(event,task) {
+  const control = event.submitter ?? event.target.querySelector('button[type="submit"],button:not([type])');
+  return withPending(control,task);
+}
