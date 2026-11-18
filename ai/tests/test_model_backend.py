@@ -73,7 +73,7 @@ def test_generation_returns_only_new_tokens(monkeypatch):
             assert ids == [2, 3]
             return '{"ok": true}'
     model = SimpleNamespace(device="cpu", generate=lambda **options: [[8, 9, 2, 3]])
-    assert generate_object(model, Tokenizer(), {"phase": "extract", "context": {}}) == {"ok": True}
+    assert generate_object(model, Tokenizer(), {"phase": "actions", "context": {}}) == {"ok": True}
 
 
 def test_base_generation_disables_adapter_and_restores_after_error(monkeypatch):
@@ -101,3 +101,26 @@ def test_base_generation_disables_adapter_and_restores_after_error(monkeypatch):
     with pytest.raises(ValueError):
         backend.generate_json({})
     assert not model.disabled
+
+def test_extract_generation_uses_prefix_and_schema_prompt(monkeypatch):
+    import sys
+    from contextlib import nullcontext
+    from types import SimpleNamespace
+    import ai.models.qwen_generation as module
+    monkeypatch.setitem(sys.modules, 'torch', SimpleNamespace(inference_mode=nullcontext))
+    monkeypatch.setattr(module, 'extraction_options', lambda request, tokenizer: {'prefix_allowed_tokens_fn': 'filter'})
+    class Inputs(dict):
+        def to(self, device): return self
+    class Tokens(list):
+        shape = (1, 1)
+    class Tokenizer:
+        eos_token_id = 0
+        def apply_chat_template(self, messages, **kwargs):
+            assert 'message_assessments' in messages[0]['content']
+            return 'prompt'
+        def __call__(self, text, **kwargs): return Inputs(input_ids=Tokens([[9]]))
+        def decode(self, tokens, **kwargs): return '{}'
+    def generate(**kwargs):
+        assert kwargs['prefix_allowed_tokens_fn'] == 'filter'
+        return [[9, 0]]
+    assert module.generate_object(SimpleNamespace(device='cpu', generate=generate), Tokenizer(), {'phase':'extract','context':{}}) == {}
