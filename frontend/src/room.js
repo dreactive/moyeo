@@ -26,9 +26,11 @@ function renderDecisionRegions(snapshot) {
   });
 }
 export function renderRoom(snapshot) {
+  const {messages,agent_status,...shared} = snapshot;
   renderDecisionRegions(snapshot);
-  renderPlan(snapshot); renderCost(displayPlan(snapshot)?.cost,getUser()?.id); run(() => renderMaps(snapshot));
-  renderChat(snapshot,getUser()?.id);
+  renderChanged('plan',[shared,getUser()?.id],() => { renderPlan(snapshot); renderCost(displayPlan(snapshot)?.cost,getUser()?.id); });
+  run(() => renderMaps(snapshot));
+  renderChanged('chat',[snapshot.room_id,snapshot.messages,snapshot.members,getUser()?.id],() => renderChat(snapshot,getUser()?.id));
   renderOverview(snapshot);
   renderAgentBanner(snapshot);
 }
