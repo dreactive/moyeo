@@ -1,17 +1,18 @@
+import {runRoomTask} from './room-errors.js';
 import {restoreTripForm,readTripForm,bindFixedCostControls} from './trip-form.js';
 import {renderRoutePanel} from './route-view.js';
 import {getSelectedDay,setSelectedDay} from './state.js';
 import {renderOverview,renderAgentBanner,renderChanged,routeKey} from './workspace-view.js';
 import {renderChat,isSendKey} from './chat.js';
 import {getUser} from './state.js';
-import {requireSession,readRoomId,saveRoomId,clearRoomId,navigate,preparePage,signOut} from './session.js';
+import {requireSession,readRoomId,saveRoomId,clearRoomId,navigate,preparePage,signOut,pageUrl} from './session.js';
 import {html,escapeHtml as e} from './ui.js';
 import {requestJson,getDataMode} from './api.js';
 import {applySnapshot,subscribeState,setUser} from './state.js';
 import {showError} from './ui.js';
 import {getSnapshot,appendMessage,applyRoomResponse} from './state.js';
 import {openRoomEvents} from './events.js';
-import {run,withPending} from './ui.js';
+import {withPending} from './ui.js';
 import {renderItems,renderConstraints,renderQuestions,renderConflicts,readDecisionValue} from './items.js';
 import {renderPlan,displayPlan} from './plan.js';
 import {renderCost} from './cost.js';
@@ -20,6 +21,15 @@ import {tripPatch} from './trip-input.js';
 import {initMaps,renderRouteMap,renderPlaceMap} from './map.js';
 import {selectPlace,renderPlace} from './place.js';
 import {getSelectedPlace} from './state.js';
+const run = task => runRoomTask(task,{
+  showError,
+  expired:expireRoomSession,
+  stale:() => roomId ? refreshRoom().catch(showError) : undefined
+});
+function expireRoomSession() {
+  closeEvents();
+  html('error',`세션이 만료되었습니다. <a href="${e(pageUrl('/login.html'))}">다시 로그인해 주세요.</a>`);
+}
 function renderDecisionRegions(snapshot) {
   const {messages,agent_status,...shared} = snapshot;
   renderChanged('decisions',[shared,getUser()?.id],() => {
@@ -51,7 +61,7 @@ export async function startRoomApp() {
   html('session', e(user.name));
   if (savedRoom) enterRoom(await requestJson('/api/rooms/' + encodeURIComponent(savedRoom)));
 }
-startRoomApp().catch(showError);
+run(startRoomApp);
 let closeEvents = () => {};
 let roomId = null;
 let tripBaseline = {};
