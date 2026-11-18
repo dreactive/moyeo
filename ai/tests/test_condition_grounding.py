@@ -15,3 +15,8 @@ import pytest
 def test_negative_hypothetical_proxy_and_shared_budgets_are_not_personal_facts(text):
     from ai.condition_grounding import condition_value
     assert condition_value('budget', text) is None
+
+def test_time_period_and_decimal_budget_are_not_misnormalized():
+    from ai.condition_grounding import condition_value
+    assert condition_value('return_by', '오후 4시까지 귀가해야 해') == '16:00'
+    assert condition_value('budget', '내 예산은 2.5만원') == 25000
