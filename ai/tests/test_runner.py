@@ -12,26 +12,24 @@ async def test_observations_survive_disabled_trace():
     assert "fixture:price-a" in observation["source_refs"]
 
 
-async def test_observation_changes_next_selected_action():
-    from ai.runner import choose_action
+async def test_observation_changes_generated_candidates():
+    from ai.runner import generate_candidates
     from ai.models.fake_actions import tool
     class Model:
         def generate_json(self, request):
             ref = request["context"]["observations"][0]["result"]["places"][0]["id"]
             return {"candidates": [tool("get_place_details", {"place_ref": ref})]}
-        def score_candidates(self, context, candidates):
-            return [1.] + [0.] * (len(candidates) - 1)
     value = task()
     value["observations"] = [{"tool_name": "search_places", "arguments": {}, "observed_at": "2026-11-18T00:00:00+09:00",
                               "result": {"places": [{"id": "new-a", "name": "A"}]}, "source_refs": []}]
-    first = await choose_action(value, Model(), None, 1)
+    first = await generate_candidates(value, Model(), None, 1)
     value["observations"][0]["result"]["places"][0]["id"] = "new-b"
-    second = await choose_action(value, Model(), None, 2)
-    assert first["arguments"]["place_ref"] == "new-a"
-    assert second["arguments"]["place_ref"] == "new-b"
+    second = await generate_candidates(value, Model(), None, 2)
+    assert first[0]["arguments"]["place_ref"] == "new-a"
+    assert second[0]["arguments"]["place_ref"] == "new-b"
 
 
-async def test_twenty_action_limit_does_not_fake_completion():
+async def test_candidate_generation_does_not_execute_or_fake_completion():
     from ai.runner import run_steps
     from ai.result import empty_result
     from ai.models.fake_actions import tool
@@ -39,8 +37,6 @@ async def test_twenty_action_limit_does_not_fake_completion():
         def generate_json(self, request):
             query = "A" + str(len(request["context"]["observations"]))
             return {"candidates": [tool("search_places", {"query": query, "region": "여수", "category": None})]}
-        def score_candidates(self, context, candidates):
-            return [1.] + [0.] * (len(candidates) - 1)
     class Tools:
         calls = 0
         async def execute(self, name, arguments):
@@ -49,7 +45,8 @@ async def test_twenty_action_limit_does_not_fake_completion():
     value, tools = task(), Tools()
     result = empty_result(value)
     await run_steps(value, Model(), tools, None, result)
-    assert tools.calls == 20 and len(result["observations"]) == 20
+    assert tools.calls == 0 and result["observations"] == []
+    assert result["candidates"][0]["tool_name"] == "search_places"
     assert result["completion"] == "needs_input" and not result["questions"]
 
 
@@ -66,25 +63,27 @@ def test_plan_result_uses_only_executed_calculations_and_retains_null():
     assert set(result["plan_draft"]) == {"selected_item_ids", "days", "cost", "validation", "blocking_conflict_ids"}
 
 
-async def test_invalid_model_scores_return_needs_input_without_tool_call():
+async def test_generation_never_calls_model_scorer_or_tools():
     from ai.runner import run_agent
     from ai.models.fake_actions import tool
     class Model:
         def generate_json(self, request):
-            return {} if request["phase"] == "extract" else {"candidates": [tool("search_places",
+            from ai.models.fake_extraction import fixture_batch
+            return fixture_batch({}, request["context"]) if request["phase"] == "extract" else {"candidates": [tool("search_places",
                 {"query": "A", "region": "여수", "category": None})]}
         def score_candidates(self, context, candidates):
-            return [float("nan")]
+            raise AssertionError("Scoring must not run")
     class Tools:
         async def execute(self, name, arguments):
             raise AssertionError("Invalid decision executed")
     result = await run_agent(task(), Model(), Tools(), None)
+    assert result["candidates"][0]["tool_name"] == "search_places"
     assert result["completion"] == "needs_input"
     assert all(q["field"] != "constraint_value" or q["target_ref"] for q in result["questions"])
     assert not result["observations"]
 
 
-async def test_rule_assistance_is_labeled_and_does_not_skip_base_generation():
+async def test_invalid_model_extraction_is_labeled_and_never_rule_success():
     from ai.runner import run_agent
     class Model:
         mode = "local_qwen"
@@ -97,27 +96,29 @@ async def test_rule_assistance_is_labeled_and_does_not_skip_base_generation():
     async def sink(event):
         events.append(event)
     result = await run_agent(value, model, None, sink)
-    assert model.calls == 1 and result["constraint_proposals"][0]["value"] == 200000
-    assert events[0]["payload"]["extraction_mode"] == "rule-assisted"
+    assert model.calls == 2 and result["constraint_proposals"] == []
+    assert result["extraction_report"]["status"] == "failed"
+    assert events[0]["payload"]["extraction_mode"] == "schema-grounded"
     assert events[0]["payload"]["model_mode"] == "local_qwen"
 
 
-async def test_ready_unchanged_plan_finishes_without_judge_or_lookup():
+async def test_ready_unchanged_plan_still_generates_candidates():
     from ai.runner import run_steps
     from ai.result import empty_result
+    from ai.models.fake import FakeModelBackend
     value = task()
     value["recent_messages"] = []
     value["current_plan"]["validation"] = "ready"
     value["questions"] = []
     value["current_plan"].update(value["base_versions"])
     result = empty_result(value)
-    await run_steps(value, None, None, None, result)
-    assert result["completion"] == "done" and not result["questions"]
-    assert result["plan_draft"]["selected_item_ids"] == ["item-a", "item-b"]
+    await run_steps(value, FakeModelBackend(), None, None, result)
+    assert result["completion"] == "needs_input" and result["candidates"]
+    assert result["plan_draft"] is None
 
 
 async def test_action_model_receives_code_derived_calculations_and_route_time():
-    from ai.runner import choose_action
+    from ai.runner import generate_candidates
     class Model:
         def generate_json(self, request):
             context = request["context"]
@@ -125,20 +126,17 @@ async def test_action_model_receives_code_derived_calculations_and_route_time():
             meal = next(l for l in context["available_calculations"]["calculate_costs"]["lines"] if l["category"] == "meal")
             assert meal["unit_price_krw"] == 10000
             return {"candidates": [dict(action="ask", reason="test", tool_name=None, arguments={}, source_message_ids=[], source_refs=[])]}
-        def score_candidates(self, context, candidates):
-            return [1.] + [0.] * (len(candidates) - 1)
-    assert (await choose_action(task(), Model(), None, 1))["action"] == "ask"
+    assert (await generate_candidates(task(), Model(), None, 1))[0]["action"] == "ask"
 
 
-async def test_judge_can_select_later_day_instead_of_first_pipeline_step():
-    from ai.runner import choose_action
+async def test_generation_keeps_later_day_route_alternatives():
+    from ai.runner import generate_candidates
     class Model:
         def generate_json(self, request):
             return {"candidates": []}
-        def score_candidates(self, context, candidates):
-            return [10. if c["arguments"].get("from_ref") == "anchor:lodging" else 0. for c in candidates]
-    action = await choose_action(task(), Model(), None, 1)
-    assert action["tool_name"] == "get_car_route" and action["arguments"]["from_ref"] == "anchor:lodging"
+    candidates = await generate_candidates(task(), Model(), None, 1)
+    routes = [c for c in candidates if c["tool_name"] == "get_car_route"]
+    assert {c["arguments"]["from_ref"] for c in routes} == {"anchor:origin", "anchor:lodging"}
 
 
 def test_budget_overrun_is_blocking_even_when_calculation_is_complete():
@@ -164,7 +162,8 @@ async def test_manual_replan_does_not_reuse_old_ready_plan():
     runtime = create_runtime({"model_backend": "fake", "provider_mode": "fixture"})
     result = await runtime.run(value, None)
     await runtime.aclose()
-    assert {"calculate_costs", "build_itinerary"} <= {o["tool_name"] for o in result["observations"]}
+    assert result["candidates"] and result["observations"] == []
+    assert result["plan_draft"] is None
 
 
 def test_unverified_minority_hard_condition_requires_its_owner_without_relaxing():

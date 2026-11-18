@@ -3,14 +3,15 @@ from copy import deepcopy
 
 def model_context(value):
     if isinstance(value, dict):
-        return {k: model_context(v) for k, v in value.items() if k != "polyline"}
+        return {k: model_context(v) for k, v in value.items() if k not in ("polyline", "conversation_context")}
     if isinstance(value, list):
         return [model_context(v) for v in value]
     return value
 
 
 def extraction_context(context):
-    return dict(recent_messages=context.get("recent_messages", [])[-20:],
+    return dict(conversation_context=context.get("conversation_context", [])[-20:],
+                reference_region=context.get("config", {}).get("region"), recent_messages=context.get("recent_messages", [])[-20:],
                 members=context.get("members", []), questions=context.get("questions", []),
                 constraints=context.get("constraints", []),
                 items=[{k: i[k] for k in ("id", "item_version", "title")} for i in context.get("items", [])])

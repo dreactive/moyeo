@@ -3,14 +3,11 @@ import time
 from httpx import HTTPError
 from datetime import datetime, timezone
 from ai.trace import emit, terminate
-from ai.candidates import build_candidates, select_candidate, grounded_options, valid_options
+from ai.candidates import build_candidates, grounded_options, valid_options
 from ai.tools.context import build_tool_context
-from ai.tools.validation import validate_arguments
 from ai.context import build_context
-from ai.questions import question, valid_questions
-from ai.outcome import assemble_result, reuse_current_plan
+from ai.questions import valid_questions
 from ai.result import empty_result
-from ai.extraction import validate_extraction
 from ai.assistance import assist_extraction
 from ai.selection import apply_selection
 from ai.planning import itinerary_arguments, next_route
@@ -18,17 +15,15 @@ from ai.cost_inputs import build_cost_inputs
 
 
 async def extract_proposals(task, model, emit_trace):
-    error = None
-    try:
-        raw = await asyncio.to_thread(model.generate_json, {"phase": "extract", "context": task})
-    except ValueError as exc:
-        raw, error = {}, type(exc).__name__
-    output = assist_extraction(raw, task)
+    from ai.extraction_run import validated_batch, extraction_output
+    batch, attempts, error = await validated_batch(task, model)
+    output = extraction_output(batch, attempts, error, task)
     await emit(emit_trace, task, 0, "decision", None,
                dict(goal=task["goal"], candidates=[], selected_index=None, scores=[],
                     model_mode=getattr(model, "mode", "unknown"), base_versions=task["base_versions"],
-                    extraction_mode="rule-assisted", model_format_error=error,
-                    model_proposal_counts={k: len(v) for k, v in raw.items() if isinstance(v, list)}))
+                    extraction_mode="schema-grounded", model_format_error=error,
+                    schema_version="1", decoder_mode="json-schema" if getattr(model, "mode", "unknown") == "local_qwen" else "fixture-schema",
+                    model_proposal_counts={key:len(getattr(batch, key)) if batch else 0 for key in ("item_proposals", "constraint_proposals", "support_observations")}, extraction_report=output["extraction_report"]))
     return output
 
 
@@ -47,6 +42,8 @@ async def run_agent(task, model, tools, emit_trace):
         return result
     try:
         result.update(await extract_proposals(task, model, emit_trace))
+        if result["extraction_report"]["status"] == "failed":
+            return result
         result["questions"].extend(q for q in task["questions"] if q["status"] == "open")
         task["_new_item_refs"] = [i["client_ref"] for i in result["item_proposals"] if not i.get("existing_item_id")]
         task["items"].extend(dict(i, id=i["client_ref"], item_version=1) for i in result["item_proposals"]
@@ -55,7 +52,7 @@ async def run_agent(task, model, tools, emit_trace):
             tools.restore(task)
         message_only = task["goal"] in ("new_message", "message_created", "remaining_messages") and not result["item_proposals"]
         if task["goal"] in ("chat", "messages", "extract") or message_only:
-            result["completion"] = "needs_input" if result["questions"] else "done"
+            result["completion"] = "needs_input" if result["questions"] or result["extraction_report"]["status"] != "ok" else "done"
         else:
             await run_steps(task, model, tools, emit_trace, result)
     except (ValueError, KeyError, TypeError, RuntimeError, OSError, HTTPError) as error:
@@ -65,28 +62,12 @@ async def run_agent(task, model, tools, emit_trace):
 
 
 async def run_steps(task, model, tools, emit_trace, result):
-    if reuse_current_plan(task, result):
-        return
     task = build_context(task, [])
     task["observations"] = [o for o in task["observations"] if o["tool_name"] not in ("build_itinerary", "calculate_costs")]
-    if hasattr(tools, "restore"):
-        tools.restore(task)
-    for step in range(1, 21):
-        context = build_context(task, result["observations"])
-        action = await choose_action(context, model, emit_trace, step)
-        if action["action"] != "tool":
-            result["completion"] = "unsupported" if action["action"] == "unsupported" else "needs_input"
-            result["questions"].extend(build_cost_inputs(context)[1])
-            break
-        observation = await execute_selected(task, action, tools, emit_trace, step)
-        result["observations"].append(observation)
-        if assemble_result(task, result):
-            break
-    else:
-        await terminate(emit_trace, task, 20, model, "action_limit")
+    result["candidates"] = await generate_candidates(task, model, emit_trace, 1)
 
 
-async def choose_action(context, model, emit_trace, step):
+async def generate_candidates(context, model, emit_trace, step):
     context = build_tool_context(context)
     context["needed_route"] = next_route(context)
     context["available_calculations"] = dict(build_itinerary=itinerary_arguments(context),
@@ -94,15 +75,10 @@ async def choose_action(context, model, emit_trace, step):
     generated = await asyncio.to_thread(model.generate_json, {"phase": "actions", "context": context})
     context["generated_candidates"] = generated.get("candidates", [])
     candidates = valid_options(context, build_candidates(context) + grounded_options(context))
-    scores = await asyncio.to_thread(model.score_candidates, context, candidates)
-    index = select_candidate(candidates, scores)
-    action = candidates[index]
     await emit(emit_trace, context, step, "decision", None,
-               dict(goal=context["goal"], candidates=candidates, selected_index=index, scores=scores,
+               dict(goal=context["goal"], candidates=candidates, selected_index=None, scores=[],
                     model_mode=getattr(model, "mode", "unknown"), base_versions=context["base_versions"]))
-    if action["action"] == "tool":
-        validate_arguments(action["tool_name"], action["arguments"], context)
-    return action
+    return candidates
 
 
 async def execute_selected(task, action, tools, emit_trace, step):

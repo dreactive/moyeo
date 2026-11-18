@@ -73,10 +73,10 @@ def test_generation_returns_only_new_tokens(monkeypatch):
             assert ids == [2, 3]
             return '{"ok": true}'
     model = SimpleNamespace(device="cpu", generate=lambda **options: [[8, 9, 2, 3]])
-    assert generate_object(model, Tokenizer(), {"phase": "extract", "context": {}}) == {"ok": True}
+    assert generate_object(model, Tokenizer(), {"phase": "actions", "context": {}}) == {"ok": True}
 
 
-def test_base_generation_judge_switch_and_variable_candidates(monkeypatch):
+def test_base_generation_disables_adapter_and_restores_after_error(monkeypatch):
     from contextlib import contextmanager
     import ai.models.local_qwen as module
     class Model:
@@ -91,12 +91,9 @@ def test_base_generation_judge_switch_and_variable_candidates(monkeypatch):
     model = Model()
     monkeypatch.setattr(module, "load_components", lambda *args: (model, object()))
     monkeypatch.setattr(module, "generate_object", lambda m, t, r: {"disabled": m.disabled, "view": r.get("context")})
-    monkeypatch.setattr(module, "score_objects", lambda m, t, c, choices: [float(not m.disabled)] * len(choices))
     backend = module.LocalQwenBackend("base", "adapter")
     assert backend.generate_json({"context": {"polyline": [1], "seconds": 2}}) == {
         "disabled": True, "view": {"seconds": 2}}
-    for count in (1, 2, 5):
-        assert backend.score_candidates({}, [{}] * count) == [1.] * count
     def fail(*args):
         raise ValueError("invalid JSON")
     monkeypatch.setattr(module, "generate_object", fail)
@@ -104,3 +101,26 @@ def test_base_generation_judge_switch_and_variable_candidates(monkeypatch):
     with pytest.raises(ValueError):
         backend.generate_json({})
     assert not model.disabled
+
+def test_extract_generation_uses_prefix_and_schema_prompt(monkeypatch):
+    import sys
+    from contextlib import nullcontext
+    from types import SimpleNamespace
+    import ai.models.qwen_generation as module
+    monkeypatch.setitem(sys.modules, 'torch', SimpleNamespace(inference_mode=nullcontext))
+    monkeypatch.setattr(module, 'extraction_options', lambda request, tokenizer: {'prefix_allowed_tokens_fn': 'filter'})
+    class Inputs(dict):
+        def to(self, device): return self
+    class Tokens(list):
+        shape = (1, 1)
+    class Tokenizer:
+        eos_token_id = 0
+        def apply_chat_template(self, messages, **kwargs):
+            assert 'places' in messages[0]['content']
+            return 'prompt'
+        def __call__(self, text, **kwargs): return Inputs(input_ids=Tokens([[9]]))
+        def decode(self, tokens, **kwargs): return '{}'
+    def generate(**kwargs):
+        assert kwargs['prefix_allowed_tokens_fn'] == 'filter'
+        return [[9, 0]]
+    assert module.generate_object(SimpleNamespace(device='cpu', generate=generate), Tokenizer(), {'phase':'extract','context':{}}) == {}

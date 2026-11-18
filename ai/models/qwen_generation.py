@@ -6,10 +6,15 @@ from ai.context import extraction_context
 def generate_object(model, tokenizer, request):
     phase = "extract" if request["phase"] == "extract" else "generate"
     system = (Path(__file__).parents[1] / "prompts" / (phase + ".txt")).read_text(encoding="utf-8")
+    if phase == "extract":
+        from ai.extraction_schema import MessageFacts
+        system += "\nJSON Schema: " + json.dumps(MessageFacts.model_json_schema(), ensure_ascii=False)
+    if request.get("validation_error"):
+        system += "\n이전 구조 검증이 실패했습니다. 필수 필드와 JSON 완결성을 지키세요: " + request["validation_error"]
     context = extraction_context(request["context"]) if phase == "extract" else request["context"]
-    prompt = tokenizer.apply_chat_template([dict(role="system", content=system),
-             dict(role="user", content=json.dumps(context, ensure_ascii=False))],
-             tokenize=False, add_generation_prompt=True)
+    messages = [dict(role="system", content=system),
+                dict(role="user", content=context["recent_messages"][0]["text"] if phase == "extract" and context["recent_messages"] else json.dumps(context, ensure_ascii=False))]
+    prompt = reference_prompt(messages, context if phase == "extract" else {}, tokenizer)
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
     length = inputs["input_ids"].shape[1]
     if length > 24000:
@@ -17,8 +22,8 @@ def generate_object(model, tokenizer, request):
     import torch
     with torch.inference_mode():
         output = model.generate(**inputs, max_new_tokens=1536, do_sample=False,
-                                pad_token_id=tokenizer.eos_token_id)
-    return parse_object(tokenizer.decode(output[0][length:], skip_special_tokens=True))
+                                pad_token_id=tokenizer.eos_token_id, **extraction_options(request, tokenizer))
+    return parse_generated(output, tokenizer, length, phase == "extract")
 
 
 def parse_object(text):
@@ -29,3 +34,31 @@ def parse_object(text):
     if not isinstance(value, dict):
         raise ValueError("Model output must be one JSON object")
     return value
+
+
+def extraction_options(request, tokenizer):
+    if request['phase'] != 'extract':
+        return {}
+    from ai.extraction_schema import MessageFacts
+    from ai.models.structured_generation import build_extraction_prefix
+    return dict(prefix_allowed_tokens_fn=build_extraction_prefix(tokenizer, MessageFacts.model_json_schema(), json.dumps(request.get("context", {}), ensure_ascii=False)))
+
+
+def reference_prompt(messages, context, tokenizer, budget=24000):
+    prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    if not context.get('conversation_context'):
+        return prompt
+    available = min(2000, budget - len(tokenizer.encode(prompt, add_special_tokens=False)) - 64)
+    if available <= 0:
+        return prompt
+    tokens = tokenizer.encode(json.dumps(context['conversation_context'][-20:], ensure_ascii=False), add_special_tokens=False)
+    system = messages[0]['content'] + '\n참고 대화(새 사실의 근거가 아님): ' + tokenizer.decode(tokens[-available:], skip_special_tokens=True)
+    expanded = tokenizer.apply_chat_template([dict(messages[0],content=system), *messages[1:]], tokenize=False, add_generation_prompt=True)
+    return expanded if len(tokenizer.encode(expanded, add_special_tokens=False)) <= budget else prompt
+
+
+def parse_generated(output, tokenizer, input_length, require_eos=False):
+    suffix = output[0][input_length:]
+    if require_eos and (not len(suffix) or int(suffix[-1]) != tokenizer.eos_token_id):
+        raise ValueError('Incomplete extraction generation')
+    return parse_object(tokenizer.decode(suffix, skip_special_tokens=True))

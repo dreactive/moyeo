@@ -1,16 +1,21 @@
-Return one JSON object only. Do not write reasoning or markdown.
-Extract Korean trip conversation facts as proposals, never official confirmations.
-Schema:
-{"constraint_proposals":[{"owner_id":"actual speaker ID","key":"budget or return_by or another explicit condition","value":"grounded value","kind":"hard or preference","source_message_ids":["existing message ID"],"replaces_constraint_id":null}],
- "item_proposals":[{"client_ref":"client:source-message-ID","existing_item_id":null,"kind":"place","title":"exact place mentioned in message","source_message_ids":["existing message ID"]}],
- "support_observations":[{"item_id":"existing item ID or new client_ref","item_version":1,"author_id":"actual speaker","stance":"support or oppose or withdraw or unclear","source_message_id":"existing message ID"}]}
-Use empty arrays when absent. A budget of 20만원 is 200000 KRW. Return-by values use HH:MM.
-An owner can correct only their own constraint. Repeated support does not create extra votes.
-"다들 찬성" never supports on behalf of others. An ambiguous "좋아" must not guess a target.
-Do not generate prices, hours, coordinates, server IDs, confirmations, or plan versions.
-Only recent_messages are evidence for NEW proposals. items and constraints are lookup targets, not new messages.
-Do not output an existing item as a new item. Every item_proposal MUST include source_message_ids.
-Example: recent_messages=[{"id":"m7","author_id":"u1","text":"예산은 20만원이야."}], constraints=[], items=[].
-Correct output: {"constraint_proposals":[{"owner_id":"u1","key":"budget","value":200000,"kind":"hard","source_message_ids":["m7"],"replaces_constraint_id":null}],"item_proposals":[],"support_observations":[]}
-Example: items=[{"id":"i1","item_version":2,"title":"오동도"}], recent_messages=[{"id":"m8","author_id":"u2","text":"오동도 가자"}].
-Correct output: {"constraint_proposals":[],"item_proposals":[],"support_observations":[{"item_id":"i1","item_version":2,"author_id":"u2","stance":"support","source_message_id":"m8"}]}
+한국어 여행 문장에서 실제 장소 이름과 발화자 본인의 명시적 조건을 추출한다. 아래 JSON Schema에 맞는 JSON 객체 하나만 출력한다.
+places에는 원문에 연속해서 나타나는 장소 고유명사만 그대로 복사한다. 대학교, 식당, 공원, 섬은 장소다. 도시/지역만 제안하면 region이고 places는 []다.
+장소 이름 앞의 지역 설명과 조사/동작은 제외한다. 원문 단어를 재조합하거나 다른 이름/지점/주소를 만들어내지 않는다.
+conditions에는 실제로 말한 개인 조건만 넣는다. 예산은 key=budget_krw,value=원 단위 정수, 귀가 마감은 key=return_by,value=HH:MM이다.
+시간이나 예산이 없는 문장에서 조건을 만들지 않는다. 인사나 점심 제안에는 conditions=[]다. 부정, 가정, 타인 인용, 질문형 조건은 넣지 않는다.
+intents는 chitchat/place/condition/support/region/unclear 중 해당 의도를 모두 나열한다.
+
+입력: 서울대학교 가는 건 어때?
+출력: {"places":["서울대학교"],"conditions":[],"intents":["place"]}
+입력: 우리 이번에 부산 해운대에 있는 청사포 국수에서 점심 먹자
+출력: {"places":["청사포 국수"],"conditions":[],"intents":["place"]}
+입력: 한강공원 가자
+출력: {"places":["한강공원"],"conditions":[],"intents":["place"]}
+입력: 내 예산은 20만원
+출력: {"places":[],"conditions":[{"key":"budget_krw","value":200000}],"intents":["condition"]}
+입력: 난 16시까지 역에 도착해야 해
+출력: {"places":[],"conditions":[{"key":"return_by","value":"16:00"}],"intents":["condition"]}
+입력: 안녕
+출력: {"places":[],"conditions":[],"intents":["chitchat"]}
+입력: 우리 여수 가는 건 어때?
+출력: {"places":[],"conditions":[],"intents":["region"]}

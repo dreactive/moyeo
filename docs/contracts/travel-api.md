@@ -201,6 +201,8 @@ async def run_agent(
 
 Backend가 AgentResult를 저장 타입으로 변환하고 base_versions를 확인한다. AI는 최종 Confirmation이나 confirmed 상태를 생성할 수 없다. plan_draft에는 Backend가 배정할 version/hash를 넣지 않고 selected_item_ids/days/cost/validation 내용만 담는다. 새 item/constraint ID를 배정하고 참조를 해결한 뒤 item_snapshots와 계획 버전을 만든다.
 
+`codex/candidate-generation-only` 브랜치에서는 계획 실행 결과에 선택 필드 `candidates: dict[]`를 추가한다. 후보는 `{action,reason,tool_name,arguments,source_message_ids,source_refs}`이며 생성·검증 후 그대로 반환한다. 채점·선택·자동 도구 실행은 없고 `plan_draft`는 null, 새 `observations`는 빈 배열, `completion`은 `needs_input`이다. 추출 전용·지원하지 않는 교통수단·오래된 사용자 선택은 기존 조기 종료를 유지하며 `candidates`를 생략한다. Backend는 이 필드로 행동을 자동 실행하지 않는다.
+
 runner는 실제 도구 반환값을 ToolObservation으로 수집해 AgentResult.observations로 전달한다. Backend는 이를 공급자 보관 조건에 맞는 메모리/저장 경계에 적용하고 PlaceDetails·Evidence 참조를 제공하며, 다음 AgentInput.observations에 필요한 결과를 넣는다. trace는 진단용이며 제품 데이터 전달 통로로 사용하지 않는다.
 
 충돌 선택 endpoint는 저장된 ConflictOption.effect를 UserSelection으로 복사해 AgentInput에 넣는다. 사용자가 선택한 ‘제외/순서변경/장소교체’를 자유 문장으로 다시 추측하지 않는다. base_versions와 대상 ID가 맞는 선택을 실행기가 우선 반영한 뒤 경로·일정·경비를 재계산한다.
@@ -243,3 +245,15 @@ TraceEvent 필드는 `run_id,step,event,call_id:null|string,created_at,payload`�
 - 시간 충돌: blocking=true, 항목의 conflict_ids에 연결. 노랑을 초록으로 간주할 수 없음.
 - 계획 변경: plan_revision 증가, 새 대상의 확인을 다시 받음. 기존 confirmed_plan은 보존.
 - 개발 fixture가 같은 DTO를 반환해도 mode=fixture이므로 실제 API 검증 통과는 아님.
+
+## 스키마 추출의 선택 필드와 실패 처리
+
+기존 필수 제안/상태 enum은 유지한다. AgentInput에 선택 필드 `conversation_context: dict[]`를 추가한다. 최대20개 과거 메시지이며 미처리 `recent_messages`와 구분한다. 과거 맥락은 새 제안의 source_message_ids로 사용할 수 없다.
+
+AgentResult의 선택 필드 `extraction_report`는 `{status:"ok"|"filtered"|"failed",issue_codes:string[],rejected_message_ids:string[],attempts:1|2}`다. 필드가 없는 기존 fixture/AgentPort 계약은 유지한다.
+
+- `ok`: 구조·근거 검증 완료. 정상 빈 인사는 새 사실 없이 done일 수 있다. 명시적 조건의 규칙 보조는 정보성 issue code `condition_rule_assisted`로 남긴다.
+- `filtered`: 근거 불일치·미지원 key·미해결 의도에 해당하는 제안은 제외하고 검증된 제안만 반영한다. 처리 포인터는 전진하고 상태는 needs_input으로 남는다. 원시 모델 응답은 저장하지 않는다.
+- `failed`: 스키마/완결성/추론 실패. Backend는 부작용 제안이 섞여도 반영하지 않고 해당 실행으로 처리 포인터를 전진시키지 않는다. 등록된 메시지만 별도 실패 기록으로 보존한다. 새 메시지는 실패분을 제외해 처리하고, 수동 재계획은 실패분을 최대20개 재시도한다. 과거 실패의 복구는 포인터를 뒤로 돌리지 않는다.
+
+내부 MessageFacts/ExtractionBatch 및 원문 evidence.quote는 외부 필수 proposal 계약에 포함되지 않는다. quote는 API 입력 상한과 같은10000자까지 검증한다. 개발 trace에는 schema_version/decoder_mode/제안 건수/오류 코드가 남고 방의 agent_status.label은 실패·거절을 구분한다. 일반 대기 작업이 비면 직전의 의미 있는 상태를 보존한다.

@@ -4,3 +4,4 @@ transformers>=4.45,<5
 peft>=0.14,<1
 accelerate>=1,<2
 safetensors>=0.5,<1
+lm-format-enforcer==0.11.3

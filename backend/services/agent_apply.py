@@ -1,4 +1,5 @@
 from backend.db import serialized
+from backend.services.extraction import record_extraction_failure, latest_processed
 from backend.domain import apply_item_proposals, resolve_refs, add_constraint_proposal
 from backend.services.consensus import apply_support
 from backend.services.events import publish_event
@@ -82,15 +83,23 @@ def prepare_result(room, result, old_observations):
 def apply_agent_result(db, result):
     if not valid_result_base(db, result):
         return False
+    if result.get("extraction_report", {}).get("status") == "failed":
+        record_extraction_failure(db, result)
+        return False
     room_id = result['room_id']
     room, observations = prepare_result(db.get('room:' + room_id), result, get_observations(db, room_id))
     run = db.get('run:' + result['run_id'])
     run['applied'] = True
+    if result.get('extraction_report'):
+        run['extraction_report'] = result['extraction_report']
     records = {'room:' + room_id:room, 'run:' + result['run_id']:run}
     processed = result.get('last_processed_message_id')
     valid_ids = run.get('message_ids', [message['id'] for message in room['messages']])
     if processed is not None and processed in valid_ids:
-        records['processed-message:' + room_id] = processed
+        records['processed-message:' + room_id] = latest_processed(room['messages'], db.get('processed-message:' + room_id), processed)
+        if result.get('extraction_report'):
+            from backend.services.extraction import recovered_failures
+            records['failed-extraction:' + room_id] = recovered_failures(db.get('failed-extraction:' + room_id) or {}, run['message_ids'], processed)
     db.put_many(records)
     db.observations[room_id] = observations
     publish_event(db, room_id, 'room.updated', {'changed':['items','constraints','questions','conflicts','current_plan','versions']})

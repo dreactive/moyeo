@@ -1,3 +1,0 @@
-Judge each actual next action using the original When2Call yes/no judge prompt.
-Only registered tools with grounded required arguments may run. Missing facts require a question.
-Use the supplied Qwen base for generation with adapters disabled; enable the supplied judge LoRA for scoring.

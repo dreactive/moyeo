@@ -1,15 +1,6 @@
 import pytest
 
 
-def test_invalid_scores_never_choose_first_candidate():
-    from ai.candidates import select_candidate
-    candidates = [{"action": "tool"}, {"action": "ask"}]
-    assert select_candidate(candidates, [-2., 3.]) == 1
-    for scores in ([1.], [float("nan"), 1.], [1., float("inf")], []):
-        with pytest.raises(ValueError):
-            select_candidate(candidates, scores)
-
-
 def test_tool_arguments_require_known_refs_and_positive_quantity():
     from ai.tools.validation import validate_arguments
     context = {"places": {"p": {}}, "observations": [], "config": {}}
@@ -78,7 +69,7 @@ def test_grounded_choices_include_independent_routes_and_ask():
     assert all(c["tool_name"] != "calculate_costs" for c in options)
 
 
-def test_invalid_or_already_observed_tools_are_excluded_before_scoring():
+def test_invalid_or_already_observed_tools_are_excluded_from_candidates():
     from ai.candidates import valid_options, tool_option
     from ai.tests.test_place_route_tools import task
     options = [

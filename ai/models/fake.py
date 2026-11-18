@@ -25,6 +25,3 @@ class FakeModelBackend:
                     output["support_observations"].append(dict(item_id=item["id"], item_version=item["item_version"],
                         author_id=message["author_id"], stance=stance, source_message_id=message["id"]))
         return output
-
-    def score_candidates(self, context, candidates):
-        return [float(len(candidates) - i) for i in range(len(candidates))]
