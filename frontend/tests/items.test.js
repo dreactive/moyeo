@@ -157,3 +157,11 @@ test('the condition change marker appears after a same-room update', () => {
   decisions.renderConstraints({...updated,room_id:'change-marker-other'});
   assert.doesNotMatch(card.innerHTML,/최근 변경/);
 });
+
+test('visit questions identify the actual place in the open questions section', () => {
+  const card = {};
+  globalThis.document = {getElementById:() => card};
+  decisions.renderQuestions(scenarios.questions.snapshot);
+  assert.match(card.innerHTML,/확인 질문/);
+  assert.match(card.innerHTML,/가상 A식당 · 공유 질문/);
+});

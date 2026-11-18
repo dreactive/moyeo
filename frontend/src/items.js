@@ -94,8 +94,9 @@ function supportFields(items,relatedIds) {
     .map(item => `<option value="${e(item.id)}">${e(item.title)}</option>`).join('');
   return `<label>의견 대상<select name="item_id" required><option value="">항목을 선택해 주세요</option>${options}</select></label>`;
 }
+const questionLabels = {origin:'출발지',destination:'귀가지',lodging:'숙소',menu_selection:'메뉴 선택',visit_duration:'체류시간',constraint_value:'조건 확인',support_target:'의견 대상'};
 export function renderQuestions(snapshot) {
-  html('questions', snapshot.questions.filter(question => question.status === 'open').map(question => {
+  const cards = snapshot.questions.filter(question => question.status === 'open').map(question => {
     const fields = question.field === 'support_target'
       ? supportFields(snapshot.items,question.related_item_ids)
       : questionFields[question.field];
@@ -105,7 +106,10 @@ export function renderQuestions(snapshot) {
     const input = fields || conditionInput(condition);
     const owner = question.owner_id;
     const canAnswer = !owner || owner === getUser()?.id;
-    return `<div class="card"><h3>${e(question.text)}</h3><p>${e(question.field)} / 대상 ${e(question.target_ref)} / ${owner ? e(memberName(snapshot,owner)) : '공유 질문'}</p>
+    const subject = condition ? constraintLabels[condition.key] ?? condition.key
+      : snapshot.items.find(item => item.id === question.target_ref)?.title ?? questionLabels[question.field] ?? '추가 입력';
+    return `<div class="card"><strong>${e(question.text)}</strong><p class="constraint-meta">${e(subject)} · ${owner ? e(memberName(snapshot,owner)) : '공유 질문'}</p>
   ${canAnswer ? `<form data-question="${e(question.id)}" data-value-mode="${input ? 'fields' : 'json'}">${input || `<label>응답 (JSON)<textarea name="value" required>${e(JSON.stringify(answerExamples[question.field]))}</textarea></label>`}<button>답변 보내기</button></form>` : ''}</div>`;
-  }).join(''));
+  }).join('');
+  html('questions', cards ? '<h3 class="card-section-title">확인 질문</h3>' + cards : '');
 }
