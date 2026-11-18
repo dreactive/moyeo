@@ -28,11 +28,23 @@ export async function checkAuthPage(submit, retry) {
   }
 }
 
+const authErrors = {
+  401:'이메일 또는 비밀번호를 확인해 주세요.',
+  409:'이미 가입된 이메일이에요.',
+  422:'입력한 정보를 확인해 주세요.'
+};
+
+export function authErrorMessage(error) {
+  if (error instanceof RangeError) return error.message;
+  return authErrors[error.status] ?? '연결 상태를 확인하고 다시 시도해 주세요.';
+}
+
 export function startAuthPage(form) {
   preparePage();
   const submit = form.querySelector('button[type=submit]');
   const retry = document.getElementById('retry');
-  bindEntryForm(form, () => submitAuth(form.dataset.action, Object.fromEntries(new FormData(form))));
+  bindEntryForm(form, () => submitAuth(form.dataset.action, Object.fromEntries(new FormData(form))),
+    error => showError(new Error(authErrorMessage(error))));
   retry.onclick = () => checkAuthPage(submit, retry);
   return retry.onclick();
 }

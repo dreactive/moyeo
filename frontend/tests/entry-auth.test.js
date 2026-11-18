@@ -33,3 +33,10 @@ test('auth forms become available after the anonymous session check', async () =
   assert.equal(button.disabled,false);
   assert.equal(typeof form.onsubmit,'function');
 });
+
+test('authentication failures distinguish credentials, registration, and retry', () => {
+  assert.match(auth.authErrorMessage({status:401}), /이메일 또는 비밀번호/);
+  assert.match(auth.authErrorMessage({status:409}), /가입된 이메일/);
+  assert.match(auth.authErrorMessage({status:422}), /입력한 정보/);
+  assert.match(auth.authErrorMessage({status:503}), /다시 시도/);
+});
