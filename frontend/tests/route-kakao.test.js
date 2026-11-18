@@ -53,3 +53,22 @@ test('a Kakao drawing failure preserves the selected route data',async t => {
   assert.match(route.innerHTML,/서버 polyline/);
   assert.equal(classes.has('sdk'),false);
 });
+
+test('the Kakao route labels visits by their position within the selected day',async t => {
+  const titles = [];
+  const maps = {
+    load:callback => callback(),
+    LatLng:class {},
+    Map:class {setBounds(){}},
+    LatLngBounds:class {extend(){}},
+    Marker:class {constructor({title}) { titles.push(title); }},
+    Polyline:class {}
+  };
+  globalThis.kakao = {maps};
+  t.after(() => delete globalThis.kakao);
+  await initMaps({routeElement:{classList:new Set()},placeElement:{},appKey:'test-key'});
+  titles.length = 0;
+  const places = new Map([['fixture:place-b',{name:'둘째 장소',latitude:34.77,longitude:127.68}]]);
+  renderRouteMap(snapshot.current_plan,places,snapshot.config,'2026-11-21');
+  assert.deepEqual(titles,['예시 출발지','예시 숙소','2. 둘째 장소']);
+});

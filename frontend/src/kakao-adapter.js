@@ -34,7 +34,9 @@ export function drawKakao(maps,element,points,lines = []) {
   const bounds = new maps.LatLngBounds();
   points.forEach(point => {
     const position = latLng(point);
-    layers.push(new maps.Marker({map,position,title:point.name ?? point.label}));
+    const name = point.name ?? point.label;
+    const title = point.visitNumber ? `${point.visitNumber}. ${name}` : name;
+    layers.push(new maps.Marker({map,position,title}));
     bounds.extend(position);
   });
   lines.forEach((line,index) => {

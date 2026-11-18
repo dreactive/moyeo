@@ -14,7 +14,10 @@ export function renderRouteMap(plan, placesById, config, date) {
   const visibleDays = date != null && selected ? [selected] : days;
   const anchorKeys = date != null && selected ? dailyAnchors(days,selected) : ['origin','lodging','destination'];
   if (sdk) {
-    const visits = visibleDays.flatMap(day => day.visits.map(visit => placesById.get(visit.place_ref)));
+    const visits = visibleDays.flatMap(day => day.visits.map((visit,index) => {
+      const place = placesById.get(visit.place_ref);
+      return place && {...place,visitNumber:index + 1};
+    }));
     const points = [...anchorKeys.map(key => config[key]),...visits].filter(Boolean);
     const lines = visibleDays.flatMap(day => day.route_legs.map(leg => leg.polyline));
     const map = tryDraw(routeElement,points,lines);
