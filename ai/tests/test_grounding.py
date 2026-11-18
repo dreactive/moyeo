@@ -151,3 +151,11 @@ def test_known_place_support_does_not_report_unresolved_new_place():
     value['recent_messages'] = [message]
     batch = ExtractionBatch.model_validate(facts_to_batch(dict(places=['B공원'],conditions=[],intents=['place','support']),message,value))
     assert extraction_output(batch,1,None,value)['extraction_report']['status'] == 'ok'
+
+def test_api_length_message_facts_keep_valid_full_evidence():
+    from ai.extraction_projection import facts_to_batch
+    from ai.extraction_schema import ExtractionBatch
+    value = task()
+    message = dict(id='long',author_id='u1',text='오동도 가자. ' + '가' * 9992)
+    batch = ExtractionBatch.model_validate(facts_to_batch(dict(places=['오동도'],conditions=[],intents=['place']),message,value))
+    assert batch.item_proposals[0].evidence.quote == message['text']

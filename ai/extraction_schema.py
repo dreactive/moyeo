@@ -12,7 +12,7 @@ class StrictModel(BaseModel):
 
 class EvidenceQuote(StrictModel):
     message_id: Identifier
-    quote: Text
+    quote: Annotated[str, Field(min_length=1, max_length=10000)]
 
 
 class MessageAssessment(StrictModel):
