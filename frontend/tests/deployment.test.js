@@ -6,6 +6,7 @@ import {tmpdir} from 'node:os';
 import {join, resolve, sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {copyStatic} from '../scripts/build-files.mjs';
+import {buildFrontend} from '../scripts/build.mjs';
 
 async function temporary(t) {
   const directory = await mkdtemp(join(tmpdir(), 'trip-deploy-'));
@@ -44,4 +45,16 @@ test('static packaging excludes server and development files', async t => {
   for (const name of ['.env', '.env.example', 'server.js', 'scripts', 'tests', 'package.json']) assert.ok(!files.includes(name));
   assert.match(await readFile(join(output, 'index.html'), 'utf8'), /kakao-map-app-key/);
   assert.ok((await readdir(join(output, 'fixtures'))).includes('scenarios.json'));
+});
+
+test('a complete build publishes routes and only the public environment key', async t => {
+  const root = await temporary(t);
+  await copyStatic(fileURLToPath(new URL('../', import.meta.url)), root);
+  await buildFrontend(root, {BACKEND_ORIGIN: 'https://api.example.com', KAKAO_JAVASCRIPT_KEY: 'public-map', DEV_TOKEN: 'private-sentinel'});
+  const output = join(root, '.vercel/output');
+  const config = JSON.parse(await readFile(join(output, 'config.json'), 'utf8'));
+  const html = await readFile(join(output, 'static/index.html'), 'utf8');
+  assert.equal(config.version, 3);
+  assert.match(html, /content="public-map"/);
+  assert.ok(!JSON.stringify(config).includes('private-sentinel') && !html.includes('private-sentinel'));
 });
