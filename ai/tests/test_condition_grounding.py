@@ -25,3 +25,8 @@ def test_time_period_and_decimal_budget_are_not_misnormalized():
 def test_third_person_facts_without_quotation_are_not_owned_by_speaker(key,text):
     from ai.condition_grounding import condition_value
     assert condition_value(key,text) is None
+
+@pytest.mark.parametrize('text', ['내 예산은 20만원이 아니라 15만원이야', '내 예산은 20만원은 아냐', '내 예산은 20만원인지 모르겠어', '내 예산은 20만원이면 좋겠어', '내 예산은 20만원에서 15만원으로 바꿀게'])
+def test_negation_uncertainty_and_multiple_values_need_clarification(text):
+    from ai.condition_grounding import condition_value
+    assert condition_value('budget',text) is None
