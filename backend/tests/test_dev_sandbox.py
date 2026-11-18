@@ -201,3 +201,17 @@ def test_sandbox_calls_do_not_change_room_or_jobs(api):
     assert response.status_code == 200
     assert db.get('room:room-fixture') == before
     assert not db.traces and api.app.state.jobs.queue.empty()
+
+
+@pytest.mark.parametrize('name', ['build_itinerary', 'calculate_costs'])
+def test_calculation_cannot_override_canonical_facts(api, name):
+    from backend.dev_examples import tool_examples
+    api.app.state.dev_token = 'test-dev'
+    body = tool_examples(name)['fixture']['value']
+    path, headers = '/api/dev/tools/' + name, {'X-Dev-Token': 'test-dev'}
+    body['arguments'] = api.post(path, json=body, headers=headers).json()['arguments']
+    if name == 'calculate_costs':
+        body['arguments']['lines'][0]['unit_price_krw'] += 1
+    else:
+        body['arguments']['route_legs'][0]['duration_seconds'] += 1
+    assert api.post(path, json=body, headers=headers).status_code == 422
